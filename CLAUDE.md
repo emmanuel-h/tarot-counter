@@ -42,3 +42,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Documentation
 - Always add inline comments to generated code and explain key concepts. The user is new to Kotlin and Android development.
 - When the user asks for a new feature, add or update relevant Markdown files in a docs/ folder.
+- **Keep `README.md` in sync**: whenever you add, remove, or significantly change a feature (game rules, screens, bonuses, architecture, tech stack versions), update the relevant section(s) of `README.md` in the same commit.
