@@ -1,0 +1,18 @@
+{
+  "enabledPlugins": {
+    "fullstack-dev-skills@fullstack-dev-skills": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | grep -q '\\.kt$' && echo '{\"systemMessage\": \"Reminder: a .kt file was changed - update docs/ if this affects game flow, data models, or screen behavior.\"}' || true"
+          }
+        ]
+      }
+    ]
+  }
+}
