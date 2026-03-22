@@ -8,14 +8,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -183,13 +185,16 @@ fun GameScreen(
     if (contract != null) {
         // Step 2: fill in bouts, points, and bonuses.
         // We pass `modifier` so the Scaffold padding still applies.
+        // `onShowHistory` is non-null when at least one round is recorded,
+        // so the History button appears inside the form's header.
         RoundDetailsForm(
-            takerName   = currentTaker,
-            contract    = contract,
-            playerNames = displayNames,
-            onConfirm   = { details -> recordPlayed(contract, details) },
-            onBack      = { selectedContract = null },
-            modifier    = modifier
+            takerName     = currentTaker,
+            contract      = contract,
+            playerNames   = displayNames,
+            onConfirm     = { details -> recordPlayed(contract, details) },
+            onBack        = { selectedContract = null },
+            onShowHistory = if (roundHistory.isNotEmpty()) ({ showScoreHistory = true }) else null,
+            modifier      = modifier
         )
         return  // stop here — don't render the column below
     }
@@ -207,7 +212,19 @@ fun GameScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // History button — pinned at the top so it is always visible without scrolling.
+        // Only shown once at least one round has been recorded (otherwise there's nothing to see).
+        if (roundHistory.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                HistoryButton(onClick = { showScoreHistory = true })
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // ── Pick a contract ───────────────────────────────────────────────────
         // The taker is already known (auto-assigned), so we go straight to contract selection.
@@ -252,26 +269,10 @@ fun GameScreen(
             // ── Scoreboard ────────────────────────────────────────────────────
             // Cumulative score per player: sum of all their per-round scores.
             // A positive total means they are ahead; negative means they owe points.
-            //
-            // The "Scores" label and the bar-chart icon are on the same line.
-            // `SpaceBetween` pushes the icon to the far right of the row.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Scores",
-                    style = MaterialTheme.typography.titleSmall
-                )
-                // Tapping this icon opens the full score-history table screen.
-                IconButton(onClick = { showScoreHistory = true }) {
-                    Icon(
-                        imageVector = Icons.Default.BarChart,
-                        contentDescription = "View score history table"
-                    )
-                }
-            }
+            Text(
+                text = "Scores",
+                style = MaterialTheme.typography.titleSmall
+            )
             Spacer(modifier = Modifier.height(8.dp))
 
             for (name in displayNames) {
@@ -316,5 +317,30 @@ fun GameScreen(
                 Spacer(modifier = Modifier.height(4.dp))
             }
         }
+    }
+}
+
+// ── Shared composable ─────────────────────────────────────────────────────────
+
+// A tonal button with a bar-chart icon and "History" label.
+//
+// Using `FilledTonalButton` (Material 3) gives it a coloured background,
+// rounded corners, and a ripple — making it unmistakably tappable compared
+// to a plain `IconButton`. The icon has no content description because the
+// adjacent "History" text already conveys the action to accessibility tools.
+//
+// This composable is used in both GameScreen (step 1 top bar)
+// and RoundDetailsForm (step 2 header), so it lives here at package level
+// and is accessible from all files in `fr.mandarine.tarotcounter`.
+@Composable
+fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    FilledTonalButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            imageVector = Icons.Default.BarChart,
+            contentDescription = null,                    // "History" text label is sufficient
+            modifier = Modifier.size(ButtonDefaults.IconSize)
+        )
+        Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+        Text("History")
     }
 }

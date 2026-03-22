@@ -263,22 +263,18 @@ class GameScreenTest {
 
     @Test
     fun score_history_button_appears_after_first_round_is_completed() {
-        // The bar-chart icon button only appears once the scoreboard is visible,
-        // i.e. after at least one round has been recorded.
+        // The History button only appears once at least one round has been recorded.
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule
-            .onNodeWithContentDescription("View score history table")
-            .assertIsDisplayed()
+        // FilledTonalButton with text label — findable by its text.
+        composeTestRule.onNodeWithText("History").assertIsDisplayed()
     }
 
     @Test
     fun tapping_score_history_button_opens_history_screen() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule
-            .onNodeWithContentDescription("View score history table")
-            .performClick()
+        composeTestRule.onNodeWithText("History").performClick()
         composeTestRule.onNodeWithText("Score history").assertIsDisplayed()
     }
 
@@ -286,14 +282,21 @@ class GameScreenTest {
     fun back_button_on_history_screen_returns_to_game() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()  // complete round 1
-        composeTestRule
-            .onNodeWithContentDescription("View score history table")
-            .performClick()
+        composeTestRule.onNodeWithText("History").performClick()
         composeTestRule
             .onNodeWithContentDescription("Back to game")
             .performClick()
         // We should be back on round 2's contract selection screen.
         composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
+    }
+
+    @Test
+    fun score_history_button_also_appears_in_round_details_form() {
+        // After round 1 is done, entering step 2 should also show the History button.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()  // complete round 1
+        composeTestRule.onNodeWithText("Garde").performClick()        // enter step 2
+        composeTestRule.onNodeWithText("History").assertIsDisplayed()
     }
 
     @Test

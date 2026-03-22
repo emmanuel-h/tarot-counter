@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,11 +33,13 @@ import androidx.compose.ui.unit.dp
 
 // RoundDetailsForm collects all scoring information for a played round.
 //
-// takerName:   display name of the player who took the hand this round.
-// contract:    the contract they announced (already chosen on the previous screen).
-// playerNames: all player display names, used to build the player chip selectors.
-// onConfirm:   called with the completed RoundDetails when the user taps "Confirm round".
-// onBack:      called when the user taps "← Change contract" to go back.
+// takerName:     display name of the player who took the hand this round.
+// contract:      the contract they announced (already chosen on the previous screen).
+// playerNames:   all player display names, used to build the player chip selectors.
+// onConfirm:     called with the completed RoundDetails when the user taps "Confirm round".
+// onBack:        called when the user taps "← Change contract" to go back.
+// onShowHistory: when non-null, shows a History button in the header that calls this lambda.
+//                Pass null when there is no history yet (i.e. this is the first round).
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RoundDetailsForm(
@@ -45,6 +48,7 @@ fun RoundDetailsForm(
     playerNames: List<String>,
     onConfirm: (RoundDetails) -> Unit,
     onBack: () -> Unit,
+    onShowHistory: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // ── Form state ────────────────────────────────────────────────────────────
@@ -87,7 +91,21 @@ fun RoundDetailsForm(
             style = MaterialTheme.typography.headlineSmall
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // History button — shown when at least one round has been recorded.
+        // It sits right-aligned below the header, mirroring its placement in step 1.
+        // When null, we keep the same total spacing as the original Spacer(24.dp).
+        if (onShowHistory != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                HistoryButton(onClick = onShowHistory)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        } else {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
         // ── Bouts (oudlers) ───────────────────────────────────────────────────
         SectionLabel("Number of bouts (oudlers)")
