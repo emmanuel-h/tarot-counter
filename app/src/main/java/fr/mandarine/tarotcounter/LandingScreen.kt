@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -48,13 +49,19 @@ fun LandingScreen(
 
     // Column stacks children vertically. `verticalScroll` makes it scrollable
     // in case the content (name fields + button) doesn't fit on smaller screens.
+    // `imePadding()` shrinks this Column by the keyboard height when the IME is open.
+    // Combined with `verticalScroll`, this means all text fields remain reachable by
+    // scrolling even while the keyboard is visible.
+    // `Arrangement.Top` is the correct choice for scrollable columns: centering fights
+    // with overflow and can clip content when the keyboard reduces the available height.
     Column(
         modifier = modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
         // Text displays a string. MaterialTheme.typography gives us pre-defined
         // text styles that match Material Design (headlineLarge is a big bold title).
