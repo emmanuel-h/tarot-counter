@@ -34,3 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Unit tests: `src/test/` — JUnit 4
 - Instrumented tests: `src/androidTest/` — AndroidJUnit4 + Espresso + Compose UI test
+
+## Documentation
+Always add inline comments to generated code and explain key concepts. The user is new to Kotlin and Android development.
+When the user ask for a new feature, add or update relevant Markdown files in a docs/ folder.
