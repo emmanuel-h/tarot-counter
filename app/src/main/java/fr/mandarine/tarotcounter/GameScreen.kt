@@ -13,12 +13,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,9 +35,10 @@ fun GameScreen(
     // Current round number — increases by 1 each time a round is completed.
     var currentRound by remember { mutableIntStateOf(1) }
 
-    // The player selected as taker for this round.
-    // null means we're still on step 1 (player selection).
-    var selectedTaker by remember { mutableStateOf<String?>(null) }
+    // Pick a random starting player index once when the game begins.
+    // `remember { ... }` without a key only runs its block on the very first composition,
+    // so this value stays fixed for the entire game session.
+    val startingIndex = remember { playerNames.indices.random() }
 
     // Observable list of completed rounds — adding to it triggers a UI redraw.
     val roundHistory = remember { mutableStateListOf<RoundResult>() }
@@ -49,11 +48,20 @@ fun GameScreen(
     fun displayName(index: Int): String =
         playerNames[index].ifBlank { "Player ${index + 1}" }
 
-    // Records the outcome of the current round and resets state for the next one.
-    fun recordRound(takerName: String, contract: Contract?) {
-        roundHistory.add(RoundResult(currentRound, takerName, contract))
+    // Derive the current taker from the starting index and the round number.
+    // `%` (modulo) wraps the index back to 0 once we've cycled through all players.
+    // Example with 3 players starting at index 1 (Bob):
+    //   Round 1 → (1 + 0) % 3 = 1 → Bob
+    //   Round 2 → (1 + 1) % 3 = 2 → Charlie
+    //   Round 3 → (1 + 2) % 3 = 0 → Alice
+    //   Round 4 → (1 + 3) % 3 = 1 → Bob  (cycle restarts)
+    val currentTakerIndex = (startingIndex + currentRound - 1) % playerNames.size
+    val currentTaker = displayName(currentTakerIndex)
+
+    // Records the outcome of the current round and advances to the next.
+    fun recordRound(contract: Contract?) {
+        roundHistory.add(RoundResult(currentRound, currentTaker, contract))
         currentRound++
-        selectedTaker = null  // reset so step 1 is shown again for the next round
     }
 
     // verticalScroll allows the screen to scroll if the content (especially history) overflows.
@@ -71,73 +79,36 @@ fun GameScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // The UI has two steps, toggled by whether `selectedTaker` is null or not.
-        if (selectedTaker == null) {
+        // ── Pick a contract ─────────────────────────────────────────────────────
+        // The taker is already known (auto-assigned), so we go straight to contract selection.
+        Text(
+            text = "$currentTaker — choose a contract:",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Step 1: Pick the taker ──────────────────────────────────────────
-            Text(
-                text = "Who is taking?",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // One button per player. Tapping it advances to step 2.
-            for (i in playerNames.indices) {
-                Button(
-                    onClick = { selectedTaker = displayName(i) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-                    Text(displayName(i))
-                }
-            }
-
-        } else {
-
-            // ── Step 2: Pick a contract (or skip) ──────────────────────────────
-            //
-            // We capture `selectedTaker` into a local `taker` val here.
-            // This is the idiomatic Kotlin way to handle a nullable that we know
-            // is non-null inside an `else` branch — no `!!` (the crash operator) needed.
-            // `?: return@Column` means "if somehow null, exit the Column lambda early".
-            val taker = selectedTaker ?: return@Column
-
-            Text(
-                text = "$taker — choose a contract:",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // One button per contract, from weakest (Petite) to strongest (Garde Contre).
-            // `Contract.entries` is the idiomatic Kotlin 1.9+ way to iterate all enum values.
-            for (contract in Contract.entries) {
-                Button(
-                    onClick = { recordRound(taker, contract) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-                    Text(contract.displayName)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Skip: records the round without a contract.
-            // OutlinedButton has a less prominent style to visually distinguish it.
-            OutlinedButton(
-                onClick = { recordRound(taker, null) },
-                modifier = Modifier.fillMaxWidth()
+        // One button per contract, from weakest (Petite) to strongest (Garde Contre).
+        // `Contract.entries` is the idiomatic Kotlin 1.9+ way to iterate all enum values.
+        for (contract in Contract.entries) {
+            Button(
+                onClick = { recordRound(contract) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
             ) {
-                Text("Skip round")
+                Text(contract.displayName)
             }
+        }
 
-            // TextButton is the least prominent style — used for secondary actions.
-            // This lets the user go back and pick a different taker.
-            TextButton(onClick = { selectedTaker = null }) {
-                Text("← Change player")
-            }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Skip: records the round without a contract.
+        // OutlinedButton has a less prominent style to visually distinguish it.
+        OutlinedButton(
+            onClick = { recordRound(null) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Skip round")
         }
 
         // ── Round history ───────────────────────────────────────────────────────
