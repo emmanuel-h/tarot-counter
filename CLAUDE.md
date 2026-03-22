@@ -34,6 +34,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Unit tests: `src/test/` — JUnit 4
 - Instrumented tests: `src/androidTest/` — AndroidJUnit4 + Espresso + Compose UI test
+- **When adding or changing a feature, always write or update tests alongside the production code.**
+  - Pure logic (data models, score calculation): unit tests in `src/test/`
+  - Composable behaviour: Compose UI tests in `src/androidTest/`
+  - Never leave a feature untested without an explicit note explaining why it cannot be tested.
 
 ## Documentation
 - Always add inline comments to generated code and explain key concepts. The user is new to Kotlin and Android development.

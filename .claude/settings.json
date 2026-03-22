@@ -9,7 +9,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // \"\"' | grep -q '\\.kt$' && echo '{\"systemMessage\": \"Reminder: a .kt file was changed - update docs/ if this affects game flow, data models, or screen behavior.\"}' || true"
+            "command": "jq -r '.tool_input.file_path // \"\"' | grep -q 'src/main.*\\.kt$' && echo '{\"systemMessage\": \"Checklist for src/main .kt change:\\n1. Tests - add or update unit/UI tests in src/test/ or src/androidTest/\\n2. Docs - update docs/ if this affects game flow, data models, or screen behavior.\"}' || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$(git status --porcelain 2>/dev/null)\" ] && printf '{\"systemMessage\":\"Uncommitted changes detected. Say \\\"commit\\\" and I will stage all changes, write a Conventional Commits message (feat/fix/docs/test/refactor/chore), and push to main with git + gh.\"}' || true"
           }
         ]
       }
