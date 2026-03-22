@@ -64,15 +64,22 @@ class GameScreenTest {
         assertTrue("One of the player names should appear as the current taker", anyTakerVisible)
     }
 
-    // ── Spec: Step 1 — five contract buttons ──────────────────────────────────
+    // ── Spec: Step 1 — four contract buttons ─────────────────────────────────
 
     @Test
-    fun all_five_contract_buttons_are_displayed() {
-        // Spec table: Petite, Pousse, Garde, Garde Sans, Garde Contre.
+    fun all_four_contract_buttons_are_displayed() {
+        // Spec table: Prise, Garde, Garde Sans, Garde Contre (POUSSE removed).
         launchGame()
         Contract.entries.forEach { contract ->
             composeTestRule.onNodeWithText(contract.displayName).assertIsDisplayed()
         }
+    }
+
+    @Test
+    fun pousse_button_does_not_exist() {
+        // POUSSE was removed from the contract list.
+        launchGame()
+        composeTestRule.onNodeWithText("Pousse").assertDoesNotExist()
     }
 
     @Test
@@ -107,7 +114,7 @@ class GameScreenTest {
     fun details_form_shows_all_four_chelem_options() {
         // Spec: four Chelem values with their display names.
         launchGame()
-        composeTestRule.onNodeWithText("Petite").performClick()
+        composeTestRule.onNodeWithText("Prise").performClick()
         Chelem.entries.forEach { chelem ->
             composeTestRule.onNodeWithText(chelem.displayName).assertIsDisplayed()
         }
@@ -229,5 +236,41 @@ class GameScreenTest {
         // Both entries must be present.
         composeTestRule.onNodeWithText("Round 1", substring = true).assertIsDisplayed()
         composeTestRule.onNodeWithText("Round 2", substring = true).assertIsDisplayed()
+    }
+
+    // ── Spec: scoreboard shown after a played round ────────────────────────────
+
+    @Test
+    fun scores_section_appears_after_first_played_round() {
+        // After completing a round, a "Scores" heading and player names should be visible.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        composeTestRule.onNodeWithText("Scores").assertIsDisplayed()
+        // All player names should appear in the scoreboard.
+        players.forEach { name ->
+            assertTrue(
+                "$name should appear in the scoreboard",
+                composeTestRule.onAllNodesWithText(name, substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            )
+        }
+    }
+
+    @Test
+    fun partner_selector_not_shown_for_3_player_game() {
+        // Partner selection is only for 5-player games.
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Partner (called by taker)").assertDoesNotExist()
+    }
+
+    @Test
+    fun partner_selector_is_shown_for_5_player_game() {
+        // In a 5-player game the partner selector must appear in the details form.
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Partner (called by taker)").assertIsDisplayed()
     }
 }

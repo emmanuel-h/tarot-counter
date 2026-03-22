@@ -70,12 +70,23 @@ fun GameScreen(
     fun recordPlayed(contract: Contract, details: RoundDetails) {
         // Check if the taker scored enough points for their bout count.
         val won = takerWon(details.bouts, details.points)
-        roundHistory.add(RoundResult(currentRound, currentTaker, contract, details, won))
+        // Compute the base score for this round (before player distribution).
+        val roundScore = calculateRoundScore(contract, details.bouts, details.points)
+        // Distribute the score: taker gets/pays for all defenders; partner shares in 5-player.
+        val scores = computePlayerScores(
+            allPlayers  = displayNames,
+            takerName   = currentTaker,
+            partnerName = details.partnerName,
+            won         = won,
+            roundScore  = roundScore
+        )
+        roundHistory.add(RoundResult(currentRound, currentTaker, contract, details, won, scores))
         currentRound++
         selectedContract = null  // return to step 1 for the next round
     }
 
     // Records a skipped round (no contract, no details) and advances.
+    // playerScores is empty — no points change on a skipped round.
     fun recordSkipped() {
         roundHistory.add(RoundResult(currentRound, currentTaker, contract = null, details = null, won = null))
         currentRound++
@@ -148,13 +159,39 @@ fun GameScreen(
             Text("Skip round")
         }
 
-        // ── Round history ─────────────────────────────────────────────────────
+        // ── Scoreboard & Round history ────────────────────────────────────────
         // Only shown once at least one round is complete.
         if (roundHistory.isNotEmpty()) {
             Spacer(modifier = Modifier.height(32.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
 
+            // ── Scoreboard ────────────────────────────────────────────────────
+            // Cumulative score per player: sum of all their per-round scores.
+            // A positive total means they are ahead; negative means they owe points.
+            Text(
+                text = "Scores",
+                style = MaterialTheme.typography.titleSmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            for (name in displayNames) {
+                // `sumOf` adds up each round's score for this player (0 for skipped rounds).
+                val total = roundHistory.sumOf { it.playerScores[name] ?: 0 }
+                // Format the total with an explicit + or − sign for clarity.
+                val sign = if (total >= 0) "+" else ""
+                Text(
+                    text = "$name: $sign$total",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Round history ─────────────────────────────────────────────────
             Text(
                 text = "History",
                 style = MaterialTheme.typography.titleSmall
@@ -166,10 +203,11 @@ fun GameScreen(
                 val contractText = round.contract?.displayName ?: "Skipped"
                 // If the round was played, show bouts, points, and whether the taker won.
                 val detailsText = round.details?.let { " · ${it.bouts} bouts · ${it.points} pts" } ?: ""
-                // `won` is null for skipped rounds; otherwise show the outcome clearly.
+                // `won` is null for skipped rounds; otherwise show the outcome and taker's score.
+                val takerScore = round.playerScores[round.takerName]
                 val outcomeText = when (round.won) {
-                    true  -> " — Won"
-                    false -> " — Lost"
+                    true  -> { val s = if (takerScore != null) " (+$takerScore)" else ""; " — Won$s" }
+                    false -> { val s = if (takerScore != null) " ($takerScore)" else ""; " — Lost$s" }
                     null  -> ""
                 }
                 Text(

@@ -57,6 +57,11 @@ fun RoundDetailsForm(
     // We parse and clamp it to 0–91 when the round is confirmed.
     var pointsText by remember { mutableStateOf("") }
 
+    // Partner selection — only used in 5-player games.
+    // The taker silently calls one other player as their partner for scoring purposes.
+    // In 3- and 4-player games this stays null and no selector is shown.
+    var selectedPartner by remember { mutableStateOf<String?>(null) }
+
     // Player-assigned bonuses — String? means either a player's name or null (nobody).
     var petitAuBout   by remember { mutableStateOf<String?>(null) }
     var misere        by remember { mutableStateOf<String?>(null) }
@@ -122,6 +127,25 @@ fun RoundDetailsForm(
         Spacer(modifier = Modifier.height(16.dp))
         HorizontalDivider()
         Spacer(modifier = Modifier.height(16.dp))
+
+        // ── Partner (5-player only) ────────────────────────────────────────────
+        // In a 5-player game the taker calls a silent partner before the round starts.
+        // The partner's identity affects score distribution at the end of the round.
+        // This section is hidden for 3- and 4-player games.
+        if (playerNames.size == 5) {
+            // Show all players except the taker as possible partners.
+            val partnerOptions = playerNames.filter { it != takerName }
+            PlayerChipSelector(
+                label = "Partner (called by taker)",
+                selectedPlayer = selectedPartner,
+                playerNames = partnerOptions,
+                onSelect = { selectedPartner = it }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // ── Player-assigned bonuses ───────────────────────────────────────────
         // Each bonus can belong to any player, or to nobody (null).
@@ -197,6 +221,8 @@ fun RoundDetailsForm(
                     RoundDetails(
                         bouts         = bouts,
                         points        = points,
+                        // partnerName is only set in 5-player games; null otherwise.
+                        partnerName   = if (playerNames.size == 5) selectedPartner else null,
                         petitAuBout   = petitAuBout,
                         misere        = misere,
                         doubleMisere  = doubleMisere,

@@ -8,10 +8,10 @@ TarotCounter guides players through a game round by round:
 
 1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names
 2. **Contract selection** — the current taker picks their contract (or skips)
-3. **Scoring details** — enter bouts, points scored, and any bonuses
-4. **Round history** — a running log of all rounds, newest first
+3. **Scoring details** — enter bouts, points scored, partner (5-player), and any bonuses
+4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first
 
-The app automatically rotates the taker each round and determines win/loss based on the standard French Tarot rules.
+The app automatically rotates the taker each round, determines win/loss, and computes each player's score for the round.
 
 ## Game Rules Summary
 
@@ -28,13 +28,20 @@ The taker wins if they score enough points based on the number of **bouts** (spe
 
 ### Contracts (weakest → strongest)
 
-| Contract | French name |
-|---|---|
-| Petite | La Petite |
-| Pousse | La Pousse |
-| Garde | La Garde |
-| Garde Sans | La Garde Sans |
-| Garde Contre | La Garde Contre |
+| Contract | Multiplier |
+|---|:---:|
+| Prise | ×1 |
+| Garde | ×2 |
+| Garde Sans | ×4 |
+| Garde Contre | ×6 |
+
+### Round Score
+
+```
+roundScore = (25 + |scoredPoints − requiredPoints(bouts)|) × multiplier
+```
+
+Scores are zero-sum. The taker receives `±(n−1) × roundScore` for 3/4-player games, `±2 × roundScore` in 5-player games (partner gets `±1 × roundScore`); each defender receives `∓roundScore`.
 
 ### Bonuses Tracked per Round
 
@@ -103,7 +110,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 
 | Test file | What it covers |
 |---|---|
-| `GameModelsTest.kt` | Data models, win condition logic, boundary cases |
+| `GameModelsTest.kt` | Data models, win condition, score calculation, player score distribution |
 | `TakerRotationTest.kt` | Taker rotation formula for 3–5 players |
 | `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, navigation |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history |

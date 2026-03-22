@@ -24,13 +24,12 @@ Each round follows a two-step flow:
 
 The current taker's name is shown. Available contracts (weakest → strongest):
 
-| Contract     | Description                    |
-|--------------|-------------------------------|
-| Petite       | Weakest contract               |
-| Pousse       | Slightly stronger than Petite  |
-| Garde        | Standard contract              |
-| Garde Sans   | Play without the dog           |
-| Garde Contre | Play against the dog           |
+| Contract     | Multiplier | Description                    |
+|--------------|:----------:|-------------------------------|
+| Prise        | ×1         | Weakest contract               |
+| Garde        | ×2         | Standard contract              |
+| Garde Sans   | ×4         | Play without the dog           |
+| Garde Contre | ×6         | Play against the dog           |
 
 The taker can also **Skip round** to record the round without any details.
 
@@ -38,16 +37,19 @@ The taker can also **Skip round** to record the round without any details.
 
 After a contract is chosen, the user fills in the scoring details:
 
-| Field           | Type                        | Description |
-|-----------------|-----------------------------|-------------|
-| Bouts (oudlers) | 0 · 1 · 2 · 3 chips         | Number of oudlers in the taker's tricks |
-| Points          | Number input (0–91)         | Points scored by the taker |
-| Petit au bout   | None or any player          | Player who captured the 1 of trump on the last trick |
-| Misère          | None or any player          | Player who declared misère |
-| Double misère   | None or any player          | Player who declared double misère |
-| Poignée         | None or any player          | Player who showed a poignée (10+ trumps) |
-| Double poignée  | None or any player          | Player who showed a double poignée (13+ trumps) |
-| Chelem          | See table below             | Grand slam outcome |
+| Field              | Type                        | Description |
+|--------------------|-----------------------------|-------------|
+| Bouts (oudlers)    | 0 · 1 · 2 · 3 chips         | Number of oudlers in the taker's tricks |
+| Points             | Number input (0–91)         | Points scored by the taker |
+| Partner            | None or any player (5-player only) | The player called by the taker as a silent partner |
+| Petit au bout      | None or any player          | Player who captured the 1 of trump on the last trick |
+| Misère             | None or any player          | Player who declared misère |
+| Double misère      | None or any player          | Player who declared double misère |
+| Poignée            | None or any player          | Player who showed a poignée (10+ trumps) |
+| Double poignée     | None or any player          | Player who showed a double poignée (13+ trumps) |
+| Chelem             | See table below             | Grand slam outcome |
+
+**Partner selection** is only shown in 5-player games. The taker secretly calls a partner; their identity affects score distribution at the end of the round.
 
 **Chelem options:**
 
@@ -74,25 +76,59 @@ The taker must score at least the threshold for their bout count:
 | 2               | 41                   |
 | 3               | 36                   |
 
-The three bouts are the 21 of trumps, the 1 of trumps (Petit), and the Excuse. Holding more bouts reduces the required score.
+The three bouts are the 21 of trumps, the 1 of trump (Petit), and the Excuse. Holding more bouts reduces the required score.
 
-## Round History
+## Scoring
 
-After each round is completed, a summary is appended to a history list at the bottom of the screen (newest round first):
+### Round score
 
 ```
-Round 3: Alice — Garde · 2 bouts · 56 pts — Won
-Round 2: Bob — Skipped
-Round 1: Charlie — Petite · 1 bout · 40 pts — Lost
+roundScore = (25 + |scoredPoints − requiredPoints(bouts)|) × contract.multiplier
 ```
 
-Skipped rounds show no outcome. Played rounds always show **Won** or **Lost**.
+The constant 25 is added for every contract. The absolute difference rewards or penalises proportionally to the margin of victory or defeat.
+
+**Example:** Garde (×2), 2 bouts (threshold 41), scored 56 → diff = 15 → `(25 + 15) × 2 = 80`.
+
+### Score distribution
+
+Scores are zero-sum — the total across all players is always 0.
+
+| Game mode | Taker | Partner | Each defender |
+|-----------|:-----:|:-------:|:-------------:|
+| 3 players | ±2 × roundScore | — | ∓roundScore |
+| 4 players | ±3 × roundScore | — | ∓roundScore |
+| 5 players | ±2 × roundScore | ±1 × roundScore | ∓roundScore |
+
+The sign is **+** when the taker won, **−** when the taker lost. The same sign applies to the partner in 5-player games; defenders receive the opposite sign.
+
+## Scoreboard & Round History
+
+After each round is completed the game screen shows:
+
+1. **Scores** — cumulative score per player across all completed rounds.
+2. **History** — a round-by-round log, newest first.
+
+```
+Scores
+Alice: +80
+Bob:   -40
+Charlie: -40
+
+History
+Round 2: Bob — Prise · 0 bouts · 50 pts — Lost (-31)
+Round 1: Alice — Garde · 2 bouts · 56 pts — Won (+80)
+```
+
+Skipped rounds show no outcome and do not affect scores.
 
 ## Data Model
 
-- `Contract` enum — the five possible contracts with display names.
+- `Contract` enum — four contracts with `displayName` and `multiplier`.
 - `Chelem` enum — four grand slam outcomes (`NONE`, `ANNOUNCED_REALIZED`, `ANNOUNCED_NOT_REALIZED`, `NOT_ANNOUNCED_REALIZED`).
-- `RoundDetails` data class — all scoring fields for a played round (bouts, points, and the seven player-assigned/chelem bonuses).
-- `RoundResult` data class — round number, taker name, contract (`null` if skipped), details (`null` if skipped), and `won` (`null` if skipped, `true`/`false` otherwise).
+- `RoundDetails` data class — all scoring fields: bouts, points, `partnerName` (5-player only), and the player-assigned/chelem bonuses.
+- `RoundResult` data class — round number, taker name, contract (`null` if skipped), details (`null` if skipped), `won` (`null` if skipped), and `playerScores` (empty map if skipped).
 - `requiredPoints(bouts)` — returns the minimum points needed to win for a given bout count.
 - `takerWon(bouts, points)` — returns `true` if points ≥ `requiredPoints(bouts)`.
+- `calculateRoundScore(contract, bouts, points)` — returns the base round score before distribution.
+- `computePlayerScores(allPlayers, takerName, partnerName, won, roundScore)` — returns a `Map<String, Int>` of player → score for the round.
