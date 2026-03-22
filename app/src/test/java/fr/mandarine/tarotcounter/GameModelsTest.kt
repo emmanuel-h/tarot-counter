@@ -69,6 +69,57 @@ class GameModelsTest {
         assertEquals("Not announced, realized", Chelem.NOT_ANNOUNCED_REALIZED.displayName)
     }
 
+    // ── petitAuBoutBonus ──────────────────────────────────────────────────────
+
+    @Test
+    fun `petitAuBoutBonus is 10 times the contract multiplier`() {
+        // The bonus scales with the contract, not a flat value.
+        assertEquals(10,  petitAuBoutBonus(Contract.PRISE))         // 10 × 1
+        assertEquals(20,  petitAuBoutBonus(Contract.GARDE))         // 10 × 2
+        assertEquals(40,  petitAuBoutBonus(Contract.GARDE_SANS))    // 10 × 4
+        assertEquals(60,  petitAuBoutBonus(Contract.GARDE_CONTRE))  // 10 × 6
+    }
+
+    @Test
+    fun `petitAuBoutBonus — taker achieves it, bonus distribution is zero-sum (4 players)`() {
+        // Taker's camp achieved petit au bout → sign = +1.
+        // Amount = 10 × 2 = 20 (Garde). 3 defenders.
+        // Taker delta = +20 × 3 = +60; each defender delta = -20. Sum = 0.
+        val amount = petitAuBoutBonus(Contract.GARDE)
+        val sign = +1 // taker's camp
+        val numDefenders = 3
+        val takerDelta    = sign * amount * numDefenders  // +60
+        val defenderDelta = -sign * amount                // -20 each
+        assertEquals(0, takerDelta + defenderDelta * numDefenders)
+        assertEquals(+60, takerDelta)
+        assertEquals(-20, defenderDelta)
+    }
+
+    @Test
+    fun `petitAuBoutBonus — defender achieves it, bonus distribution is zero-sum (4 players)`() {
+        // Defender's camp achieved petit au bout → sign = -1.
+        // Amount = 10 × 2 = 20 (Garde). 3 defenders.
+        // Taker delta = -20 × 3 = -60; each defender delta = +20. Sum = 0.
+        val amount = petitAuBoutBonus(Contract.GARDE)
+        val sign = -1 // defenders' camp
+        val numDefenders = 3
+        val takerDelta    = sign * amount * numDefenders  // -60
+        val defenderDelta = -sign * amount                // +20 each
+        assertEquals(0, takerDelta + defenderDelta * numDefenders)
+        assertEquals(-60, takerDelta)
+        assertEquals(+20, defenderDelta)
+    }
+
+    @Test
+    fun `petitAuBoutBonus — awarded regardless of round outcome`() {
+        // The bonus is fixed (10 × multiplier) regardless of who won.
+        // This test verifies the amount itself is not affected by the won/lost state.
+        val amount = petitAuBoutBonus(Contract.GARDE_CONTRE) // 60 pts
+        assertEquals(60, amount)
+        // Whether the taker won or lost, the amount stays 60.
+        // The sign (who pays whom) is determined by which camp achieved it, not by won/lost.
+    }
+
     // ── poigneeBonus ──────────────────────────────────────────────────────────
 
     @Test

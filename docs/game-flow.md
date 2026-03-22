@@ -105,6 +105,22 @@ Scores are zero-sum — the total across all players is always 0.
 
 The sign is **+** when the taker won, **−** when the taker lost. The same sign applies to the partner in 5-player games; defenders receive the opposite sign.
 
+### Petit au bout bonus
+
+The petit au bout is achieved when the **Petit (1 of trumps) is captured on the very last trick**. The bonus is awarded to the camp that achieved it — **regardless of who won the round**.
+
+| Contract     | Bonus per defender (10 × multiplier) |
+|--------------|--------------------------------------|
+| Prise   ×1   | 10 pts                               |
+| Garde   ×2   | 20 pts                               |
+| Garde Sans ×4 | 40 pts                              |
+| Garde Contre ×6 | 60 pts                            |
+
+- **Taker's camp achieved it** (taker or partner captured the Petit on the last trick) → each defender pays the bonus to the taker.
+- **Defenders' camp achieved it** → the taker pays the bonus to each defender.
+
+The partner (5-player) does not participate in this exchange. The result is always zero-sum.
+
 ### Poignée bonus
 
 A poignée (trump show) grants a flat bonus **per defender**, always awarded to the **winning camp** regardless of who declared it.
@@ -152,5 +168,6 @@ Skipped rounds show no outcome and do not affect scores.
 - `takerWon(bouts, points)` — returns `true` if points ≥ `requiredPoints(bouts)`.
 - `calculateRoundScore(contract, bouts, points)` — returns the base round score before distribution.
 - `computePlayerScores(allPlayers, takerName, partnerName, won, roundScore)` — returns a `Map<String, Int>` of player → score for the round.
+- `petitAuBoutBonus(contract)` — returns `10 × contract.multiplier`. Direction (which camp benefits) is determined in GameScreen by comparing the achiever's name against the taker/partner.
 - `poigneeBonus(poignee, doublePoignee, triplePoignee)` — returns the flat per-defender bonus: 20, 30, 40, or 0. Direction follows the round winner, applied in GameScreen.
 - `chelemBonus(chelem)` — returns the flat per-defender bonus value: +400, +200, −200, or 0.

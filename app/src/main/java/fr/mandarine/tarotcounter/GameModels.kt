@@ -116,6 +116,23 @@ fun computePlayerScores(
     }
 }
 
+// Returns the petit-au-bout bonus amount per defender.
+//
+// The petit au bout is achieved when the Petit (1 of trumps) is captured on the
+// very last trick. The bonus is awarded to the **camp that achieved it** —
+// regardless of whether that camp won or lost the round overall.
+//
+// Value: 10 × contract.multiplier  (scales with the contract, like the base score)
+//
+// Distribution rule applied in GameScreen:
+//   Determine which camp `petitAuBout` player belongs to:
+//     - taker's camp  (taker or partner) → sign = +1  → taker gains, defenders pay
+//     - defenders' camp                  → sign = −1  → each defender gains, taker pays
+//   taker delta    = sign × petitAuBoutBonus × numDefenders
+//   defender delta = −sign × petitAuBoutBonus   (per defender)
+//   partner delta  = 0   (partner is not involved in the petit-au-bout bonus)
+fun petitAuBoutBonus(contract: Contract): Int = 10 * contract.multiplier
+
 // Returns the flat poignée (trump show) bonus per defender.
 //
 // Exactly one of the three parameters should be non-null at most per round.

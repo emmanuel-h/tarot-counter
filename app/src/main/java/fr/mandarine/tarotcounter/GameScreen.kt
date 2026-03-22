@@ -81,9 +81,31 @@ fun GameScreen(
             roundScore  = roundScore
         )
 
-        // numDefenders is used by both bonus calculations below.
+        // numDefenders is used by all bonus calculations below.
         // It is 3 in a 5-player game, (n−1) otherwise.
         val numDefenders = if (details.partnerName != null) 3 else displayNames.size - 1
+
+        // Apply the petit-au-bout bonus.
+        // The bonus goes to whichever camp captured the Petit on the last trick,
+        // regardless of who won the round.
+        // Taker's camp = taker + partner; defenders' camp = everyone else.
+        val pabAmount = if (details.petitAuBout != null) petitAuBoutBonus(contract) else 0
+        // +1 if the achiever is in the taker's camp, -1 if they are a defender.
+        val pabSign = when (details.petitAuBout) {
+            null                -> 0
+            currentTaker,
+            details.partnerName -> +1  // taker's camp achieved it
+            else                -> -1  // defenders' camp achieved it
+        }
+        val scoresAfterPab = if (pabAmount == 0) baseScores else {
+            baseScores.mapValues { (player, score) ->
+                when (player) {
+                    currentTaker        -> score + pabSign * pabAmount * numDefenders
+                    details.partnerName -> score  // partner unaffected
+                    else                -> score - pabSign * pabAmount
+                }
+            }
+        }
 
         // Apply the poignée (trump show) flat bonus.
         // The bonus always goes to the winning camp, regardless of who declared it:
@@ -92,8 +114,8 @@ fun GameScreen(
         // The partner (5-player) is not involved in the poignée bonus.
         val pBonus = poigneeBonus(details.poignee, details.doublePoignee, details.triplePoignee)
         val pSign  = if (won) 1 else -1  // positive = taker benefits, negative = defenders benefit
-        val scoresAfterPoignee = if (pBonus == 0) baseScores else {
-            baseScores.mapValues { (player, score) ->
+        val scoresAfterPoignee = if (pBonus == 0) scoresAfterPab else {
+            scoresAfterPab.mapValues { (player, score) ->
                 when (player) {
                     currentTaker        -> score + pSign * pBonus * numDefenders
                     details.partnerName -> score  // partner unaffected
