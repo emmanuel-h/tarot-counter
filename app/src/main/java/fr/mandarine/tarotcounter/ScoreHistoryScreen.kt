@@ -1,0 +1,174 @@
+package fr.mandarine.tarotcounter
+
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+
+// Width for the "Round" column — short because round numbers only go up to ~99.
+private val ROUND_COL_WIDTH: Dp = 64.dp
+
+// Width for each player column — wide enough for score strings like "+1000"
+// and player names up to about 8 characters.
+private val PLAYER_COL_WIDTH: Dp = 80.dp
+
+/**
+ * ScoreHistoryScreen displays the score evolution as a table.
+ *
+ * Layout:
+ *   - Header: back arrow + "Score history" title
+ *   - Table: one row per completed round, one column per player
+ *     - Each cell shows the player's **cumulative** total after that round,
+ *       matching exactly what the scoreboard shows on the game screen.
+ *
+ * Example (3 players, 2 completed rounds):
+ *
+ *   | Round | Alice | Bob  | Charlie |
+ *   |-------|-------|------|---------|
+ *   |   1   |  +50  | -25  |  -25   |
+ *   |   2   |  +20  | -10  |  -10   |
+ *
+ * The table scrolls horizontally (for 5 players) and vertically (for many rounds).
+ *
+ * @param playerNames  Ordered list of player display names (fallbacks already resolved).
+ * @param roundHistory Completed rounds in chronological order, oldest first.
+ * @param onBack       Callback fired when the user taps the back arrow.
+ * @param modifier     Passed from the parent (e.g. Scaffold inner padding).
+ */
+@Composable
+fun ScoreHistoryScreen(
+    playerNames: List<String>,
+    roundHistory: List<RoundResult>,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        // ── Screen header: back arrow + title ─────────────────────────────────
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Tapping the back arrow returns to the game without losing any state,
+            // because `showScoreHistory` in GameScreen just flips back to false.
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to game"
+                )
+            }
+            Text(
+                text = "Score history",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ── Score table ───────────────────────────────────────────────────────
+        // Two scroll directions: left↔right for many players, up↓down for many rounds.
+        // We use a plain Column (not LazyColumn) inside two nested scroll modifiers,
+        // which is fine for Tarot games (typical: tens of rounds, 3–5 players).
+        Column(
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Column headers: "Round", then one header per player name.
+            ScoreTableRow(
+                cells = listOf("Round") + playerNames,
+                isHeader = true
+            )
+            HorizontalDivider()
+
+            // `runningTotals` accumulates each player's score as we iterate rounds.
+            // We start everyone at 0 and add their per-round delta on each iteration.
+            val runningTotals = playerNames.associateWith { 0 }.toMutableMap()
+
+            for (round in roundHistory) {
+                // Add this round's scores to each player's running total.
+                // `getOrDefault(name, 0)` returns 0 for skipped rounds, which have an
+                // empty `playerScores` map — so skipped rounds don't change totals.
+                for (name in playerNames) {
+                    runningTotals[name] =
+                        (runningTotals[name] ?: 0) + round.playerScores.getOrDefault(name, 0)
+                }
+
+                // Build the cell list: round number first, then cumulative score per player.
+                val cells = buildList {
+                    add(round.roundNumber.toString())
+                    for (name in playerNames) {
+                        val total = runningTotals[name] ?: 0
+                        // Prefix "+" for non-negative values so the sign is always visible.
+                        val sign = if (total >= 0) "+" else ""
+                        add("$sign$total")
+                    }
+                }
+
+                ScoreTableRow(cells = cells, isHeader = false)
+            }
+        }
+    }
+}
+
+/**
+ * A single horizontal row in the score table.
+ *
+ * The first cell (index 0) uses [ROUND_COL_WIDTH]; all other cells use [PLAYER_COL_WIDTH].
+ * This keeps the "Round" column compact while giving player names room to breathe.
+ *
+ * @param cells    Text content for each cell in left-to-right order.
+ * @param isHeader If true, renders the text in bold (used for the header row).
+ */
+@Composable
+private fun ScoreTableRow(cells: List<String>, isHeader: Boolean) {
+    Row {
+        cells.forEachIndexed { index, text ->
+            // First column ("Round") is narrower; player columns are wider.
+            val cellWidth = if (index == 0) ROUND_COL_WIDTH else PLAYER_COL_WIDTH
+
+            Box(
+                modifier = Modifier
+                    .width(cellWidth)
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = text,
+                    style = if (isHeader) {
+                        // Bold weight for the header row so column labels stand out.
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                    } else {
+                        MaterialTheme.typography.bodyMedium
+                    },
+                    textAlign = TextAlign.Center,
+                    // Prevent very long names from wrapping and making rows uneven.
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}

@@ -10,6 +10,7 @@ TarotCounter guides players through a game round by round:
 2. **Contract selection** — the current taker picks their contract (or skips)
 3. **Scoring details** — enter bouts, points scored, partner (5-player), and any bonuses
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first
+5. **Score history table** — tap the bar-chart icon next to "Scores" to see a round-by-round table of cumulative scores for every player
 
 The app automatically rotates the taker each round, determines win/loss, and computes each player's score for the round.
 
@@ -62,6 +63,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── LandingScreen.kt       # Player setup UI
 ├── GameScreen.kt          # Round management, taker rotation, history
 ├── RoundDetailsForm.kt    # Scoring details form
+├── ScoreHistoryScreen.kt  # Round-by-round cumulative score table
 └── ui/theme/              # Material 3 theme, colors, typography
 ```
 
@@ -113,7 +115,8 @@ app/src/main/java/fr/mandarine/tarotcounter/
 | `GameModelsTest.kt` | Data models, win condition, score calculation, player score distribution |
 | `TakerRotationTest.kt` | Taker rotation formula for 3–5 players |
 | `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, navigation |
-| `GameScreenTest.kt` | Full game flow: contract selection, details form, history |
+| `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation |
+| `ScoreHistoryScreenTest.kt` | Score history table: column headers, cumulative totals, back navigation |
 
 ## Project Structure
 
@@ -140,3 +143,4 @@ More detailed documentation lives in [`docs/`](docs/):
 
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
+- [`docs/score-history.md`](docs/score-history.md) — score history table: layout, navigation, scrolling

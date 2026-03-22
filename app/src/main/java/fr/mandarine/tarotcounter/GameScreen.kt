@@ -1,6 +1,8 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,8 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -48,6 +54,10 @@ fun GameScreen(
     // null = we are on step 1 (contract selection).
     // non-null = we are on step 2 (details form).
     var selectedContract by remember { mutableStateOf<Contract?>(null) }
+
+    // Controls whether the score history table is shown instead of the game screen.
+    // Toggled by the bar-chart icon button in the scoreboard section.
+    var showScoreHistory by remember { mutableStateOf(false) }
 
     // Returns the display name for a player: their typed name, or "Player N" if blank.
     fun displayName(index: Int): String =
@@ -152,8 +162,23 @@ fun GameScreen(
     }
 
     // ── Step routing ─────────────────────────────────────────────────────────
-    // If a contract has been chosen, show the details form.
-    // Otherwise show the contract selection screen.
+    // Priority order:
+    //   1. Score history table (user tapped the bar-chart icon)
+    //   2. Round details form  (user selected a contract in step 1)
+    //   3. Contract selection  (default step 1 view)
+
+    // 1. Score history table.
+    if (showScoreHistory) {
+        ScoreHistoryScreen(
+            playerNames = displayNames,
+            roundHistory = roundHistory,
+            onBack = { showScoreHistory = false },
+            modifier = modifier
+        )
+        return  // stop here — don't render anything below
+    }
+
+    // 2. Details form (step 2).
     val contract = selectedContract
     if (contract != null) {
         // Step 2: fill in bouts, points, and bonuses.
@@ -227,10 +252,26 @@ fun GameScreen(
             // ── Scoreboard ────────────────────────────────────────────────────
             // Cumulative score per player: sum of all their per-round scores.
             // A positive total means they are ahead; negative means they owe points.
-            Text(
-                text = "Scores",
-                style = MaterialTheme.typography.titleSmall
-            )
+            //
+            // The "Scores" label and the bar-chart icon are on the same line.
+            // `SpaceBetween` pushes the icon to the far right of the row.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Scores",
+                    style = MaterialTheme.typography.titleSmall
+                )
+                // Tapping this icon opens the full score-history table screen.
+                IconButton(onClick = { showScoreHistory = true }) {
+                    Icon(
+                        imageVector = Icons.Default.BarChart,
+                        contentDescription = "View score history table"
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             for (name in displayNames) {

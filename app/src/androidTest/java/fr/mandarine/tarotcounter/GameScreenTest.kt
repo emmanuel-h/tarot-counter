@@ -3,6 +3,7 @@ package fr.mandarine.tarotcounter
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -256,6 +257,43 @@ class GameScreenTest {
                     .fetchSemanticsNodes().isNotEmpty()
             )
         }
+    }
+
+    // ── Spec: score history navigation ────────────────────────────────────────
+
+    @Test
+    fun score_history_button_appears_after_first_round_is_completed() {
+        // The bar-chart icon button only appears once the scoreboard is visible,
+        // i.e. after at least one round has been recorded.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule
+            .onNodeWithContentDescription("View score history table")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_score_history_button_opens_history_screen() {
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule
+            .onNodeWithContentDescription("View score history table")
+            .performClick()
+        composeTestRule.onNodeWithText("Score history").assertIsDisplayed()
+    }
+
+    @Test
+    fun back_button_on_history_screen_returns_to_game() {
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()  // complete round 1
+        composeTestRule
+            .onNodeWithContentDescription("View score history table")
+            .performClick()
+        composeTestRule
+            .onNodeWithContentDescription("Back to game")
+            .performClick()
+        // We should be back on round 2's contract selection screen.
+        composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
     }
 
     @Test
