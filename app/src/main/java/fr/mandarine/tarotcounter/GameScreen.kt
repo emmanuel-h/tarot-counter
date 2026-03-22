@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,8 +44,12 @@ fun GameScreen(
     // Observable list of completed rounds — adding to it triggers a UI redraw.
     val roundHistory = remember { mutableStateListOf<RoundResult>() }
 
+    // The contract chosen in step 1, waiting for details to be filled in step 2.
+    // null = we are on step 1 (contract selection).
+    // non-null = we are on step 2 (details form).
+    var selectedContract by remember { mutableStateOf<Contract?>(null) }
+
     // Returns the display name for a player: their typed name, or "Player N" if blank.
-    // `ifBlank` returns the fallback string when the value is empty or whitespace-only.
     fun displayName(index: Int): String =
         playerNames[index].ifBlank { "Player ${index + 1}" }
 
@@ -53,18 +58,47 @@ fun GameScreen(
     // Example with 3 players starting at index 1 (Bob):
     //   Round 1 → (1 + 0) % 3 = 1 → Bob
     //   Round 2 → (1 + 1) % 3 = 2 → Charlie
-    //   Round 3 → (1 + 2) % 3 = 0 → Alice
-    //   Round 4 → (1 + 3) % 3 = 1 → Bob  (cycle restarts)
+    //   Round 3 → (1 + 2) % 3 = 0 → Alice  (cycle restarts)
     val currentTakerIndex = (startingIndex + currentRound - 1) % playerNames.size
     val currentTaker = displayName(currentTakerIndex)
 
-    // Records the outcome of the current round and advances to the next.
-    fun recordRound(contract: Contract?) {
-        roundHistory.add(RoundResult(currentRound, currentTaker, contract))
+    // Resolve the display names once so both steps use the same list.
+    // `map` transforms each index into its display name.
+    val displayNames = playerNames.indices.map { displayName(it) }
+
+    // Records a played round (contract + details) and advances to the next round.
+    fun recordPlayed(contract: Contract, details: RoundDetails) {
+        roundHistory.add(RoundResult(currentRound, currentTaker, contract, details))
         currentRound++
+        selectedContract = null  // return to step 1 for the next round
     }
 
-    // verticalScroll allows the screen to scroll if the content (especially history) overflows.
+    // Records a skipped round (no contract, no details) and advances.
+    fun recordSkipped() {
+        roundHistory.add(RoundResult(currentRound, currentTaker, contract = null, details = null))
+        currentRound++
+        selectedContract = null
+    }
+
+    // ── Step routing ─────────────────────────────────────────────────────────
+    // If a contract has been chosen, show the details form.
+    // Otherwise show the contract selection screen.
+    val contract = selectedContract
+    if (contract != null) {
+        // Step 2: fill in bouts, points, and bonuses.
+        // We pass `modifier` so the Scaffold padding still applies.
+        RoundDetailsForm(
+            takerName   = currentTaker,
+            contract    = contract,
+            playerNames = displayNames,
+            onConfirm   = { details -> recordPlayed(contract, details) },
+            onBack      = { selectedContract = null },
+            modifier    = modifier
+        )
+        return  // stop here — don't render the column below
+    }
+
+    // Step 1: contract selection.
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -79,7 +113,7 @@ fun GameScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // ── Pick a contract ─────────────────────────────────────────────────────
+        // ── Pick a contract ───────────────────────────────────────────────────
         // The taker is already known (auto-assigned), so we go straight to contract selection.
         Text(
             text = "$currentTaker — choose a contract:",
@@ -89,33 +123,34 @@ fun GameScreen(
 
         // One button per contract, from weakest (Petite) to strongest (Garde Contre).
         // `Contract.entries` is the idiomatic Kotlin 1.9+ way to iterate all enum values.
-        for (contract in Contract.entries) {
+        for (c in Contract.entries) {
             Button(
-                onClick = { recordRound(contract) },
+                // Selecting a contract moves to step 2 — details are collected there.
+                onClick = { selectedContract = c },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
             ) {
-                Text(contract.displayName)
+                Text(c.displayName)
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Skip: records the round without a contract.
+        // Skip: records the round immediately without entering any details.
         // OutlinedButton has a less prominent style to visually distinguish it.
         OutlinedButton(
-            onClick = { recordRound(null) },
+            onClick = { recordSkipped() },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Skip round")
         }
 
-        // ── Round history ───────────────────────────────────────────────────────
+        // ── Round history ─────────────────────────────────────────────────────
         // Only shown once at least one round is complete.
         if (roundHistory.isNotEmpty()) {
             Spacer(modifier = Modifier.height(32.dp))
-            HorizontalDivider()  // a thin horizontal line to separate sections
+            HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
@@ -127,8 +162,10 @@ fun GameScreen(
             // Show rounds newest-first so the latest result is always at the top.
             for (round in roundHistory.reversed()) {
                 val contractText = round.contract?.displayName ?: "Skipped"
+                // If the round was played, also show bouts and points as a quick summary.
+                val detailsText = round.details?.let { " · ${it.bouts} bouts · ${it.points} pts" } ?: ""
                 Text(
-                    text = "Round ${round.roundNumber}: ${round.takerName} — $contractText",
+                    text = "Round ${round.roundNumber}: ${round.takerName} — $contractText$detailsText",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))

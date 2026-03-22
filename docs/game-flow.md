@@ -13,13 +13,16 @@ After setting up players on the setup screen, the user taps **Start Game** to be
 
 ### Game Screen (`GameScreen`)
 
-The game is divided into **rounds**. Each round follows a two-step flow:
+The game is divided into **rounds**. The taker for each round is determined automatically:
 
-#### Step 1 — Pick the taker
-One button is shown per player. Tapping a player selects them as the **taker** (the one who takes the hand) and advances to step 2.
+- **Round 1** — a random player is chosen as the first taker.
+- **Round 2+** — players take turns in the order they were entered on the setup screen, cycling back to the first player after the last one.
 
-#### Step 2 — Pick a contract
-The selected taker announces their contract. Available contracts (weakest → strongest):
+Each round follows a two-step flow:
+
+#### Step 1 — Pick a contract
+
+The current taker's name is shown. Available contracts (weakest → strongest):
 
 | Contract     | Description                    |
 |--------------|-------------------------------|
@@ -29,21 +32,48 @@ The selected taker announces their contract. Available contracts (weakest → st
 | Garde Sans   | Play without the dog           |
 | Garde Contre | Play against the dog           |
 
-The taker can also **Skip round** if no contract is announced.
+The taker can also **Skip round** to record the round without any details.
 
-A **← Change player** button lets the user go back to step 1 if the wrong player was selected.
+#### Step 2 — Round details (`RoundDetailsForm`)
+
+After a contract is chosen, the user fills in the scoring details:
+
+| Field           | Type                        | Description |
+|-----------------|-----------------------------|-------------|
+| Bouts (oudlers) | 0 · 1 · 2 · 3 chips         | Number of oudlers in the taker's tricks |
+| Points          | Number input (0–91)         | Points scored by the taker |
+| Petit au bout   | None or any player          | Player who captured the 1 of trump on the last trick |
+| Misère          | None or any player          | Player who declared misère |
+| Double misère   | None or any player          | Player who declared double misère |
+| Poignée         | None or any player          | Player who showed a poignée (10+ trumps) |
+| Double poignée  | None or any player          | Player who showed a double poignée (13+ trumps) |
+| Chelem          | See table below             | Grand slam outcome |
+
+**Chelem options:**
+
+| Value                      | Meaning |
+|----------------------------|---------|
+| None                       | No grand slam |
+| Announced & realized       | Taker announced and won every trick |
+| Announced, not realized    | Taker announced but failed to win every trick |
+| Not announced, realized    | Taker won every trick without announcing |
+
+Tapping **Confirm round** saves the result and moves to the next round.
+Tapping **← Change contract** goes back to step 1 without saving.
 
 ## Round History
 
-After each round is completed, the result is appended to a history list at the bottom of the screen (newest round first):
+After each round is completed, a summary is appended to a history list at the bottom of the screen (newest round first):
 
 ```
-Round 3: Alice — Garde
+Round 3: Alice — Garde · 2 bouts · 56 pts
 Round 2: Bob — Skipped
-Round 1: Alice — Petite
+Round 1: Charlie — Petite · 1 bout · 51 pts
 ```
 
 ## Data Model
 
 - `Contract` enum — the five possible contracts with display names.
-- `RoundResult` data class — stores round number, taker name, and chosen contract (or `null` if skipped).
+- `Chelem` enum — four grand slam outcomes (`NONE`, `ANNOUNCED_REALIZED`, `ANNOUNCED_NOT_REALIZED`, `NOT_ANNOUNCED_REALIZED`).
+- `RoundDetails` data class — all scoring fields for a played round (bouts, points, and the seven player-assigned/chelem bonuses).
+- `RoundResult` data class — round number, taker name, contract (`null` if skipped), and details (`null` if skipped).
