@@ -68,14 +68,16 @@ fun GameScreen(
 
     // Records a played round (contract + details) and advances to the next round.
     fun recordPlayed(contract: Contract, details: RoundDetails) {
-        roundHistory.add(RoundResult(currentRound, currentTaker, contract, details))
+        // Check if the taker scored enough points for their bout count.
+        val won = takerWon(details.bouts, details.points)
+        roundHistory.add(RoundResult(currentRound, currentTaker, contract, details, won))
         currentRound++
         selectedContract = null  // return to step 1 for the next round
     }
 
     // Records a skipped round (no contract, no details) and advances.
     fun recordSkipped() {
-        roundHistory.add(RoundResult(currentRound, currentTaker, contract = null, details = null))
+        roundHistory.add(RoundResult(currentRound, currentTaker, contract = null, details = null, won = null))
         currentRound++
         selectedContract = null
     }
@@ -162,10 +164,16 @@ fun GameScreen(
             // Show rounds newest-first so the latest result is always at the top.
             for (round in roundHistory.reversed()) {
                 val contractText = round.contract?.displayName ?: "Skipped"
-                // If the round was played, also show bouts and points as a quick summary.
+                // If the round was played, show bouts, points, and whether the taker won.
                 val detailsText = round.details?.let { " · ${it.bouts} bouts · ${it.points} pts" } ?: ""
+                // `won` is null for skipped rounds; otherwise show the outcome clearly.
+                val outcomeText = when (round.won) {
+                    true  -> " — Won"
+                    false -> " — Lost"
+                    null  -> ""
+                }
                 Text(
-                    text = "Round ${round.roundNumber}: ${round.takerName} — $contractText$detailsText",
+                    text = "Round ${round.roundNumber}: ${round.takerName} — $contractText$detailsText$outcomeText",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))

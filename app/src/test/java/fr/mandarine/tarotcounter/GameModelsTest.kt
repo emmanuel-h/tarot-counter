@@ -1,8 +1,10 @@
 package fr.mandarine.tarotcounter
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -63,16 +65,18 @@ class GameModelsTest {
     // ── RoundResult — skipped rounds ──────────────────────────────────────────
 
     @Test
-    fun `Skipped round has null contract and null details`() {
+    fun `Skipped round has null contract, null details, and null won`() {
         // Spec: "Skip round to record the round without any details."
         val result = RoundResult(
             roundNumber = 1,
             takerName   = "Alice",
             contract    = null,   // null = skipped
-            details     = null    // null = no scoring info
+            details     = null,   // null = no scoring info
+            won         = null    // null = no outcome (skipped)
         )
         assertNull("Skipped round should have no contract", result.contract)
         assertNull("Skipped round should have no details",  result.details)
+        assertNull("Skipped round should have no outcome",  result.won)
     }
 
     // ── RoundResult — played rounds ───────────────────────────────────────────
@@ -93,11 +97,14 @@ class GameModelsTest {
             roundNumber = 3,
             takerName   = "Alice",
             contract    = Contract.GARDE,
-            details     = details
+            details     = details,
+            won         = takerWon(details.bouts, details.points)
         )
         assertNotNull(result.contract)
         assertNotNull(result.details)
         assertEquals(Contract.GARDE, result.contract)
+        // 2 bouts requires 41 pts; 56 >= 41, so the taker won.
+        assertEquals(true, result.won)
     }
 
     @Test
@@ -106,7 +113,8 @@ class GameModelsTest {
             roundNumber = 7,
             takerName   = "Bob",
             contract    = null,
-            details     = null
+            details     = null,
+            won         = null
         )
         assertEquals(7,     result.roundNumber)
         assertEquals("Bob", result.takerName)
@@ -149,6 +157,86 @@ class GameModelsTest {
         assertNull(details.poignee)
         assertNull(details.doublePoignee)
         assertEquals(Chelem.NONE, details.chelem)
+    }
+
+    // ── Win condition — requiredPoints ─────────────────────────────────────────
+
+    @Test
+    fun `requiredPoints returns correct thresholds for each bout count`() {
+        // Spec table: 0 bouts → 56 pts, 1 → 51, 2 → 41, 3 → 36.
+        assertEquals(56, requiredPoints(0))
+        assertEquals(51, requiredPoints(1))
+        assertEquals(41, requiredPoints(2))
+        assertEquals(36, requiredPoints(3))
+    }
+
+    // ── Win condition — takerWon ───────────────────────────────────────────────
+
+    @Test
+    fun `takerWon returns true when points equal the threshold`() {
+        // Exact boundary: reaching the threshold is a win.
+        assertTrue(takerWon(bouts = 0, points = 56))
+        assertTrue(takerWon(bouts = 1, points = 51))
+        assertTrue(takerWon(bouts = 2, points = 41))
+        assertTrue(takerWon(bouts = 3, points = 36))
+    }
+
+    @Test
+    fun `takerWon returns true when points exceed the threshold`() {
+        assertTrue(takerWon(bouts = 0, points = 57))
+        assertTrue(takerWon(bouts = 1, points = 60))
+        assertTrue(takerWon(bouts = 2, points = 91))
+        assertTrue(takerWon(bouts = 3, points = 80))
+    }
+
+    @Test
+    fun `takerWon returns false when points are below the threshold`() {
+        // One point short of the threshold is a loss.
+        assertFalse(takerWon(bouts = 0, points = 55))
+        assertFalse(takerWon(bouts = 1, points = 50))
+        assertFalse(takerWon(bouts = 2, points = 40))
+        assertFalse(takerWon(bouts = 3, points = 35))
+    }
+
+    @Test
+    fun `takerWon returns false when points are zero`() {
+        // Zero points never wins regardless of bout count.
+        assertFalse(takerWon(bouts = 0, points = 0))
+        assertFalse(takerWon(bouts = 3, points = 0))
+    }
+
+    @Test
+    fun `RoundResult stores won correctly for a winning played round`() {
+        // 1 bout requires 51 pts; 51 >= 51 → won.
+        val result = RoundResult(
+            roundNumber = 1,
+            takerName   = "Alice",
+            contract    = Contract.PETITE,
+            details     = RoundDetails(
+                bouts = 1, points = 51,
+                petitAuBout = null, misere = null, doubleMisere = null,
+                poignee = null, doublePoignee = null, chelem = Chelem.NONE
+            ),
+            won = takerWon(bouts = 1, points = 51)
+        )
+        assertEquals(true, result.won)
+    }
+
+    @Test
+    fun `RoundResult stores won correctly for a losing played round`() {
+        // 0 bouts requires 56 pts; 40 < 56 → lost.
+        val result = RoundResult(
+            roundNumber = 2,
+            takerName   = "Bob",
+            contract    = Contract.GARDE,
+            details     = RoundDetails(
+                bouts = 0, points = 40,
+                petitAuBout = null, misere = null, doubleMisere = null,
+                poignee = null, doublePoignee = null, chelem = Chelem.NONE
+            ),
+            won = takerWon(bouts = 0, points = 40)
+        )
+        assertEquals(false, result.won)
     }
 
     @Test

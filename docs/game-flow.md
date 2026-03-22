@@ -61,19 +61,38 @@ After a contract is chosen, the user fills in the scoring details:
 Tapping **Confirm round** saves the result and moves to the next round.
 Tapping **← Change contract** goes back to step 1 without saving.
 
+## Win Condition
+
+After the taker's points and bouts are entered, the app determines whether the taker **won** or **lost** the round.
+
+The taker must score at least the threshold for their bout count:
+
+| Bouts (oudlers) | Points needed to win |
+|-----------------|----------------------|
+| 0               | 56                   |
+| 1               | 51                   |
+| 2               | 41                   |
+| 3               | 36                   |
+
+The three bouts are the 21 of trumps, the 1 of trumps (Petit), and the Excuse. Holding more bouts reduces the required score.
+
 ## Round History
 
 After each round is completed, a summary is appended to a history list at the bottom of the screen (newest round first):
 
 ```
-Round 3: Alice — Garde · 2 bouts · 56 pts
+Round 3: Alice — Garde · 2 bouts · 56 pts — Won
 Round 2: Bob — Skipped
-Round 1: Charlie — Petite · 1 bout · 51 pts
+Round 1: Charlie — Petite · 1 bout · 40 pts — Lost
 ```
+
+Skipped rounds show no outcome. Played rounds always show **Won** or **Lost**.
 
 ## Data Model
 
 - `Contract` enum — the five possible contracts with display names.
 - `Chelem` enum — four grand slam outcomes (`NONE`, `ANNOUNCED_REALIZED`, `ANNOUNCED_NOT_REALIZED`, `NOT_ANNOUNCED_REALIZED`).
 - `RoundDetails` data class — all scoring fields for a played round (bouts, points, and the seven player-assigned/chelem bonuses).
-- `RoundResult` data class — round number, taker name, contract (`null` if skipped), and details (`null` if skipped).
+- `RoundResult` data class — round number, taker name, contract (`null` if skipped), details (`null` if skipped), and `won` (`null` if skipped, `true`/`false` otherwise).
+- `requiredPoints(bouts)` — returns the minimum points needed to win for a given bout count.
+- `takerWon(bouts, points)` — returns `true` if points ≥ `requiredPoints(bouts)`.

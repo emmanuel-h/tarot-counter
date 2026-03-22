@@ -208,6 +208,18 @@ class GameScreenTest {
     }
 
     @Test
+    fun played_round_shows_Lost_in_history_when_taker_did_not_reach_threshold() {
+        // Default form values: 0 bouts, 0 points.
+        // With 0 bouts the taker needs 56 pts; 0 < 56 → Lost.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+        composeTestRule
+            .onNodeWithText("Lost", substring = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
     fun history_is_newest_round_first() {
         // Complete two rounds; round 2 summary should appear before round 1.
         launchGame()
