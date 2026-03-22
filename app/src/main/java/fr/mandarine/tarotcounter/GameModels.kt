@@ -115,6 +115,25 @@ fun computePlayerScores(
     }
 }
 
+// Returns the flat chelem (grand slam) bonus.
+//
+// The value is the amount the taker collects from (or pays to) *each* defender:
+//   +400 → announced & realized    (taker wins 400 from each defender)
+//   +200 → not announced, realized (taker wins 200 from each defender)
+//   -200 → announced, not realized (taker pays 200 to each defender)
+//     0  → no chelem, no adjustment
+//
+// Distribution rule applied in GameScreen:
+//   taker delta   = chelemBonus × numDefenders
+//   defender delta = −chelemBonus   (per defender)
+//   partner delta  = 0              (partner is not involved in chelem bonus)
+fun chelemBonus(chelem: Chelem): Int = when (chelem) {
+    Chelem.NONE                   ->    0
+    Chelem.ANNOUNCED_REALIZED     ->  400
+    Chelem.NOT_ANNOUNCED_REALIZED ->  200
+    Chelem.ANNOUNCED_NOT_REALIZED -> -200
+}
+
 // Stores the outcome of a single completed round.
 // `contract`     is null when the round was skipped (no contract announced).
 // `details`      is null when the round was skipped (there is nothing to score).

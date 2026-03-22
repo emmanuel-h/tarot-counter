@@ -51,14 +51,16 @@ After a contract is chosen, the user fills in the scoring details:
 
 **Partner selection** is only shown in 5-player games. The taker secretly calls a partner; their identity affects score distribution at the end of the round.
 
-**Chelem options:**
+**Chelem options and bonus points:**
 
-| Value                      | Meaning |
-|----------------------------|---------|
-| None                       | No grand slam |
-| Announced & realized       | Taker announced and won every trick |
-| Announced, not realized    | Taker announced but failed to win every trick |
-| Not announced, realized    | Taker won every trick without announcing |
+| Value                      | Meaning                                          | Bonus per defender |
+|----------------------------|--------------------------------------------------|--------------------|
+| None                       | No grand slam                                    | 0                  |
+| Announced & realized       | Taker announced and won every trick              | +400               |
+| Not announced, realized    | Taker won every trick without announcing         | +200               |
+| Announced, not realized    | Taker announced but failed to win every trick    | −200               |
+
+The bonus is a flat amount exchanged between the taker and each defender individually — it is **not** multiplied by the contract. A positive bonus means the taker collects that amount from each defender; a negative bonus means the taker pays that amount to each defender. The partner (5-player) is not involved in the chelem bonus. The result is always zero-sum.
 
 Tapping **Confirm round** saves the result and moves to the next round.
 Tapping **← Change contract** goes back to step 1 without saving.
@@ -132,3 +134,4 @@ Skipped rounds show no outcome and do not affect scores.
 - `takerWon(bouts, points)` — returns `true` if points ≥ `requiredPoints(bouts)`.
 - `calculateRoundScore(contract, bouts, points)` — returns the base round score before distribution.
 - `computePlayerScores(allPlayers, takerName, partnerName, won, roundScore)` — returns a `Map<String, Int>` of player → score for the round.
+- `chelemBonus(chelem)` — returns the flat per-defender bonus value: +400, +200, −200, or 0.

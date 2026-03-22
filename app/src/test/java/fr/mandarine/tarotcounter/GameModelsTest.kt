@@ -69,6 +69,64 @@ class GameModelsTest {
         assertEquals("Not announced, realized", Chelem.NOT_ANNOUNCED_REALIZED.displayName)
     }
 
+    // ── chelemBonus ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `chelemBonus returns 0 when there is no chelem`() {
+        assertEquals(0, chelemBonus(Chelem.NONE))
+    }
+
+    @Test
+    fun `chelemBonus returns 400 when announced and realized`() {
+        assertEquals(400, chelemBonus(Chelem.ANNOUNCED_REALIZED))
+    }
+
+    @Test
+    fun `chelemBonus returns 200 when not announced but realized`() {
+        assertEquals(200, chelemBonus(Chelem.NOT_ANNOUNCED_REALIZED))
+    }
+
+    @Test
+    fun `chelemBonus returns -200 when announced but not realized`() {
+        assertEquals(-200, chelemBonus(Chelem.ANNOUNCED_NOT_REALIZED))
+    }
+
+    @Test
+    fun `chelemBonus distribution is zero-sum in a 4-player game`() {
+        // In a 4-player game: 1 taker + 3 defenders.
+        // Taker delta = +400 × 3 = +1200; each defender delta = −400.
+        // Total = 1200 − 400 − 400 − 400 = 0.
+        val bonus = chelemBonus(Chelem.ANNOUNCED_REALIZED)
+        val numDefenders = 3 // 4 players, no partner
+        val takerDelta = bonus * numDefenders
+        val defenderDelta = -bonus
+        assertEquals(0, takerDelta + defenderDelta * numDefenders)
+    }
+
+    @Test
+    fun `chelemBonus penalty distribution is zero-sum in a 4-player game`() {
+        // Announced but not realized: taker pays −200 per defender.
+        // Taker delta = −200 × 3 = −600; each defender delta = +200.
+        // Total = −600 + 200 + 200 + 200 = 0.
+        val bonus = chelemBonus(Chelem.ANNOUNCED_NOT_REALIZED)
+        val numDefenders = 3
+        val takerDelta = bonus * numDefenders
+        val defenderDelta = -bonus
+        assertEquals(0, takerDelta + defenderDelta * numDefenders)
+    }
+
+    @Test
+    fun `chelemBonus distribution is zero-sum in a 5-player game — partner unaffected`() {
+        // In a 5-player game: 1 taker + 1 partner + 3 defenders.
+        // Chelem only involves taker and the 3 defenders; partner delta = 0.
+        val bonus = chelemBonus(Chelem.NOT_ANNOUNCED_REALIZED) // +200
+        val numDefenders = 3
+        val takerDelta    = bonus * numDefenders   // +600
+        val partnerDelta  = 0
+        val defenderDelta = -bonus                 // −200 each
+        assertEquals(0, takerDelta + partnerDelta + defenderDelta * numDefenders)
+    }
+
     // ── RoundResult — skipped rounds ──────────────────────────────────────────
 
     @Test

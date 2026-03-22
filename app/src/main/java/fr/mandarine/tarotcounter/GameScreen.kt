@@ -73,13 +73,30 @@ fun GameScreen(
         // Compute the base score for this round (before player distribution).
         val roundScore = calculateRoundScore(contract, details.bouts, details.points)
         // Distribute the score: taker gets/pays for all defenders; partner shares in 5-player.
-        val scores = computePlayerScores(
+        val baseScores = computePlayerScores(
             allPlayers  = displayNames,
             takerName   = currentTaker,
             partnerName = details.partnerName,
             won         = won,
             roundScore  = roundScore
         )
+
+        // Apply the chelem (grand slam) flat bonus on top of the base score.
+        // The bonus is paid individually between the taker and each defender.
+        // The partner (5-player only) is not affected by the chelem bonus.
+        val bonus = chelemBonus(details.chelem)
+        // numDefenders is 3 in a 5-player game, (n−1) otherwise.
+        val numDefenders = if (details.partnerName != null) 3 else displayNames.size - 1
+        val scores = if (bonus == 0) baseScores else {
+            baseScores.mapValues { (player, score) ->
+                when (player) {
+                    currentTaker        -> score + bonus * numDefenders // taker collects/pays all
+                    details.partnerName -> score                        // partner unaffected
+                    else                -> score - bonus                // each defender pays/receives
+                }
+            }
+        }
+
         roundHistory.add(RoundResult(currentRound, currentTaker, contract, details, won, scores))
         currentRound++
         selectedContract = null  // return to step 1 for the next round
