@@ -9,15 +9,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,6 +70,11 @@ fun LandingScreen(modifier: Modifier = Modifier) {
     // instead of `selectedPlayers.value`.
     var selectedPlayers by remember { mutableIntStateOf(3) }
 
+    // `mutableStateListOf` creates an observable list: any change to it triggers a UI redraw.
+    // We initialize it with 3 empty strings (one per player slot, matching the default).
+    // `remember` keeps the list across recompositions so typed names aren't lost.
+    val playerNames = remember { mutableStateListOf("", "", "") }
+
     // Column stacks its children vertically.
     // Alignment.CenterHorizontally + Arrangement.Center centers everything on screen.
     Column(
@@ -102,10 +110,42 @@ fun LandingScreen(modifier: Modifier = Modifier) {
                 // here it updates selectedPlayers, which triggers a UI redraw.
                 FilterChip(
                     selected = selectedPlayers == n,
-                    onClick = { selectedPlayers = n },
+                    onClick = {
+                        selectedPlayers = n
+                        // Resize the name list to match the new player count.
+                        // If the new count is larger, pad with empty strings.
+                        // If smaller, drop the extra entries.
+                        while (playerNames.size < n) playerNames.add("")
+                        while (playerNames.size > n) playerNames.removeAt(playerNames.lastIndex)
+                    },
                     label = { Text(n.toString()) } // chip label: "3", "4", or "5"
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Player names",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Loop over each player slot and render a text field for their name.
+        // `playerNames.indices` gives us 0, 1, 2 (or up to 4 for 5 players).
+        for (i in playerNames.indices) {
+            // OutlinedTextField is a Material Design text input with a visible border.
+            // `value` is the current text; `onValueChange` updates it when the user types.
+            OutlinedTextField(
+                value = playerNames[i],
+                onValueChange = { playerNames[i] = it }, // `it` is the new string the user typed
+                label = { Text("Player ${i + 1}") },     // label shown inside the field
+                singleLine = true,                        // prevent multi-line input
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)                   // 80% of screen width
+                    .padding(vertical = 4.dp)
+            )
         }
     }
 }
