@@ -40,6 +40,7 @@ data class RoundDetails(
     val doubleMisere: String?,  // player who declared double misère, or null
     val poignee: String?,       // player who showed a poignée (10+ trumps), or null
     val doublePoignee: String?, // player who showed a double poignée (13+ trumps), or null
+    val triplePoignee: String? = null, // player who showed a triple poignée (15+ trumps), or null
     val chelem: Chelem          // grand slam outcome
 )
 
@@ -113,6 +114,30 @@ fun computePlayerScores(
             else        -> -sign * roundScore
         }
     }
+}
+
+// Returns the flat poignée (trump show) bonus per defender.
+//
+// Exactly one of the three parameters should be non-null at most per round.
+// The bonus is the amount exchanged between the taker and *each* defender:
+//   triplePoignee → 40 pts
+//   doublePoignee → 30 pts
+//   poignee       → 20 pts
+//   none declared →  0 pts
+//
+// Crucially, the bonus always goes to the **winning camp**, regardless of who
+// declared it. The sign is applied in GameScreen using the round outcome:
+//   taker won  → taker collects bonus from each defender
+//   taker lost → each defender collects bonus from the taker
+fun poigneeBonus(
+    poignee: String?,
+    doublePoignee: String?,
+    triplePoignee: String?
+): Int = when {
+    triplePoignee != null -> 40
+    doublePoignee != null -> 30
+    poignee       != null -> 20
+    else                  ->  0
 }
 
 // Returns the flat chelem (grand slam) bonus.

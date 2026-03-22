@@ -81,18 +81,37 @@ fun GameScreen(
             roundScore  = roundScore
         )
 
-        // Apply the chelem (grand slam) flat bonus on top of the base score.
-        // The bonus is paid individually between the taker and each defender.
-        // The partner (5-player only) is not affected by the chelem bonus.
-        val bonus = chelemBonus(details.chelem)
-        // numDefenders is 3 in a 5-player game, (n−1) otherwise.
+        // numDefenders is used by both bonus calculations below.
+        // It is 3 in a 5-player game, (n−1) otherwise.
         val numDefenders = if (details.partnerName != null) 3 else displayNames.size - 1
-        val scores = if (bonus == 0) baseScores else {
+
+        // Apply the poignée (trump show) flat bonus.
+        // The bonus always goes to the winning camp, regardless of who declared it:
+        //   taker won  → taker collects pBonus from each defender
+        //   taker lost → each defender collects pBonus from the taker
+        // The partner (5-player) is not involved in the poignée bonus.
+        val pBonus = poigneeBonus(details.poignee, details.doublePoignee, details.triplePoignee)
+        val pSign  = if (won) 1 else -1  // positive = taker benefits, negative = defenders benefit
+        val scoresAfterPoignee = if (pBonus == 0) baseScores else {
             baseScores.mapValues { (player, score) ->
                 when (player) {
-                    currentTaker        -> score + bonus * numDefenders // taker collects/pays all
-                    details.partnerName -> score                        // partner unaffected
-                    else                -> score - bonus                // each defender pays/receives
+                    currentTaker        -> score + pSign * pBonus * numDefenders
+                    details.partnerName -> score  // partner unaffected
+                    else                -> score - pSign * pBonus
+                }
+            }
+        }
+
+        // Apply the chelem (grand slam) flat bonus on top of the previous result.
+        // The bonus is paid individually between the taker and each defender.
+        // The partner (5-player only) is not affected by the chelem bonus.
+        val cBonus = chelemBonus(details.chelem)
+        val scores = if (cBonus == 0) scoresAfterPoignee else {
+            scoresAfterPoignee.mapValues { (player, score) ->
+                when (player) {
+                    currentTaker        -> score + cBonus * numDefenders // taker collects/pays all
+                    details.partnerName -> score                         // partner unaffected
+                    else                -> score - cBonus                // each defender pays/receives
                 }
             }
         }

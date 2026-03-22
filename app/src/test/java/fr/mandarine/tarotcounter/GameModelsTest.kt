@@ -69,6 +69,69 @@ class GameModelsTest {
         assertEquals("Not announced, realized", Chelem.NOT_ANNOUNCED_REALIZED.displayName)
     }
 
+    // ── poigneeBonus ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `poigneeBonus returns 0 when no poignee is declared`() {
+        assertEquals(0, poigneeBonus(poignee = null, doublePoignee = null, triplePoignee = null))
+    }
+
+    @Test
+    fun `poigneeBonus returns 20 for a simple poignee`() {
+        assertEquals(20, poigneeBonus(poignee = "Alice", doublePoignee = null, triplePoignee = null))
+    }
+
+    @Test
+    fun `poigneeBonus returns 30 for a double poignee`() {
+        assertEquals(30, poigneeBonus(poignee = null, doublePoignee = "Bob", triplePoignee = null))
+    }
+
+    @Test
+    fun `poigneeBonus returns 40 for a triple poignee`() {
+        assertEquals(40, poigneeBonus(poignee = null, doublePoignee = null, triplePoignee = "Charlie"))
+    }
+
+    @Test
+    fun `poigneeBonus bonus goes to winner — taker wins, taker collects from each defender`() {
+        // 4 players: 1 taker + 3 defenders. Simple poignée (20 pts).
+        // Taker wins: each defender pays 20 to the taker.
+        // Taker delta = +20 × 3 = +60; each defender delta = -20. Sum = 0.
+        val bonus = poigneeBonus(poignee = "Alice", doublePoignee = null, triplePoignee = null)
+        val numDefenders = 3
+        val sign = 1 // taker won
+        val takerDelta    = sign * bonus * numDefenders // +60
+        val defenderDelta = -sign * bonus               // -20 each
+        assertEquals(0, takerDelta + defenderDelta * numDefenders)
+        assertEquals(+60, takerDelta)
+        assertEquals(-20, defenderDelta)
+    }
+
+    @Test
+    fun `poigneeBonus bonus goes to winner — taker loses, each defender collects from taker`() {
+        // 4 players: 1 taker + 3 defenders. Double poignée (30 pts) declared by a defender.
+        // Taker loses: the taker pays 30 to each defender regardless of who declared it.
+        // Taker delta = -30 × 3 = -90; each defender delta = +30. Sum = 0.
+        val bonus = poigneeBonus(poignee = null, doublePoignee = "Bob", triplePoignee = null)
+        val numDefenders = 3
+        val sign = -1 // taker lost
+        val takerDelta    = sign * bonus * numDefenders // -90
+        val defenderDelta = -sign * bonus               // +30 each
+        assertEquals(0, takerDelta + defenderDelta * numDefenders)
+        assertEquals(-90, takerDelta)
+        assertEquals(+30, defenderDelta)
+    }
+
+    @Test
+    fun `poigneeBonus triple poignee distribution is zero-sum`() {
+        // Triple poignée (40 pts). Taker wins in a 3-player game (2 defenders).
+        val bonus = poigneeBonus(poignee = null, doublePoignee = null, triplePoignee = "Alice")
+        val numDefenders = 2
+        val sign = 1 // taker won
+        val takerDelta    = sign * bonus * numDefenders // +80
+        val defenderDelta = -sign * bonus               // -40 each
+        assertEquals(0, takerDelta + defenderDelta * numDefenders)
+    }
+
     // ── chelemBonus ───────────────────────────────────────────────────────────
 
     @Test

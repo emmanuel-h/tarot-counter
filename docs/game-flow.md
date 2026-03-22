@@ -47,6 +47,7 @@ After a contract is chosen, the user fills in the scoring details:
 | Double misère      | None or any player          | Player who declared double misère |
 | Poignée            | None or any player          | Player who showed a poignée (10+ trumps) |
 | Double poignée     | None or any player          | Player who showed a double poignée (13+ trumps) |
+| Triple poignée     | None or any player          | Player who showed a triple poignée (15+ trumps) |
 | Chelem             | See table below             | Grand slam outcome |
 
 **Partner selection** is only shown in 5-player games. The taker secretly calls a partner; their identity affects score distribution at the end of the round.
@@ -104,6 +105,23 @@ Scores are zero-sum — the total across all players is always 0.
 
 The sign is **+** when the taker won, **−** when the taker lost. The same sign applies to the partner in 5-player games; defenders receive the opposite sign.
 
+### Poignée bonus
+
+A poignée (trump show) grants a flat bonus **per defender**, always awarded to the **winning camp** regardless of who declared it.
+
+| Poignée type   | Bonus per defender |
+|----------------|--------------------|
+| Simple         | 20 pts             |
+| Double         | 30 pts             |
+| Triple         | 40 pts             |
+
+- **Taker wins** → the taker collects the bonus from each defender.
+- **Taker loses** → each defender collects the bonus from the taker.
+
+The partner (5-player) does not participate in the poignée bonus exchange. The result is always zero-sum.
+
+**Example:** 4-player game, double poignée (30 pts), declared by a defender, taker loses → taker pays 30 to each of the 3 defenders (−90 for taker, +30 for each defender).
+
 ## Scoreboard & Round History
 
 After each round is completed the game screen shows:
@@ -134,4 +152,5 @@ Skipped rounds show no outcome and do not affect scores.
 - `takerWon(bouts, points)` — returns `true` if points ≥ `requiredPoints(bouts)`.
 - `calculateRoundScore(contract, bouts, points)` — returns the base round score before distribution.
 - `computePlayerScores(allPlayers, takerName, partnerName, won, roundScore)` — returns a `Map<String, Int>` of player → score for the round.
+- `poigneeBonus(poignee, doublePoignee, triplePoignee)` — returns the flat per-defender bonus: 20, 30, 40, or 0. Direction follows the round winner, applied in GameScreen.
 - `chelemBonus(chelem)` — returns the flat per-defender bonus value: +400, +200, −200, or 0.

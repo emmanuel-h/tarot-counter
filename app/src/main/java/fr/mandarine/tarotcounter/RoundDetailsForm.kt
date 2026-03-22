@@ -68,6 +68,7 @@ fun RoundDetailsForm(
     var doubleMisere  by remember { mutableStateOf<String?>(null) }
     var poignee       by remember { mutableStateOf<String?>(null) }
     var doublePoignee by remember { mutableStateOf<String?>(null) }
+    var triplePoignee by remember { mutableStateOf<String?>(null) }
 
     // Chelem outcome — defaults to NONE (no grand slam).
     var chelem by remember { mutableStateOf(Chelem.NONE) }
@@ -194,6 +195,15 @@ fun RoundDetailsForm(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        PlayerChipSelector(
+            label = "Triple poignée",
+            selectedPlayer = triplePoignee,
+            playerNames = playerNames,
+            onSelect = { triplePoignee = it }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
         HorizontalDivider()
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -228,6 +238,7 @@ fun RoundDetailsForm(
                         doubleMisere  = doubleMisere,
                         poignee       = poignee,
                         doublePoignee = doublePoignee,
+                        triplePoignee = triplePoignee,
                         chelem        = chelem
                     )
                 )
