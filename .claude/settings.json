@@ -21,10 +21,6 @@
             "type": "command",
             "command": "JAVA_HOME=/usr/local/android-studio/jbr ./gradlew testDebugUnitTest > /tmp/tc-test.txt 2>&1; CODE=$?; [ $CODE -ne 0 ] && tail -40 /tmp/tc-test.txt | jq -Rs '{\"systemMessage\":(\"Unit tests FAILED — fix before continuing:\\n\" + .)}' || true",
             "statusMessage": "Running unit tests..."
-          },
-          {
-            "type": "command",
-            "command": "[ -n \"$(git status --porcelain 2>/dev/null)\" ] && printf '{\"systemMessage\":\"Uncommitted changes detected. Say \\\"commit\\\" and I will stage all changes, write a Conventional Commits message (feat/fix/docs/test/refactor/chore), and push to main with git + gh.\"}' || true"
           }
         ]
       }
