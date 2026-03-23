@@ -60,12 +60,11 @@ class GameStorage(private val context: Context) {
             .catch { emit(emptyPreferences()) }   // handle read errors gracefully
             .map { prefs ->
                 val raw = prefs[GAMES_KEY] ?: return@map emptyList()
-                // `try/catch` guards against JSON parse errors (e.g. corrupted data).
-                try {
-                    json.decodeFromString<List<SavedGame>>(raw)
-                } catch (e: Exception) {
-                    emptyList()
-                }
+                // `runCatching` is the idiomatic Kotlin alternative to try/catch when
+                // you want to convert a thrown exception into a Result value.
+                // `getOrDefault` returns the list on success, or the fallback on failure.
+                runCatching { json.decodeFromString<List<SavedGame>>(raw) }
+                    .getOrDefault(emptyList())
             }
 
     // Returns a Flow that emits the current in-progress game, or null if there is none.
@@ -75,11 +74,8 @@ class GameStorage(private val context: Context) {
             .catch { emit(emptyPreferences()) }
             .map { prefs ->
                 val raw = prefs[IN_PROGRESS_KEY] ?: return@map null
-                try {
-                    json.decodeFromString<InProgressGame>(raw)
-                } catch (e: Exception) {
-                    null
-                }
+                // `getOrNull` returns the decoded value on success, or null on failure.
+                runCatching { json.decodeFromString<InProgressGame>(raw) }.getOrNull()
             }
 
     // Overwrites the in-progress game with the latest state.
@@ -106,11 +102,9 @@ class GameStorage(private val context: Context) {
     suspend fun addGame(game: SavedGame) {
         context.dataStore.edit { prefs ->
             val raw = prefs[GAMES_KEY] ?: "[]"
-            val games = try {
-                json.decodeFromString<List<SavedGame>>(raw).toMutableList()
-            } catch (e: Exception) {
-                mutableListOf()
-            }
+            val games = runCatching { json.decodeFromString<List<SavedGame>>(raw) }
+                .getOrDefault(emptyList())
+                .toMutableList()
             // Insert the new game at position 0 so the list stays newest-first.
             games.add(0, game)
             // Trim to the limit so the file doesn't grow without bound.

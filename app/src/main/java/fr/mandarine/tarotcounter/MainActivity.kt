@@ -15,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
-import java.util.UUID
 
 // MainActivity is the entry point of every Android app.
 // It extends ComponentActivity, which is the base class for activities

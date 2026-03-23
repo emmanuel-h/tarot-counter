@@ -295,9 +295,9 @@ fun computeFinalTotals(
 //   {Alice: 10, Bob: 10, Charlie: -20}  → ["Alice", "Bob"]   (tie)
 fun findWinners(totals: Map<String, Int>): List<String> {
     val maxScore = totals.values.maxOrNull() ?: return emptyList()
-    return totals.entries
-        .filter { it.value == maxScore }
-        .map { it.key }
+    // `filterValues` keeps only entries whose value matches the max, then `.keys`
+    // gives back the player names — no need to unpack each entry manually.
+    return totals.filterValues { it == maxScore }.keys.toList()
 }
 
 // Stores the outcome of a single completed round.

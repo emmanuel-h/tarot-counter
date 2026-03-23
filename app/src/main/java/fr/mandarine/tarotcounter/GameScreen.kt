@@ -104,6 +104,16 @@ fun GameScreen(
     // `map` transforms each index into its display name.
     val displayNames = playerNames.indices.map { displayName(it) }
 
+    // Builds an InProgressGame snapshot from the current game state.
+    // Called after every round to persist progress — extracted here to avoid repeating
+    // the same four-field construction in both recordPlayed and recordSkipped.
+    fun progressSnapshot() = InProgressGame(
+        playerNames   = displayNames,
+        currentRound  = currentRound,
+        startingIndex = startingIndex,
+        rounds        = roundHistory.toList()
+    )
+
     // Records a played round (contract + details) and advances to the next round.
     fun recordPlayed(contract: Contract, details: RoundDetails) {
         // Check if the taker scored enough points for their bout count.
@@ -133,12 +143,7 @@ fun GameScreen(
         // Persist the current game state so it can be resumed if the app is closed.
         // We save after incrementing currentRound so the restored state points to the
         // correct next taker (the formula uses currentRound to derive the taker index).
-        onSaveProgress(InProgressGame(
-            playerNames   = displayNames,
-            currentRound  = currentRound,
-            startingIndex = startingIndex,
-            rounds        = roundHistory.toList()
-        ))
+        onSaveProgress(progressSnapshot())
     }
 
     // Records a skipped round (no contract, no details) and advances.
@@ -149,12 +154,7 @@ fun GameScreen(
         selectedContract = null
 
         // Save progress after a skip just like after a played round.
-        onSaveProgress(InProgressGame(
-            playerNames   = displayNames,
-            currentRound  = currentRound,
-            startingIndex = startingIndex,
-            rounds        = roundHistory.toList()
-        ))
+        onSaveProgress(progressSnapshot())
     }
 
     // Saves the completed game and shows the Final Score screen.
