@@ -580,4 +580,227 @@ class GameModelsTest {
         assertEquals(+30, scores["Eve"])
         assertEquals(0, scores.values.sum())
     }
+
+    // ── applyBonuses ──────────────────────────────────────────────────────────
+
+    // Helper: build a RoundDetails with all bonuses set to null/NONE.
+    // Only override the fields relevant to each test.
+    private fun details(
+        partnerName: String?   = null,
+        petitAuBout: String?   = null,
+        poignee: String?       = null,
+        doublePoignee: String? = null,
+        triplePoignee: String? = null,
+        chelem: Chelem         = Chelem.NONE
+    ) = RoundDetails(
+        bouts         = 2,
+        points        = 50,
+        partnerName   = partnerName,
+        petitAuBout   = petitAuBout,
+        misere        = null,
+        doubleMisere  = null,
+        poignee       = poignee,
+        doublePoignee = doublePoignee,
+        triplePoignee = triplePoignee,
+        chelem        = chelem
+    )
+
+    @Test
+    fun `applyBonuses — no bonuses, returns base scores unchanged`() {
+        // All bonus fields absent: the function should be a no-op.
+        // 4-player game: Alice (taker) won.
+        val base = mapOf("Alice" to +120, "Bob" to -40, "Charlie" to -40, "Dave" to -40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(base, result)
+    }
+
+    @Test
+    fun `applyBonuses — petit au bout by taker adjusts scores and stays zero-sum (4-player)`() {
+        // Contract: Garde (×2) → pabAmount = 20. Taker's camp achieved it → pabSign = +1.
+        // numDefenders = 3.
+        // Alice delta = +1 × 20 × 3 = +60 → 120 + 60 = +180
+        // Bob/Charlie/Dave delta = -1 × 20 = -20 → -40 - 20 = -60 each
+        val base = mapOf("Alice" to +120, "Bob" to -40, "Charlie" to -40, "Dave" to -40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(petitAuBout = "Alice"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+180, result["Alice"])
+        assertEquals(-60,  result["Bob"])
+        assertEquals(-60,  result["Charlie"])
+        assertEquals(-60,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — petit au bout by defender adjusts scores and stays zero-sum (4-player)`() {
+        // Garde (×2) → pabAmount = 20. Defenders' camp achieved it → pabSign = -1.
+        // Alice delta = -1 × 20 × 3 = -60 → +120 - 60 = +60
+        // Bob/Charlie/Dave delta = -(-1) × 20 = +20 → -40 + 20 = -20 each
+        val base = mapOf("Alice" to +120, "Bob" to -40, "Charlie" to -40, "Dave" to -40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(petitAuBout = "Bob"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+60,  result["Alice"])
+        assertEquals(-20,  result["Bob"])
+        assertEquals(-20,  result["Charlie"])
+        assertEquals(-20,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — poignee bonus goes to winning camp (taker wins, 4-player)`() {
+        // Simple poignée → pBonus = 20. Taker won → pSign = +1.
+        // Alice delta = +1 × 20 × 3 = +60 → +120 + 60 = +180
+        // Bob/Charlie/Dave delta = -1 × 20 = -20 → -40 - 20 = -60 each
+        val base = mapOf("Alice" to +120, "Bob" to -40, "Charlie" to -40, "Dave" to -40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(poignee = "Alice"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+180, result["Alice"])
+        assertEquals(-60,  result["Bob"])
+        assertEquals(-60,  result["Charlie"])
+        assertEquals(-60,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — poignee bonus goes to winning camp (taker loses, 4-player)`() {
+        // Simple poignée → pBonus = 20. Taker lost → pSign = -1.
+        // Alice delta = -1 × 20 × 3 = -60 → -120 - 60 = -180
+        // Bob/Charlie/Dave delta = -(-1) × 20 = +20 → +40 + 20 = +60 each
+        val base = mapOf("Alice" to -120, "Bob" to +40, "Charlie" to +40, "Dave" to +40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(poignee = "Alice"),
+            takerName    = "Alice",
+            won          = false,
+            numDefenders = 3
+        )
+        assertEquals(-180, result["Alice"])
+        assertEquals(+60,  result["Bob"])
+        assertEquals(+60,  result["Charlie"])
+        assertEquals(+60,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — chelem announced and realized adds large bonus (4-player)`() {
+        // cBonus = +400.
+        // Alice delta = +400 × 3 = +1200 → +120 + 1200 = +1320
+        // Bob/Charlie/Dave delta = -400 → -40 - 400 = -440 each
+        val base = mapOf("Alice" to +120, "Bob" to -40, "Charlie" to -40, "Dave" to -40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(chelem = Chelem.ANNOUNCED_REALIZED),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+1320, result["Alice"])
+        assertEquals(-440,  result["Bob"])
+        assertEquals(-440,  result["Charlie"])
+        assertEquals(-440,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — chelem announced but not realized is a penalty (4-player)`() {
+        // cBonus = -200.
+        // Alice delta = -200 × 3 = -600 → +120 - 600 = -480
+        // Bob/Charlie/Dave delta = -(-200) = +200 → -40 + 200 = +160 each
+        val base = mapOf("Alice" to +120, "Bob" to -40, "Charlie" to -40, "Dave" to -40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(chelem = Chelem.ANNOUNCED_NOT_REALIZED),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(-480, result["Alice"])
+        assertEquals(+160, result["Bob"])
+        assertEquals(+160, result["Charlie"])
+        assertEquals(+160, result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — partner is unaffected by all three bonuses (5-player)`() {
+        // Alice (taker), Bob (partner), Charlie/Dave/Eve (defenders). numDefenders = 3.
+        // Poignée (20) + chelem announced & realized (+400): only taker and defenders adjust.
+        // Base: Alice=+60, Bob=+30, Charlie/Dave/Eve=-30 each.
+        // Poignée (won → +): Alice +60, defenders -20 each → Alice=120, Bob=30, others=-50
+        // Chelem (+400 × 3 = +1200 to taker): Alice=+1320, defenders -400 each → -450
+        val base = mapOf(
+            "Alice"   to +60,
+            "Bob"     to +30,
+            "Charlie" to -30,
+            "Dave"    to -30,
+            "Eve"     to -30
+        )
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(
+                partnerName = "Bob",
+                poignee     = "Alice",
+                chelem      = Chelem.ANNOUNCED_REALIZED
+            ),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        // Bob (partner) must not change from his base score.
+        assertEquals(+30, result["Bob"])
+        // All scores must still sum to zero.
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — all three bonuses applied together are zero-sum`() {
+        // Garde (×2), taker wins, 4-player game.
+        // Petit au bout by taker (+1): pabAmount=20, pabSign=+1
+        // Double poignée: pBonus=30, pSign=+1 (won)
+        // Chelem not announced but realized: cBonus=+200
+        // Base: Alice=+120, Bob/Charlie/Dave=-40 each
+        val base = mapOf("Alice" to +120, "Bob" to -40, "Charlie" to -40, "Dave" to -40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(
+                petitAuBout   = "Alice",
+                doublePoignee = "Alice",
+                chelem        = Chelem.NOT_ANNOUNCED_REALIZED
+            ),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        // Zero-sum is the key invariant — every point the taker gains is paid by defenders.
+        assertEquals(0, result.values.sum())
+    }
 }

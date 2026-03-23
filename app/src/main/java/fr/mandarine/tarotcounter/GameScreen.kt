@@ -84,7 +84,8 @@ fun GameScreen(
         val won = takerWon(details.bouts, details.points)
         // Compute the base score for this round (before player distribution).
         val roundScore = calculateRoundScore(contract, details.bouts, details.points)
-        // Distribute the score: taker gets/pays for all defenders; partner shares in 5-player.
+        // Distribute the base score: taker pays/collects from all defenders;
+        // in a 5-player game the partner shares with the taker.
         val baseScores = computePlayerScores(
             allPlayers  = displayNames,
             takerName   = currentTaker,
@@ -92,63 +93,12 @@ fun GameScreen(
             won         = won,
             roundScore  = roundScore
         )
-
-        // numDefenders is used by all bonus calculations below.
+        // numDefenders is used by all three bonus calculations inside applyBonuses.
         // It is 3 in a 5-player game, (n−1) otherwise.
         val numDefenders = if (details.partnerName != null) 3 else displayNames.size - 1
-
-        // Apply the petit-au-bout bonus.
-        // The bonus goes to whichever camp captured the Petit on the last trick,
-        // regardless of who won the round.
-        // Taker's camp = taker + partner; defenders' camp = everyone else.
-        val pabAmount = if (details.petitAuBout != null) petitAuBoutBonus(contract) else 0
-        // +1 if the achiever is in the taker's camp, -1 if they are a defender.
-        val pabSign = when (details.petitAuBout) {
-            null                -> 0
-            currentTaker,
-            details.partnerName -> +1  // taker's camp achieved it
-            else                -> -1  // defenders' camp achieved it
-        }
-        val scoresAfterPab = if (pabAmount == 0) baseScores else {
-            baseScores.mapValues { (player, score) ->
-                when (player) {
-                    currentTaker        -> score + pabSign * pabAmount * numDefenders
-                    details.partnerName -> score  // partner unaffected
-                    else                -> score - pabSign * pabAmount
-                }
-            }
-        }
-
-        // Apply the poignée (trump show) flat bonus.
-        // The bonus always goes to the winning camp, regardless of who declared it:
-        //   taker won  → taker collects pBonus from each defender
-        //   taker lost → each defender collects pBonus from the taker
-        // The partner (5-player) is not involved in the poignée bonus.
-        val pBonus = poigneeBonus(details.poignee, details.doublePoignee, details.triplePoignee)
-        val pSign  = if (won) 1 else -1  // positive = taker benefits, negative = defenders benefit
-        val scoresAfterPoignee = if (pBonus == 0) scoresAfterPab else {
-            scoresAfterPab.mapValues { (player, score) ->
-                when (player) {
-                    currentTaker        -> score + pSign * pBonus * numDefenders
-                    details.partnerName -> score  // partner unaffected
-                    else                -> score - pSign * pBonus
-                }
-            }
-        }
-
-        // Apply the chelem (grand slam) flat bonus on top of the previous result.
-        // The bonus is paid individually between the taker and each defender.
-        // The partner (5-player only) is not affected by the chelem bonus.
-        val cBonus = chelemBonus(details.chelem)
-        val scores = if (cBonus == 0) scoresAfterPoignee else {
-            scoresAfterPoignee.mapValues { (player, score) ->
-                when (player) {
-                    currentTaker        -> score + cBonus * numDefenders // taker collects/pays all
-                    details.partnerName -> score                         // partner unaffected
-                    else                -> score - cBonus                // each defender pays/receives
-                }
-            }
-        }
+        // Apply petit-au-bout, poignée, and chelem bonuses on top of the base scores.
+        // All the bonus logic lives in GameModels so it can be unit-tested without Compose.
+        val scores = applyBonuses(baseScores, contract, details, currentTaker, won, numDefenders)
 
         roundHistory.add(RoundResult(currentRound, currentTaker, contract, details, won, scores))
         currentRound++

@@ -176,6 +176,89 @@ fun chelemBonus(chelem: Chelem): Int = when (chelem) {
     Chelem.ANNOUNCED_NOT_REALIZED -> -200
 }
 
+// Applies all three bonus adjustments to a base score map and returns the final scores.
+//
+// The three bonuses — petit au bout, poignée, and chelem — each adjust the scores
+// after the base round result is computed by `computePlayerScores`. They are
+// applied sequentially, each building on the previous result.
+//
+// Why this lives here and not in GameScreen:
+//   The bonus logic is pure domain arithmetic — no UI or Compose code needed.
+//   Keeping it in GameModels lets us unit-test it on the JVM, just like the
+//   other scoring functions above.
+//
+// Parameters:
+//   baseScores   : score map from `computePlayerScores` (already zero-sum)
+//   contract     : the contract for this round (used to scale petit-au-bout)
+//   details      : all bonus flags collected from the round
+//   takerName    : display name of the taker
+//   won          : true if the taker won (determines poignée direction)
+//   numDefenders : number of defending players (2 in 3-player, 3 in 4- or 5-player)
+//
+// Returns a new map with all three bonuses applied; the result is still zero-sum.
+fun applyBonuses(
+    baseScores: Map<String, Int>,
+    contract: Contract,
+    details: RoundDetails,
+    takerName: String,
+    won: Boolean,
+    numDefenders: Int
+): Map<String, Int> {
+
+    // ── Petit au bout ──────────────────────────────────────────────────────
+    // The bonus goes to whichever camp captured the Petit on the last trick,
+    // regardless of who won the round overall.
+    // Taker's camp = taker + partner; defenders' camp = everyone else.
+    val pabAmount = if (details.petitAuBout != null) petitAuBoutBonus(contract) else 0
+    // +1 if the achiever is in the taker's camp, -1 if they are a defender, 0 if nobody.
+    val pabSign = when (details.petitAuBout) {
+        null                -> 0
+        takerName,
+        details.partnerName -> +1   // taker's camp achieved it
+        else                -> -1   // defenders' camp achieved it
+    }
+    val scoresAfterPab = if (pabAmount == 0) baseScores else {
+        baseScores.mapValues { (player, score) ->
+            when (player) {
+                takerName           -> score + pabSign * pabAmount * numDefenders
+                details.partnerName -> score                        // partner unaffected
+                else                -> score - pabSign * pabAmount  // each defender
+            }
+        }
+    }
+
+    // ── Poignée (trump show) ───────────────────────────────────────────────
+    // The bonus always goes to the winning camp, regardless of who declared it.
+    //   taker won  → taker collects bonus from each defender
+    //   taker lost → each defender collects bonus from the taker
+    // The partner (5-player only) is not involved.
+    val pBonus = poigneeBonus(details.poignee, details.doublePoignee, details.triplePoignee)
+    val pSign  = if (won) 1 else -1
+    val scoresAfterPoignee = if (pBonus == 0) scoresAfterPab else {
+        scoresAfterPab.mapValues { (player, score) ->
+            when (player) {
+                takerName           -> score + pSign * pBonus * numDefenders
+                details.partnerName -> score                       // partner unaffected
+                else                -> score - pSign * pBonus      // each defender
+            }
+        }
+    }
+
+    // ── Chelem (grand slam) ────────────────────────────────────────────────
+    // The taker collects or pays a fixed amount from/to each defender.
+    // The partner (5-player only) is not involved.
+    val cBonus = chelemBonus(details.chelem)
+    return if (cBonus == 0) scoresAfterPoignee else {
+        scoresAfterPoignee.mapValues { (player, score) ->
+            when (player) {
+                takerName           -> score + cBonus * numDefenders  // taker collects/pays all
+                details.partnerName -> score                          // partner unaffected
+                else                -> score - cBonus                 // each defender pays/receives
+            }
+        }
+    }
+}
+
 // Stores the outcome of a single completed round.
 // `contract`     is null when the round was skipped (no contract announced).
 // `details`      is null when the round was skipped (there is nothing to score).
