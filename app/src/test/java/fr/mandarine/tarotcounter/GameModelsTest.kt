@@ -803,4 +803,102 @@ class GameModelsTest {
         // Zero-sum is the key invariant — every point the taker gains is paid by defenders.
         assertEquals(0, result.values.sum())
     }
+
+    // ── computeFinalTotals ────────────────────────────────────────────────────
+
+    @Test
+    fun `computeFinalTotals returns all zeros when there are no rounds`() {
+        val players = listOf("Alice", "Bob", "Charlie")
+        val totals = computeFinalTotals(players, emptyList())
+        assertEquals(mapOf("Alice" to 0, "Bob" to 0, "Charlie" to 0), totals)
+    }
+
+    @Test
+    fun `computeFinalTotals sums per-round scores correctly across multiple rounds`() {
+        // Round 1: Alice +50, Bob -25, Charlie -25
+        // Round 2: Alice -30, Bob +15, Charlie +15
+        // Expected: Alice +20, Bob -10, Charlie -10
+        val players = listOf("Alice", "Bob", "Charlie")
+        val history = listOf(
+            RoundResult(1, "Alice", Contract.GARDE, null, true,
+                mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)),
+            RoundResult(2, "Bob", Contract.PRISE, null, false,
+                mapOf("Alice" to -30, "Bob" to 15, "Charlie" to 15))
+        )
+        val totals = computeFinalTotals(players, history)
+        assertEquals(+20, totals["Alice"])
+        assertEquals(-10, totals["Bob"])
+        assertEquals(-10, totals["Charlie"])
+    }
+
+    @Test
+    fun `computeFinalTotals skipped rounds contribute zero to the total`() {
+        // Round 1 played: Alice +50, others -25
+        // Round 2 skipped: no change
+        val players = listOf("Alice", "Bob", "Charlie")
+        val history = listOf(
+            RoundResult(1, "Alice", Contract.GARDE, null, true,
+                mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)),
+            RoundResult(2, "Bob", null, null, null)  // skipped — playerScores defaults to emptyMap()
+        )
+        val totals = computeFinalTotals(players, history)
+        // Totals unchanged from the first round because the second was skipped.
+        assertEquals(+50, totals["Alice"])
+        assertEquals(-25, totals["Bob"])
+        assertEquals(-25, totals["Charlie"])
+    }
+
+    @Test
+    fun `computeFinalTotals result is zero-sum (sum of all totals equals zero)`() {
+        val players = listOf("Alice", "Bob", "Charlie")
+        val history = listOf(
+            RoundResult(1, "Alice", Contract.GARDE, null, true,
+                mapOf("Alice" to 100, "Bob" to -50, "Charlie" to -50)),
+            RoundResult(2, "Bob", Contract.PRISE, null, false,
+                mapOf("Alice" to -25, "Bob" to 50, "Charlie" to -25))
+        )
+        val totals = computeFinalTotals(players, history)
+        assertEquals(0, totals.values.sum())
+    }
+
+    // ── findWinners ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `findWinners returns empty list when totals map is empty`() {
+        val winners = findWinners(emptyMap())
+        assertTrue("Empty totals should produce no winners", winners.isEmpty())
+    }
+
+    @Test
+    fun `findWinners returns the single player with the highest score`() {
+        // Alice has the most points.
+        val totals = mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)
+        val winners = findWinners(totals)
+        assertEquals(listOf("Alice"), winners)
+    }
+
+    @Test
+    fun `findWinners returns all tied players when two share the highest score`() {
+        // Alice and Bob are tied; Charlie is behind.
+        val totals = mapOf("Alice" to 10, "Bob" to 10, "Charlie" to -20)
+        val winners = findWinners(totals)
+        assertEquals(2, winners.size)
+        assertTrue("Alice should be a co-winner", "Alice" in winners)
+        assertTrue("Bob should be a co-winner", "Bob" in winners)
+    }
+
+    @Test
+    fun `findWinners returns all players when everyone has the same score`() {
+        // All tied at zero (e.g. no rounds played yet).
+        val totals = mapOf("Alice" to 0, "Bob" to 0, "Charlie" to 0)
+        val winners = findWinners(totals)
+        assertEquals(3, winners.size)
+    }
+
+    @Test
+    fun `findWinners works correctly with a single player`() {
+        val totals = mapOf("Alice" to 42)
+        val winners = findWinners(totals)
+        assertEquals(listOf("Alice"), winners)
+    }
 }

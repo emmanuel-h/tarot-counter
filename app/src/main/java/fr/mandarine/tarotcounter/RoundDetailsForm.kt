@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 // onBack:        called when the user taps "← Change contract" to go back.
 // onShowHistory: when non-null, shows a History button in the header that calls this lambda.
 //                Pass null when there is no history yet (i.e. this is the first round).
+// onEndGame:     called when the user taps "End Game" — navigates to the final score screen.
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RoundDetailsForm(
@@ -49,6 +51,7 @@ fun RoundDetailsForm(
     onConfirm: (RoundDetails) -> Unit,
     onBack: () -> Unit,
     onShowHistory: (() -> Unit)? = null,
+    onEndGame: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // ── Form state ────────────────────────────────────────────────────────────
@@ -91,21 +94,21 @@ fun RoundDetailsForm(
             style = MaterialTheme.typography.headlineSmall
         )
 
-        // History button — shown when at least one round has been recorded.
-        // It sits right-aligned below the header, mirroring its placement in step 1.
-        // When null, we keep the same total spacing as the original Spacer(24.dp).
-        if (onShowHistory != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
+        // Button row: History (if available) and End Game (always shown).
+        // Both sit right-aligned below the header, mirroring their placement in step 1.
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (onShowHistory != null) {
                 HistoryButton(onClick = onShowHistory)
+                Spacer(modifier = Modifier.width(8.dp))
             }
-            Spacer(modifier = Modifier.height(16.dp))
-        } else {
-            Spacer(modifier = Modifier.height(24.dp))
+            EndGameButton(onClick = onEndGame)
         }
+        Spacer(modifier = Modifier.height(16.dp))
 
         // ── Bouts (oudlers) ───────────────────────────────────────────────────
         SectionLabel("Number of bouts (oudlers)")

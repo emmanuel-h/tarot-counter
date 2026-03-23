@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -35,10 +37,15 @@ import androidx.compose.ui.unit.dp
 // GameScreen handles the full round-by-round flow of a Tarot game.
 //
 // playerNames: the list of players set up on the previous screen.
-// modifier: passed in from the parent (e.g. Scaffold padding).
+// onEndGame:   called when the user taps "End Game" from any step.
+//              In practice this navigates to the FinalScoreScreen via the showFinalScore flag
+//              inside this composable — but the callback is also forwarded from MainActivity
+//              for the "New Game" action on FinalScoreScreen.
+// modifier:    passed in from the parent (e.g. Scaffold padding).
 @Composable
 fun GameScreen(
     playerNames: List<String>,
+    onEndGame: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Current round number — increases by 1 each time a round is completed.
@@ -60,6 +67,10 @@ fun GameScreen(
     // Controls whether the score history table is shown instead of the game screen.
     // Toggled by the bar-chart icon button in the scoreboard section.
     var showScoreHistory by remember { mutableStateOf(false) }
+
+    // Controls whether the final score screen is shown.
+    // Set to true when the user taps "End Game" from any step.
+    var showFinalScore by remember { mutableStateOf(false) }
 
     // Returns the display name for a player: their typed name, or "Player N" if blank.
     fun displayName(index: Int): String =
@@ -115,11 +126,24 @@ fun GameScreen(
 
     // ── Step routing ─────────────────────────────────────────────────────────
     // Priority order:
-    //   1. Score history table (user tapped the bar-chart icon)
-    //   2. Round details form  (user selected a contract in step 1)
-    //   3. Contract selection  (default step 1 view)
+    //   1. Final score screen  (user tapped "End Game")
+    //   2. Score history table (user tapped the bar-chart icon)
+    //   3. Round details form  (user selected a contract in step 1)
+    //   4. Contract selection  (default step 1 view)
 
-    // 1. Score history table.
+    // 1. Final score screen — shown when the user explicitly ends the game.
+    if (showFinalScore) {
+        FinalScoreScreen(
+            playerNames = displayNames,
+            roundHistory = roundHistory,
+            // "New Game" navigates back to the setup screen via the MainActivity callback.
+            onNewGame = onEndGame,
+            modifier = modifier
+        )
+        return  // stop here — don't render anything below
+    }
+
+    // 2. Score history table.
     if (showScoreHistory) {
         ScoreHistoryScreen(
             playerNames = displayNames,
@@ -130,7 +154,7 @@ fun GameScreen(
         return  // stop here — don't render anything below
     }
 
-    // 2. Details form (step 2).
+    // 3. Details form (step 2).
     val contract = selectedContract
     if (contract != null) {
         // Step 2: fill in bouts, points, and bonuses.
@@ -144,6 +168,7 @@ fun GameScreen(
             onConfirm     = { details -> recordPlayed(contract, details) },
             onBack        = { selectedContract = null },
             onShowHistory = if (roundHistory.isNotEmpty()) ({ showScoreHistory = true }) else null,
+            onEndGame     = { showFinalScore = true },
             modifier      = modifier
         )
         return  // stop here — don't render the column below
@@ -162,16 +187,20 @@ fun GameScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
-        // History button — pinned at the top so it is always visible without scrolling.
-        // Only shown once at least one round has been recorded (otherwise there's nothing to see).
-        if (roundHistory.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
+        // Button row pinned below the round header.
+        // - History: only shown once at least one round is recorded (nothing to see otherwise).
+        // - End Game: always shown so the user can leave at any point during the game.
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (roundHistory.isNotEmpty()) {
                 HistoryButton(onClick = { showScoreHistory = true })
+                Spacer(modifier = Modifier.width(8.dp))
             }
+            EndGameButton(onClick = { showFinalScore = true })
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -270,7 +299,7 @@ fun GameScreen(
     }
 }
 
-// ── Shared composable ─────────────────────────────────────────────────────────
+// ── Shared composables ────────────────────────────────────────────────────────
 
 // A tonal button with a bar-chart icon and "History" label.
 //
@@ -292,5 +321,23 @@ fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
         Text("History")
+    }
+}
+
+// A tonal button with a flag icon and "End Game" label.
+//
+// Shown at all times in both step 1 (contract selection) and step 2 (RoundDetailsForm)
+// so the user can stop the game at any point and review the final scores.
+// Uses `FilledTonalButton` so it has the same visual weight as the History button.
+@Composable
+fun EndGameButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    FilledTonalButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            imageVector = Icons.Default.Flag,
+            contentDescription = null,                    // "End Game" text label is sufficient
+            modifier = Modifier.size(ButtonDefaults.IconSize)
+        )
+        Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+        Text("End Game")
     }
 }

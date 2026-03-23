@@ -259,6 +259,40 @@ fun applyBonuses(
     }
 }
 
+// Computes each player's cumulative total across all rounds.
+//
+// This is a pure function (no Compose/UI dependencies) so it can be unit-tested
+// on the JVM and reused across multiple screens (e.g. ScoreHistoryScreen and FinalScoreScreen).
+//
+// Skipped rounds contribute 0 to every player's total because their `playerScores` is emptyMap().
+//
+// Example (2 rounds, 3 players):
+//   Round 1 → Alice +50, Bob −25, Charlie −25
+//   Round 2 → Alice −30, Bob +15, Charlie +15
+//   Result  → Alice +20, Bob −10, Charlie −10
+fun computeFinalTotals(
+    playerNames: List<String>,
+    roundHistory: List<RoundResult>
+): Map<String, Int> =
+    playerNames.associateWith { name ->
+        roundHistory.sumOf { it.playerScores.getOrDefault(name, 0) }
+    }
+
+// Returns the name(s) of the player(s) with the highest cumulative total.
+//
+// Returns an empty list when `totals` is empty (no players).
+// Returns multiple names when two or more players share the highest score (tie).
+//
+// Examples:
+//   {Alice: 50, Bob: -25, Charlie: -25} → ["Alice"]
+//   {Alice: 10, Bob: 10, Charlie: -20}  → ["Alice", "Bob"]   (tie)
+fun findWinners(totals: Map<String, Int>): List<String> {
+    val maxScore = totals.values.maxOrNull() ?: return emptyList()
+    return totals.entries
+        .filter { it.value == maxScore }
+        .map { it.key }
+}
+
 // Stores the outcome of a single completed round.
 // `contract`     is null when the round was skipped (no contract announced).
 // `details`      is null when the round was skipped (there is nothing to score).

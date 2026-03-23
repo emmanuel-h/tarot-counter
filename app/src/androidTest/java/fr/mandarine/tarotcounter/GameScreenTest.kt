@@ -314,4 +314,43 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Garde").performClick()
         composeTestRule.onNodeWithText("Partner (called by taker)").assertIsDisplayed()
     }
+
+    // ── Spec: End Game button (step 1) ────────────────────────────────────────
+
+    @Test
+    fun end_game_button_is_displayed_on_step_1_from_the_start() {
+        // "End Game" must be visible even before any round has been played.
+        launchGame()
+        composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_end_game_on_step_1_opens_final_score_screen() {
+        launchGame()
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+    }
+
+    @Test
+    fun end_game_button_is_displayed_on_step_2() {
+        // After selecting a contract, the End Game button should appear in the details form.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_end_game_on_step_2_opens_final_score_screen() {
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+    }
+
+    @Test
+    fun final_score_screen_shows_new_game_button() {
+        launchGame()
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
+    }
 }

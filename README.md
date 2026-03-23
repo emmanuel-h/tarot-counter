@@ -11,6 +11,7 @@ TarotCounter guides players through a game round by round:
 3. **Scoring details** — enter bouts, points scored, partner (5-player), and any bonuses
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first
 5. **Score history table** — tap the bar-chart icon next to "Scores" to see a round-by-round table of cumulative scores for every player
+6. **End Game / Final Score** — tap "End Game" at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted), and a "New Game" button
 
 The app automatically rotates the taker each round, determines win/loss, and computes each player's score for the round.
 
@@ -61,9 +62,10 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── Navigation.kt          # Screen enum (SETUP / GAME)
 ├── GameModels.kt          # Data models & pure game logic (no Android deps)
 ├── LandingScreen.kt       # Player setup UI
-├── GameScreen.kt          # Round management, taker rotation, history
+├── GameScreen.kt          # Round management, taker rotation, history, End Game button
 ├── RoundDetailsForm.kt    # Scoring details form
 ├── ScoreHistoryScreen.kt  # Round-by-round cumulative score table
+├── FinalScoreScreen.kt    # End-of-game results: winner card + full score table
 └── ui/theme/              # Material 3 theme, colors, typography
 ```
 
@@ -112,11 +114,12 @@ app/src/main/java/fr/mandarine/tarotcounter/
 
 | Test file | What it covers |
 |---|---|
-| `GameModelsTest.kt` | Data models, win condition, score calculation, player score distribution |
+| `GameModelsTest.kt` | Data models, win condition, score calculation, player score distribution, `computeFinalTotals`, `findWinners` |
 | `TakerRotationTest.kt` | Taker rotation formula for 3–5 players |
 | `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, navigation |
-| `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation |
+| `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history table: column headers, cumulative totals, back navigation |
+| `FinalScoreScreenTest.kt` | Final score screen: winner card, tie detection, score table, New Game navigation |
 
 ## Project Structure
 
@@ -130,7 +133,9 @@ TarotCounter/
 │   └── build.gradle.kts
 ├── docs/
 │   ├── game-flow.md        # Game mechanics specification
-│   └── player-setup.md     # Setup screen behaviour
+│   ├── player-setup.md     # Setup screen behaviour
+│   ├── score-history.md    # Score history table
+│   └── final-score.md      # Final score screen: winner card, End Game flow
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
 ├── CLAUDE.md               # AI assistant instructions
@@ -144,3 +149,4 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
 - [`docs/score-history.md`](docs/score-history.md) — score history table: layout, navigation, scrolling
+- [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation

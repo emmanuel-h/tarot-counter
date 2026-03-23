@@ -57,6 +57,9 @@ class MainActivity : ComponentActivity() {
                         )
                         Screen.GAME -> GameScreen(
                             playerNames = confirmedPlayers,
+                            // "End Game" → FinalScoreScreen → "New Game" calls this lambda,
+                            // which resets the app back to the setup screen.
+                            onEndGame = { currentScreen = Screen.SETUP },
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
