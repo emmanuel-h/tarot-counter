@@ -14,6 +14,8 @@ The game can be ended at any time — even before the first round is played.
 ## Layout
 
 ```
+← (back arrow)
+
 [ Trophy icon ]
    Game Over
 
@@ -28,7 +30,8 @@ Round | Alice  | Bob   | Charlie
   2   |  +200  |  -100 |  -100
         ↑ winner column highlighted
 
-[          New Game          ]
+[          New Game          ]   ← filled button (primary action)
+[        Back to game        ]   ← outlined button (secondary action)
 ```
 
 ## Winner Determination
@@ -53,7 +56,13 @@ The **winner's column** is highlighted with a `secondaryContainer` tint and bold
 
 ## Navigation
 
-- **New Game** — navigates back to the setup screen (`LandingScreen`). All game state is discarded.
+| Action | Where | What it does |
+|---|---|---|
+| Back arrow (top-left) | `IconButton` | Returns to the active game round. No state is lost. |
+| **Back to game** | `OutlinedButton` (bottom) | Same as the back arrow — resumes the current game. |
+| **New Game** | `Button` (bottom, primary) | Navigates to the setup screen. All game state is discarded. |
+
+The back arrow and "Back to game" button serve the same purpose: letting the user dismiss the final score screen if they tapped **End Game** by mistake. Two entry points are provided because the arrow (top) is immediately visible, while the button (bottom) is easier to reach after scrolling down through the score table.
 
 ## Related Files
 
