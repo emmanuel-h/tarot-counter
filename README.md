@@ -12,6 +12,7 @@ TarotCounter guides players through a game round by round:
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first
 5. **Score history table** — tap the bar-chart icon next to "Scores" to see a round-by-round table of cumulative scores for every player
 6. **End Game / Final Score** — tap "End Game" at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted), and a "New Game" button
+7. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results the next time the app is opened
 
 The app automatically rotates the taker each round, determines win/loss, and computes each player's score for the round.
 
@@ -58,10 +59,13 @@ Single-module Jetpack Compose app — all source lives in `:app` under `fr.manda
 
 ```
 app/src/main/java/fr/mandarine/tarotcounter/
-├── MainActivity.kt        # Entry point, top-level navigation state
+├── MainActivity.kt        # Entry point, top-level navigation state, ViewModel wiring
 ├── Navigation.kt          # Screen enum (SETUP / GAME)
 ├── GameModels.kt          # Data models & pure game logic (no Android deps)
-├── LandingScreen.kt       # Player setup UI
+├── SavedGame.kt           # Serializable snapshot of a completed game
+├── GameStorage.kt         # DataStore read/write + JSON serialization
+├── GameViewModel.kt       # Exposes past games as StateFlow, fires save coroutines
+├── LandingScreen.kt       # Player setup UI + Past Games list
 ├── GameScreen.kt          # Round management, taker rotation, history, End Game button
 ├── RoundDetailsForm.kt    # Scoring details form
 ├── ScoreHistoryScreen.kt  # Round-by-round cumulative score table
@@ -69,9 +73,9 @@ app/src/main/java/fr/mandarine/tarotcounter/
 └── ui/theme/              # Material 3 theme, colors, typography
 ```
 
-**No ViewModel / state management library** — state is held in composables with `remember`/`mutableStateOf`. This is intentional: the app is small and local state is sufficient.
-
 **Key design choice**: `GameModels.kt` contains only pure Kotlin with no Android or Compose imports, making it fully unit-testable on the JVM.
+
+**Persistence**: completed games are saved to **DataStore** as JSON (via `kotlinx.serialization`). A `GameViewModel` holds the `StateFlow<List<SavedGame>>` that the setup screen observes.
 
 ## Tech Stack
 
@@ -80,6 +84,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 | Language | Kotlin 2.2.10 |
 | UI | Jetpack Compose (BOM 2024.09.00) |
 | Design system | Material 3 (dynamic color on Android 12+) |
+| Persistence | DataStore 1.1.1 + kotlinx.serialization 1.7.3 |
 | Min SDK | 24 (Android 7.0) |
 | Target SDK | 36 (Android 15) |
 | Build | AGP 9.1.0, Gradle 9.3.1, Java 11 |
@@ -132,10 +137,11 @@ TarotCounter/
 │   │   └── androidTest/    # Instrumented tests (device/emulator)
 │   └── build.gradle.kts
 ├── docs/
-│   ├── game-flow.md        # Game mechanics specification
-│   ├── player-setup.md     # Setup screen behaviour
-│   ├── score-history.md    # Score history table
-│   └── final-score.md      # Final score screen: winner card, End Game flow
+│   ├── game-flow.md          # Game mechanics specification
+│   ├── player-setup.md       # Setup screen behaviour
+│   ├── score-history.md      # Score history table
+│   ├── final-score.md        # Final score screen: winner card, End Game flow
+│   └── game-persistence.md   # How completed games are saved and displayed
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
 ├── CLAUDE.md               # AI assistant instructions
@@ -150,3 +156,4 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
 - [`docs/score-history.md`](docs/score-history.md) — score history table: layout, navigation, scrolling
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
+- [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen
