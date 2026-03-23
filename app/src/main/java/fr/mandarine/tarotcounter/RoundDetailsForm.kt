@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -29,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
@@ -80,10 +84,21 @@ fun RoundDetailsForm(
     // Chelem outcome — defaults to NONE (no grand slam).
     var chelem by remember { mutableStateOf(Chelem.NONE) }
 
+    // Used to hide the software keyboard programmatically when the user taps "Done".
+    // `LocalSoftwareKeyboardController.current` gives us a handle to the keyboard
+    // from inside a composable without needing a View reference.
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     // ── Layout ────────────────────────────────────────────────────────────────
     Column(
         modifier = modifier
             .fillMaxSize()
+            // imePadding() adds bottom padding equal to the current keyboard height.
+            // This ensures the content above the keyboard remains scrollable —
+            // without it, the keyboard would overlap the lower part of the form.
+            // It must come before verticalScroll so the scroll area itself shrinks
+            // when the keyboard is open, rather than the keyboard covering it.
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -139,8 +154,19 @@ fun RoundDetailsForm(
                     pointsText = input
                 }
             },
-            // keyboardType = Number shows a numeric keyboard on the phone.
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            // keyboardType = Number shows a numeric keyboard.
+            // imeAction = Done replaces the Enter key with a "Done" (✓) action button,
+            // giving the user a one-tap way to close the keyboard after entering the score.
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction    = ImeAction.Done
+            ),
+            // When the user taps the "Done" button on the keyboard, hide the keyboard.
+            // This lets them see the rest of the form and tap chips without the keyboard
+            // blocking the screen.
+            keyboardActions = KeyboardActions(
+                onDone = { keyboardController?.hide() }
+            ),
             placeholder = { Text("0") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.4f)
