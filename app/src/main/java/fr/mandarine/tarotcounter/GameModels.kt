@@ -1,6 +1,7 @@
 package fr.mandarine.tarotcounter
 
 import kotlin.math.abs
+import kotlinx.serialization.Serializable
 
 // The contracts a player can announce in French Tarot, ordered from weakest to strongest.
 // Each entry has a `displayName` shown in the UI and a `multiplier` used in score calculation.
@@ -8,6 +9,10 @@ import kotlin.math.abs
 //   GARDE    × 2
 //   GARDE_SANS   × 4  (taker bets they need no help from the dog)
 //   GARDE_CONTRE × 6  (taker gives the dog to the defenders)
+//
+// @Serializable tells the Kotlin compiler to generate JSON read/write code for this enum.
+// Without it, the serialization library would not know how to save/load Contract values.
+@Serializable
 enum class Contract(val displayName: String, val multiplier: Int) {
     PRISE("Prise", 1),
     GARDE("Garde", 2),
@@ -17,6 +22,7 @@ enum class Contract(val displayName: String, val multiplier: Int) {
 
 // The possible chelem (grand slam) outcomes for a round.
 // A chelem means winning every single trick.
+@Serializable
 enum class Chelem(val displayName: String) {
     NONE("None"),
     ANNOUNCED_REALIZED("Announced & realized"),
@@ -31,6 +37,7 @@ enum class Chelem(val displayName: String) {
 //
 // `partnerName` is only relevant in a 5-player game: the taker calls one other player as their
 // silent partner. It is null for 3- and 4-player games.
+@Serializable
 data class RoundDetails(
     val bouts: Int,             // number of oudlers (0–3) in the taker's tricks
     val points: Int,            // points scored by the taker (0–91)
@@ -299,6 +306,7 @@ fun findWinners(totals: Map<String, Int>): List<String> {
 // `won`          is null when skipped, true if the taker won, false if they lost.
 // `playerScores` maps each player's display name to their score for this round.
 //                It is an empty map for skipped rounds.
+@Serializable
 data class RoundResult(
     val roundNumber: Int,
     val takerName: String,

@@ -7,12 +7,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
+import java.util.UUID
 
 // MainActivity is the entry point of every Android app.
 // It extends ComponentActivity, which is the base class for activities
@@ -33,6 +36,16 @@ class MainActivity : ComponentActivity() {
             // Wraps the whole app in our custom theme (colors, fonts, etc.)
             TarotCounterTheme {
 
+                // `viewModel()` retrieves (or creates) the GameViewModel for this activity.
+                // The ViewModel survives screen rotations and is destroyed only when the
+                // activity is permanently finished (e.g. user presses the system back button).
+                val gameViewModel: GameViewModel = viewModel()
+
+                // `collectAsState()` subscribes to the pastGames StateFlow and converts it
+                // into Compose state. Whenever a new game is saved, `pastGames` updates
+                // automatically and triggers a recomposition of LandingScreen.
+                val pastGames by gameViewModel.pastGames.collectAsState()
+
                 // Track which screen is visible. `by` delegation means we read/write
                 // `currentScreen` directly instead of `currentScreen.value`.
                 var currentScreen by remember { mutableStateOf(Screen.SETUP) }
@@ -48,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     when (currentScreen) {
                         Screen.SETUP -> LandingScreen(
                             modifier = Modifier.padding(innerPadding),
+                            pastGames = pastGames,
                             // Lambda called when the user presses "Start Game".
                             // It receives the player names and triggers the screen switch.
                             onStartGame = { names ->
@@ -57,8 +71,10 @@ class MainActivity : ComponentActivity() {
                         )
                         Screen.GAME -> GameScreen(
                             playerNames = confirmedPlayers,
-                            // "End Game" → FinalScoreScreen → "New Game" calls this lambda,
-                            // which resets the app back to the setup screen.
+                            // Called when the user presses "New Game" on the FinalScoreScreen.
+                            // Receives the completed game data so it can be persisted.
+                            onSaveGame = { game -> gameViewModel.saveGame(game) },
+                            // Resets the app back to the setup screen after saving.
                             onEndGame = { currentScreen = Screen.SETUP },
                             modifier = Modifier.padding(innerPadding)
                         )

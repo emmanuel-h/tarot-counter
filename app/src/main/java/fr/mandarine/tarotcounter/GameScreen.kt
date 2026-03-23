@@ -33,18 +33,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import java.util.UUID
 
 // GameScreen handles the full round-by-round flow of a Tarot game.
 //
 // playerNames: the list of players set up on the previous screen.
-// onEndGame:   called when the user taps "End Game" from any step.
-//              In practice this navigates to the FinalScoreScreen via the showFinalScore flag
-//              inside this composable — but the callback is also forwarded from MainActivity
-//              for the "New Game" action on FinalScoreScreen.
+// onSaveGame:  called with the completed game data when the user presses "New Game".
+//              The caller (MainActivity) forwards this to GameViewModel which persists it.
+// onEndGame:   called after saving; navigates back to the setup screen.
 // modifier:    passed in from the parent (e.g. Scaffold padding).
 @Composable
 fun GameScreen(
     playerNames: List<String>,
+    onSaveGame: (SavedGame) -> Unit = {},
     onEndGame: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -138,8 +139,24 @@ fun GameScreen(
             roundHistory = roundHistory,
             // "Back to game" dismisses the final score screen and returns to the active round.
             onBack    = { showFinalScore = false },
-            // "New Game" navigates back to the setup screen via the MainActivity callback.
-            onNewGame = onEndGame,
+            // "New Game": save the game then navigate to the setup screen.
+            // We only save if at least one round was played (nothing to record otherwise).
+            onNewGame = {
+                if (roundHistory.isNotEmpty()) {
+                    // Build the SavedGame snapshot from the current game session.
+                    // UUID.randomUUID() generates a universally unique identifier so every
+                    // saved game can be told apart, even if played on the same day.
+                    val savedGame = SavedGame(
+                        id           = UUID.randomUUID().toString(),
+                        datestamp    = System.currentTimeMillis(),
+                        playerNames  = displayNames,
+                        rounds       = roundHistory.toList(),
+                        finalScores  = computeFinalTotals(displayNames, roundHistory)
+                    )
+                    onSaveGame(savedGame)
+                }
+                onEndGame()
+            },
             modifier  = modifier
         )
         return  // stop here — don't render anything below

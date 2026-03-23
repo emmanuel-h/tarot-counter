@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    // Generates JSON serialization code for classes annotated with @Serializable.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -49,6 +51,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
+    // JSON serialization — converts SavedGame / RoundResult to/from strings for storage.
+    implementation(libs.kotlinx.serialization.json)
+    // DataStore — persists key-value data on the device (replaces SharedPreferences).
+    implementation(libs.androidx.datastore.preferences)
+    // ViewModel for Compose — lets us call viewModel() inside a Composable function.
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
