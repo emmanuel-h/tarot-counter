@@ -136,16 +136,37 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Resolve display names: blank fields fall back to "Player N" (same logic as GameScreen).
+        // This ensures that leaving two fields blank is treated as a duplicate ("Player 1" twice).
+        val resolvedNames = playerNames.mapIndexed { i, name -> name.ifBlank { "Player ${i + 1}" } }
+
+        // Build a set of lower-cased names to detect duplicates case-insensitively.
+        // `lowerNames[i]` is the resolved name for player i, lowercased.
+        val lowerNames = resolvedNames.map { it.lowercase() }
+
+        // `duplicateFlags[i]` is true when the same resolved name appears more than once.
+        // We count occurrences in `lowerNames`; if count > 1 the slot is a duplicate.
+        val duplicateFlags = lowerNames.map { name -> lowerNames.count { it == name } > 1 }
+
+        // The button is disabled and a warning is shown whenever any duplicate exists.
+        val hasDuplicates = duplicateFlags.any { it }
+
         // Loop over each player slot and render a text field for their name.
         // `playerNames.indices` gives us 0, 1, 2 (or up to 4 for 5 players).
         for (i in playerNames.indices) {
             // OutlinedTextField is a Material Design text input with a visible border.
             // `value` is the current text; `onValueChange` updates it when the user typed.
+            // `isError` turns the border red when this slot's name conflicts with another.
+            // `supportingText` shows a small hint below the field (only when there is an error).
             OutlinedTextField(
                 value = playerNames[i],
                 onValueChange = { playerNames[i] = it }, // `it` is the new string the user typed
                 label = { Text("Player ${i + 1}") },
                 singleLine = true,                        // prevent multi-line input
+                isError = duplicateFlags[i],
+                supportingText = if (duplicateFlags[i]) {
+                    { Text("Name already used") }
+                } else null,
                 modifier = Modifier
                     .fillMaxWidth(0.8f)                   // 80% of screen width
                     .padding(vertical = 4.dp)
@@ -157,8 +178,10 @@ fun LandingScreen(
         // "Start Game" button. Tapping it calls `onStartGame` with a snapshot of the
         // current names. `toList()` converts the mutable state list to a regular
         // immutable List<String> so it's safe to pass to another screen.
+        // `enabled = !hasDuplicates` prevents starting a game when names clash.
         Button(
             onClick = { onStartGame(playerNames.toList()) },
+            enabled = !hasDuplicates,
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text("Start Game")
