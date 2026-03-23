@@ -12,7 +12,8 @@ TarotCounter guides players through a game round by round:
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first
 5. **Score history table** — tap the bar-chart icon next to "Scores" to see a round-by-round table of cumulative scores for every player
 6. **End Game / Final Score** — tap "End Game" at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted), and a "New Game" button
-7. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results the next time the app is opened
+7. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
+8. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results
 
 The app automatically rotates the taker each round, determines win/loss, and computes each player's score for the round.
 

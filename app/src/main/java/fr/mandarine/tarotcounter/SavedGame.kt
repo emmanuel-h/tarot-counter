@@ -21,3 +21,21 @@ data class SavedGame(
     val rounds: List<RoundResult>,
     val finalScores: Map<String, Int>
 )
+
+// InProgressGame captures the state of a game that has not been ended yet.
+// It is written to DataStore after every round so that if the app is closed,
+// the game can be resumed exactly where it left off.
+//
+//   playerNames   : display names used during the game (already resolved from raw input).
+//   currentRound  : the round number that would be played next (always ≥ 2 after the
+//                   first round, because saving happens after incrementing).
+//   startingIndex : the index into playerNames of the player who took first in round 1.
+//                   Needed to restore the taker-rotation formula correctly.
+//   rounds        : all rounds completed so far, in chronological order.
+@Serializable
+data class InProgressGame(
+    val playerNames: List<String>,
+    val currentRound: Int,
+    val startingIndex: Int,
+    val rounds: List<RoundResult>
+)

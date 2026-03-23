@@ -29,6 +29,10 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 // `stringPreferencesKey` wraps the name in a type-safe key object for DataStore.
 private val GAMES_KEY = stringPreferencesKey("saved_games")
 
+// The key under which the current in-progress game is stored.
+// There is at most one in-progress game at a time; it is a single JSON object (not an array).
+private val IN_PROGRESS_KEY = stringPreferencesKey("in_progress_game")
+
 // How many past games to keep on the device.
 // Older games beyond this limit are dropped when a new game is saved.
 private const val MAX_SAVED_GAMES = 20
@@ -63,6 +67,36 @@ class GameStorage(private val context: Context) {
                     emptyList()
                 }
             }
+
+    // Returns a Flow that emits the current in-progress game, or null if there is none.
+    // The emission pattern is the same as loadGames(): it re-emits whenever DataStore changes.
+    fun loadInProgressGame(): Flow<InProgressGame?> =
+        context.dataStore.data
+            .catch { emit(emptyPreferences()) }
+            .map { prefs ->
+                val raw = prefs[IN_PROGRESS_KEY] ?: return@map null
+                try {
+                    json.decodeFromString<InProgressGame>(raw)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+    // Overwrites the in-progress game with the latest state.
+    // Called after every round so the saved state is always up to date.
+    suspend fun saveInProgressGame(game: InProgressGame) {
+        context.dataStore.edit { prefs ->
+            prefs[IN_PROGRESS_KEY] = json.encodeToString(game)
+        }
+    }
+
+    // Removes the in-progress game from DataStore.
+    // Called when the game is explicitly ended (New Game) or a fresh game is started.
+    suspend fun clearInProgressGame() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(IN_PROGRESS_KEY)
+        }
+    }
 
     // Prepends `game` to the saved games list and persists it to disk.
     //

@@ -35,20 +35,22 @@ import java.util.Date
 import java.util.Locale
 
 // LandingScreen lets the user configure how many players there are and enter their names.
-// It also shows a list of previously completed games loaded from device storage.
+// It also shows:
+//   - a "Resume Game" card (if there is an unfinished game saved from a previous session)
+//   - a "Past Games" list at the bottom (if any games have been completed)
 //
-// onStartGame: a callback (lambda) invoked when the user presses "Start Game".
-//   It receives the finalized list of player names as a List<String>.
-//   `(List<String>) -> Unit` = a function that takes a List<String> and returns nothing.
-//   The default `{}` means "do nothing" — useful for the @Preview below.
-//
-// pastGames: the list of completed games loaded from DataStore. Defaults to empty so the
-//   @Preview below and any test that doesn't need history can omit it.
+// onStartGame:     lambda called when the user presses "Start Game" with a list of names.
+// onResumeGame:    lambda called when the user taps "Resume" — passes the saved state back
+//                  to MainActivity so GameScreen can be initialized from it.
+// inProgressGame:  a game that was interrupted mid-session, or null if there is none.
+// pastGames:       list of completed games; defaults to empty for the @Preview below.
 @Composable
 fun LandingScreen(
     modifier: Modifier = Modifier,
+    inProgressGame: InProgressGame? = null,
     pastGames: List<SavedGame> = emptyList(),
-    onStartGame: (List<String>) -> Unit = {}
+    onStartGame: (List<String>) -> Unit = {},
+    onResumeGame: (InProgressGame) -> Unit = {}
 ) {
     // `remember` keeps a value alive across recompositions (UI redraws).
     // `mutableIntStateOf` creates an integer that, when changed, triggers a redraw.
@@ -80,6 +82,18 @@ fun LandingScreen(
             text = "Compteur de points",
             style = MaterialTheme.typography.headlineLarge
         )
+
+        // ── Resume card ───────────────────────────────────────────────────────
+        // Shown prominently at the top when the user closed the app mid-game.
+        if (inProgressGame != null) {
+            Spacer(modifier = Modifier.height(24.dp))
+            ResumeGameCard(
+                game = inProgressGame,
+                onResume = { onResumeGame(inProgressGame) }
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider()
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -167,6 +181,58 @@ fun LandingScreen(
             for (game in pastGames) {
                 PastGameCard(game = game)
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+// ResumeGameCard is shown when there is an unfinished game saved from a previous session.
+//
+// It uses `primaryContainer` as its background to stand out from the "Past Games" cards
+// below, signalling that this is an active action rather than passive history.
+//
+// Tapping "Resume" calls onResume, which navigates straight into GameScreen with
+// the saved state (player names, round history, starting index).
+@Composable
+private fun ResumeGameCard(game: InProgressGame, onResume: () -> Unit) {
+    val roundsPlayed = game.rounds.size
+    val roundLabel = if (roundsPlayed == 1) "1 round played" else "$roundsPlayed rounds played"
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "Resume Game",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                // Show which players are in the game.
+                text = game.playerNames.joinToString(", "),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                // Show how far the game has progressed, e.g. "Round 4 · 3 rounds played".
+                text = "Round ${game.currentRound} · $roundLabel",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onResume,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Resume")
             }
         }
     }

@@ -41,18 +41,23 @@ class MainActivity : ComponentActivity() {
                 // activity is permanently finished (e.g. user presses the system back button).
                 val gameViewModel: GameViewModel = viewModel()
 
-                // `collectAsState()` subscribes to the pastGames StateFlow and converts it
-                // into Compose state. Whenever a new game is saved, `pastGames` updates
-                // automatically and triggers a recomposition of LandingScreen.
-                val pastGames by gameViewModel.pastGames.collectAsState()
+                // `collectAsState()` subscribes to these StateFlows and converts them into
+                // Compose state. Any DataStore update automatically triggers a recomposition.
+                val pastGames      by gameViewModel.pastGames.collectAsState()
+                val inProgressGame by gameViewModel.inProgressGame.collectAsState()
 
                 // Track which screen is visible. `by` delegation means we read/write
                 // `currentScreen` directly instead of `currentScreen.value`.
                 var currentScreen by remember { mutableStateOf(Screen.SETUP) }
 
-                // The finalized player names passed to the game once "Start Game" is pressed.
-                // We keep a separate copy so the game isn't affected if the setup state changes.
+                // The finalized player names passed to the game once "Start Game" is pressed
+                // (or derived from the saved in-progress state when resuming).
                 var confirmedPlayers by remember { mutableStateOf(listOf<String>()) }
+
+                // The in-progress game to restore from, set when the user taps "Resume".
+                // Null for a fresh game. Stored in `remember` so it survives recompositions
+                // but is not persisted (the ViewModel's StateFlow is the authoritative source).
+                var gameToResume by remember { mutableStateOf<InProgressGame?>(null) }
 
                 // Scaffold provides the basic Material Design page structure.
                 // It handles padding so our content doesn't go under system bars.
@@ -60,22 +65,38 @@ class MainActivity : ComponentActivity() {
 
                     when (currentScreen) {
                         Screen.SETUP -> LandingScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            pastGames = pastGames,
-                            // Lambda called when the user presses "Start Game".
-                            // It receives the player names and triggers the screen switch.
+                            modifier       = Modifier.padding(innerPadding),
+                            pastGames      = pastGames,
+                            inProgressGame = inProgressGame,
+                            // Start a fresh game: clear any leftover in-progress state so
+                            // the resume card does not appear after the new game starts.
                             onStartGame = { names ->
                                 confirmedPlayers = names
+                                gameToResume = null
+                                gameViewModel.clearInProgressGame()
+                                currentScreen = Screen.GAME
+                            },
+                            // Resume the interrupted game: restore state and navigate directly
+                            // to GameScreen without going through the setup form.
+                            onResumeGame = { game ->
+                                confirmedPlayers = game.playerNames
+                                gameToResume = game
                                 currentScreen = Screen.GAME
                             }
                         )
                         Screen.GAME -> GameScreen(
-                            playerNames = confirmedPlayers,
+                            playerNames     = confirmedPlayers,
+                            inProgressGame  = gameToResume,
+                            // Called after every round to keep DataStore in sync.
+                            onSaveProgress  = { game -> gameViewModel.saveInProgressGame(game) },
                             // Called when the user presses "New Game" on the FinalScoreScreen.
-                            // Receives the completed game data so it can be persisted.
-                            onSaveGame = { game -> gameViewModel.saveGame(game) },
+                            // saveGame() also clears the in-progress entry in one atomic step.
+                            onSaveGame      = { game -> gameViewModel.saveGame(game) },
                             // Resets the app back to the setup screen after saving.
-                            onEndGame = { currentScreen = Screen.SETUP },
+                            onEndGame = {
+                                gameToResume = null
+                                currentScreen = Screen.SETUP
+                            },
                             modifier = Modifier.padding(innerPadding)
                         )
                     }

@@ -37,28 +37,40 @@ import java.util.UUID
 
 // GameScreen handles the full round-by-round flow of a Tarot game.
 //
-// playerNames: the list of players set up on the previous screen.
-// onSaveGame:  called with the completed game data when the user presses "New Game".
-//              The caller (MainActivity) forwards this to GameViewModel which persists it.
-// onEndGame:   called after saving; navigates back to the setup screen.
-// modifier:    passed in from the parent (e.g. Scaffold padding).
+// playerNames:      the list of players set up on the previous screen.
+// inProgressGame:   if non-null, the screen restores from this saved state instead of
+//                   starting fresh (used when the user taps "Resume" on the setup screen).
+// onSaveProgress:   called after every completed or skipped round with the current state.
+//                   The caller (MainActivity) forwards this to GameViewModel which persists it.
+// onSaveGame:       called with the completed game data when the user presses "New Game".
+// onEndGame:        called after saving; navigates back to the setup screen.
+// modifier:         passed in from the parent (e.g. Scaffold padding).
 @Composable
 fun GameScreen(
     playerNames: List<String>,
+    inProgressGame: InProgressGame? = null,
+    onSaveProgress: (InProgressGame) -> Unit = {},
     onSaveGame: (SavedGame) -> Unit = {},
     onEndGame: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Current round number — increases by 1 each time a round is completed.
-    var currentRound by remember { mutableIntStateOf(1) }
+    // Current round number — restored from the saved state when resuming, otherwise 1.
+    var currentRound by remember { mutableIntStateOf(inProgressGame?.currentRound ?: 1) }
 
-    // Pick a random starting player index once when the game begins.
-    // `remember { ... }` without a key only runs its block on the very first composition,
-    // so this value stays fixed for the entire game session.
-    val startingIndex = remember { playerNames.indices.random() }
+    // The index of the player who takes first. Restored when resuming so the rotation
+    // continues seamlessly; chosen randomly for a fresh game.
+    // `remember { ... }` without a key runs only on the first composition, so this
+    // value stays fixed for the entire game session regardless of recompositions.
+    val startingIndex = remember { inProgressGame?.startingIndex ?: playerNames.indices.random() }
 
-    // Observable list of completed rounds — adding to it triggers a UI redraw.
-    val roundHistory = remember { mutableStateListOf<RoundResult>() }
+    // Observable list of completed rounds — populated from the saved state when resuming.
+    // `apply { }` runs the block on the new list and returns it, letting us fill it
+    // inline inside the `remember` block.
+    val roundHistory = remember {
+        mutableStateListOf<RoundResult>().apply {
+            inProgressGame?.rounds?.let { addAll(it) }
+        }
+    }
 
     // The contract chosen in step 1, waiting for details to be filled in step 2.
     // null = we are on step 1 (contract selection).
@@ -115,6 +127,16 @@ fun GameScreen(
         roundHistory.add(RoundResult(currentRound, currentTaker, contract, details, won, scores))
         currentRound++
         selectedContract = null  // return to step 1 for the next round
+
+        // Persist the current game state so it can be resumed if the app is closed.
+        // We save after incrementing currentRound so the restored state points to the
+        // correct next taker (the formula uses currentRound to derive the taker index).
+        onSaveProgress(InProgressGame(
+            playerNames   = displayNames,
+            currentRound  = currentRound,
+            startingIndex = startingIndex,
+            rounds        = roundHistory.toList()
+        ))
     }
 
     // Records a skipped round (no contract, no details) and advances.
@@ -123,6 +145,14 @@ fun GameScreen(
         roundHistory.add(RoundResult(currentRound, currentTaker, contract = null, details = null, won = null))
         currentRound++
         selectedContract = null
+
+        // Save progress after a skip just like after a played round.
+        onSaveProgress(InProgressGame(
+            playerNames   = displayNames,
+            currentRound  = currentRound,
+            startingIndex = startingIndex,
+            rounds        = roundHistory.toList()
+        ))
     }
 
     // ── Step routing ─────────────────────────────────────────────────────────
