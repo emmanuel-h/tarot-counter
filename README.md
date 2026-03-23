@@ -6,7 +6,7 @@ An Android app for tracking scores in **French Tarot**, a classic French trick-t
 
 TarotCounter guides players through a game round by round:
 
-1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names
+1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique
 2. **Contract selection** — the current taker picks their contract (or skips)
 3. **Scoring details** — enter bouts, points scored, partner (5-player), and any bonuses
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first
@@ -122,7 +122,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 |---|---|
 | `GameModelsTest.kt` | Data models, win condition, score calculation, player score distribution, `computeFinalTotals`, `findWinners` |
 | `TakerRotationTest.kt` | Taker rotation formula for 3–5 players |
-| `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, navigation |
+| `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, navigation, duplicate name validation |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history table: column headers, cumulative totals, back navigation |
 | `FinalScoreScreenTest.kt` | Final score screen: winner card, tie detection, score table, New Game navigation |
