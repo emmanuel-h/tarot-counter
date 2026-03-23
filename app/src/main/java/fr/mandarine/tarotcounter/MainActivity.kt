@@ -89,10 +89,11 @@ class MainActivity : ComponentActivity() {
                             inProgressGame  = gameToResume,
                             // Called after every round to keep DataStore in sync.
                             onSaveProgress  = { game -> gameViewModel.saveInProgressGame(game) },
-                            // Called when the user presses "New Game" on the FinalScoreScreen.
-                            // saveGame() also clears the in-progress entry in one atomic step.
+                            // Called when the user presses "End Game" (before FinalScoreScreen).
+                            // saveGame() persists the completed entry and clears in-progress.
                             onSaveGame      = { game -> gameViewModel.saveGame(game) },
-                            // Resets the app back to the setup screen after saving.
+                            // Called when the user presses "New Game" on FinalScoreScreen.
+                            // The game is already saved at this point — just navigate away.
                             onEndGame = {
                                 gameToResume = null
                                 currentScreen = Screen.SETUP

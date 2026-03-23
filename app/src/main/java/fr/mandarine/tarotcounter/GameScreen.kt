@@ -42,8 +42,10 @@ import java.util.UUID
 //                   starting fresh (used when the user taps "Resume" on the setup screen).
 // onSaveProgress:   called after every completed or skipped round with the current state.
 //                   The caller (MainActivity) forwards this to GameViewModel which persists it.
-// onSaveGame:       called with the completed game data when the user presses "New Game".
-// onEndGame:        called after saving; navigates back to the setup screen.
+// onSaveGame:       called with the completed game data when the user taps "End Game".
+//                   Saving happens at that moment — not when "New Game" is later pressed —
+//                   so the game is persisted even if the app is closed on the Final Score screen.
+// onEndGame:        called when the user presses "New Game"; navigates back to the setup screen.
 // modifier:         passed in from the parent (e.g. Scaffold padding).
 @Composable
 fun GameScreen(
@@ -155,6 +157,32 @@ fun GameScreen(
         ))
     }
 
+    // Saves the completed game and shows the Final Score screen.
+    //
+    // Called by both End Game buttons (step 1 and step 2). Saving here — rather than
+    // waiting for the user to press "New Game" — means the game is recorded even if
+    // the app is closed while the Final Score screen is visible.
+    //
+    // `onSaveGame` (implemented in GameViewModel) also clears the in-progress entry, so
+    // once the game is ended the resume card will not reappear unless new rounds are played.
+    //
+    // No-op save guard: if no rounds have been played yet there is nothing to record.
+    fun endGame() {
+        if (roundHistory.isNotEmpty()) {
+            // UUID.randomUUID() gives every saved game a unique identifier so entries from
+            // the same day or same players are still distinguishable in storage.
+            val savedGame = SavedGame(
+                id          = UUID.randomUUID().toString(),
+                datestamp   = System.currentTimeMillis(),
+                playerNames = displayNames,
+                rounds      = roundHistory.toList(),
+                finalScores = computeFinalTotals(displayNames, roundHistory)
+            )
+            onSaveGame(savedGame)
+        }
+        showFinalScore = true
+    }
+
     // ── Step routing ─────────────────────────────────────────────────────────
     // Priority order:
     //   1. Final score screen  (user tapped "End Game")
@@ -169,24 +197,9 @@ fun GameScreen(
             roundHistory = roundHistory,
             // "Back to game" dismisses the final score screen and returns to the active round.
             onBack    = { showFinalScore = false },
-            // "New Game": save the game then navigate to the setup screen.
-            // We only save if at least one round was played (nothing to record otherwise).
-            onNewGame = {
-                if (roundHistory.isNotEmpty()) {
-                    // Build the SavedGame snapshot from the current game session.
-                    // UUID.randomUUID() generates a universally unique identifier so every
-                    // saved game can be told apart, even if played on the same day.
-                    val savedGame = SavedGame(
-                        id           = UUID.randomUUID().toString(),
-                        datestamp    = System.currentTimeMillis(),
-                        playerNames  = displayNames,
-                        rounds       = roundHistory.toList(),
-                        finalScores  = computeFinalTotals(displayNames, roundHistory)
-                    )
-                    onSaveGame(savedGame)
-                }
-                onEndGame()
-            },
+            // "New Game" just navigates away — the game was already saved when the user
+            // pressed "End Game" (see endGame() above).
+            onNewGame = { onEndGame() },
             modifier  = modifier
         )
         return  // stop here — don't render anything below
@@ -217,7 +230,7 @@ fun GameScreen(
             onConfirm     = { details -> recordPlayed(contract, details) },
             onBack        = { selectedContract = null },
             onShowHistory = if (roundHistory.isNotEmpty()) ({ showScoreHistory = true }) else null,
-            onEndGame     = { showFinalScore = true },
+            onEndGame     = { endGame() },
             modifier      = modifier
         )
         return  // stop here — don't render the column below
@@ -249,7 +262,7 @@ fun GameScreen(
                 HistoryButton(onClick = { showScoreHistory = true })
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            EndGameButton(onClick = { showFinalScore = true })
+            EndGameButton(onClick = { endGame() })
         }
 
         Spacer(modifier = Modifier.height(16.dp))

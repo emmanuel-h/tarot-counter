@@ -14,13 +14,14 @@ The in-progress entry is cleared in two situations:
 - The user presses **New Game** on the Final Score screen (game is over → save as completed, clear in-progress).
 - The user fills in the setup form and presses **Start Game** (they are choosing to abandon the old game and start fresh).
 
-### Completed game (saved on "New Game")
+### Completed game (saved on "End Game")
 
-A completed `SavedGame` entry is written when the user presses **New Game** on the Final Score screen. This is intentional:
+A completed `SavedGame` entry is written the moment the user presses **End Game** — not when they later press **New Game**. This means:
 
-- Pressing **New Game** signals that the game is truly over — save it.
-- Pressing **Back to game** means the user wants to continue — do not save yet.
-- If the game is ended before any round is played (empty `roundHistory`), nothing is saved.
+- Closing the app while the Final Score screen is open still records the game in Past Games.
+- Pressing **New Game** afterwards just navigates to the setup screen; no second save occurs.
+- Pressing **Back to game** after End Game keeps the saved entry in Past Games and lets the player continue; if they press **End Game** again later, a new entry is created with the updated round history.
+- If no rounds were played when End Game is pressed, nothing is saved (nothing to record).
 
 ## What Is Stored
 

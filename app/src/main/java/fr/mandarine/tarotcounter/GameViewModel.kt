@@ -47,8 +47,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         )
 
     // Saves the completed game to the past-games list and clears the in-progress state.
-    // Both writes are performed sequentially in the same coroutine so the DataStore
-    // is never left in a state where the game appears both in-progress and completed.
+    //
+    // This is called when the user presses "End Game" (not "New Game"), so the game is
+    // persisted immediately — even if the app is closed while the Final Score screen is open.
+    // Clearing in-progress in the same coroutine ensures the DataStore is never left in a
+    // state where the same game appears both as in-progress and as completed.
     //
     // `viewModelScope.launch` starts a coroutine tied to the ViewModel's lifecycle:
     // if the ViewModel is cleared the coroutine is automatically cancelled,
