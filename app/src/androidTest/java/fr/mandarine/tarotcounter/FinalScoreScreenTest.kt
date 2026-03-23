@@ -3,6 +3,7 @@ package fr.mandarine.tarotcounter
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodes
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -34,9 +35,10 @@ class FinalScoreScreenTest {
 
     private val players = listOf("Alice", "Bob", "Charlie")
 
-    /** Launches FinalScoreScreen with the given history, capturing newGame events. */
+    /** Launches FinalScoreScreen with the given history, capturing callback events. */
     private fun launchFinal(
         roundHistory: List<RoundResult> = emptyList(),
+        onBack: () -> Unit = {},
         onNewGame: () -> Unit = {}
     ) {
         composeTestRule.setContent {
@@ -44,6 +46,7 @@ class FinalScoreScreenTest {
                 FinalScoreScreen(
                     playerNames  = players,
                     roundHistory = roundHistory,
+                    onBack       = onBack,
                     onNewGame    = onNewGame
                 )
             }
@@ -186,6 +189,40 @@ class FinalScoreScreenTest {
         launchFinal(roundHistory = history)
         composeTestRule.onNodeWithText("+20").assertIsDisplayed()
         composeTestRule.onNodeWithText("-10").assertIsDisplayed()
+    }
+
+    // ── Spec: back navigation (return to game) ────────────────────────────────
+
+    @Test
+    fun back_arrow_is_displayed() {
+        launchFinal()
+        composeTestRule
+            .onNodeWithContentDescription("Back to game")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_back_arrow_fires_onBack_callback() {
+        var backCalled = false
+        launchFinal(onBack = { backCalled = true })
+        composeTestRule
+            .onNodeWithContentDescription("Back to game")
+            .performClick()
+        assertTrue("onBack callback should have been called", backCalled)
+    }
+
+    @Test
+    fun back_to_game_button_is_displayed() {
+        launchFinal()
+        composeTestRule.onNodeWithText("Back to game").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_back_to_game_button_fires_onBack_callback() {
+        var backCalled = false
+        launchFinal(onBack = { backCalled = true })
+        composeTestRule.onNodeWithText("Back to game").performClick()
+        assertTrue("onBack callback should have been called", backCalled)
     }
 
     // ── Spec: New Game navigation ─────────────────────────────────────────────

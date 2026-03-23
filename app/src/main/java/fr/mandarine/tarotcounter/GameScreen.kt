@@ -136,9 +136,11 @@ fun GameScreen(
         FinalScoreScreen(
             playerNames = displayNames,
             roundHistory = roundHistory,
+            // "Back to game" dismisses the final score screen and returns to the active round.
+            onBack    = { showFinalScore = false },
             // "New Game" navigates back to the setup screen via the MainActivity callback.
             onNewGame = onEndGame,
-            modifier = modifier
+            modifier  = modifier
         )
         return  // stop here — don't render anything below
     }

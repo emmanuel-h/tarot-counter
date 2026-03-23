@@ -353,4 +353,28 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("End Game").performClick()
         composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
     }
+
+    @Test
+    fun back_to_game_button_on_final_score_screen_returns_to_game() {
+        // Complete one round so there is a score to show, then end the game.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()  // complete round 1
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+
+        // Tapping "Back to game" should return to the active round.
+        composeTestRule.onNodeWithText("Back to game").performClick()
+        composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
+    }
+
+    @Test
+    fun back_arrow_on_final_score_screen_returns_to_game() {
+        launchGame()
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule
+            .onNodeWithContentDescription("Back to game")
+            .performClick()
+        // Should be back at round 1 contract selection.
+        composeTestRule.onNodeWithText("Round 1").assertIsDisplayed()
+    }
 }

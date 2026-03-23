@@ -15,13 +15,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -54,6 +57,7 @@ private val FINAL_PLAYER_COL_WIDTH: Dp = 80.dp
  *
  * @param playerNames  Ordered list of player display names (fallbacks already resolved).
  * @param roundHistory All completed rounds in chronological order, oldest first.
+ * @param onBack       Callback fired when the user taps the back arrow (returns to the game).
  * @param onNewGame    Callback fired when the user taps "New Game" (navigates back to setup).
  * @param modifier     Passed from the parent (e.g. Scaffold inner padding).
  */
@@ -61,6 +65,7 @@ private val FINAL_PLAYER_COL_WIDTH: Dp = 80.dp
 fun FinalScoreScreen(
     playerNames: List<String>,
     roundHistory: List<RoundResult>,
+    onBack: () -> Unit,
     onNewGame: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -85,6 +90,21 @@ fun FinalScoreScreen(
             .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        // ── Back arrow ────────────────────────────────────────────────────────
+        // Lets the user return to the game if they tapped "End Game" by mistake.
+        // Placed at the leading edge of a full-width row, mirroring ScoreHistoryScreen.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to game"
+                )
+            }
+        }
 
         // ── Title ─────────────────────────────────────────────────────────────
         // The icon is decorative — the heading already conveys "game over".
@@ -229,6 +249,19 @@ fun FinalScoreScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("New Game")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ── Back to game button ───────────────────────────────────────────────
+        // Lets the user resume the current game if they ended it by mistake.
+        // OutlinedButton has a lower visual weight than the filled "New Game" button,
+        // signalling that resuming is the secondary action.
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Back to game")
         }
     }
 }
