@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertEquals
@@ -122,6 +123,28 @@ class LandingScreenTest {
     fun start_game_button_is_displayed() {
         launch()
         composeTestRule.onNodeWithText("Start Game").assertIsDisplayed()
+    }
+
+    // The button must appear ABOVE the name input fields so it stays visible
+    // when the on-screen keyboard is open (issue #19).
+    @Test
+    fun start_game_button_is_above_player_name_fields() {
+        launch()
+        // getBoundsInRoot() returns the position of each node on screen.
+        // We compare the bottom edge of the button with the top edge of the
+        // first name field: button.bottom must be less than field.top.
+        val buttonBounds = composeTestRule
+            .onNodeWithText("Start Game")
+            .getBoundsInRoot()
+        val fieldBounds = composeTestRule
+            .onNodeWithText("Player 1")
+            .getBoundsInRoot()
+
+        // The button's bottom edge should be above the first name-field's top edge.
+        assert(buttonBounds.bottom < fieldBounds.top) {
+            "Expected Start Game button (bottom=${buttonBounds.bottom}) to be above " +
+                "Player 1 field (top=${fieldBounds.top})"
+        }
     }
 
     @Test

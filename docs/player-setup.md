@@ -7,6 +7,18 @@ The landing screen lets users configure a game before it starts. It currently ha
 1. **Choose the number of players** (3, 4, or 5)
 2. **Enter each player's name**
 
+## Layout
+
+The screen uses a scrollable `Column`. To keep the "Start Game" button reachable even when the on-screen keyboard is open, the button is placed **above** the name input fields. The layout order is:
+
+1. Language switcher (flag chips, top-right)
+2. App title
+3. Player count chips (3 / 4 / 5)
+4. **Start Game button** ← always visible above the keyboard
+5. Player name fields
+6. Resume Game card (if an unfinished game is saved)
+7. Past Games list (if any completed games exist)
+
 ## How it works
 
 ### Player count selection
