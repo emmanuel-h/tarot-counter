@@ -84,7 +84,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 |---|---|
 | Language | Kotlin 2.2.10 |
 | UI | Jetpack Compose (BOM 2024.09.00) |
-| Design system | Material 3 (dynamic color on Android 12+) |
+| Design system | Material 3 (custom card-game palette — dynamic color disabled) |
 | Persistence | DataStore 1.1.1 + kotlinx.serialization 1.7.3 |
 | Min SDK | 24 (Android 7.0) |
 | Target SDK | 36 (Android 15) |
@@ -142,7 +142,8 @@ TarotCounter/
 │   ├── player-setup.md       # Setup screen behaviour
 │   ├── score-history.md      # Score history table
 │   ├── final-score.md        # Final score screen: winner card, End Game flow
-│   └── game-persistence.md   # How completed games are saved and displayed
+│   ├── game-persistence.md   # How completed games are saved and displayed
+│   └── theme.md              # Colour palette rationale and dynamic-colour policy
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
 ├── CLAUDE.md               # AI assistant instructions
@@ -158,3 +159,4 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/score-history.md`](docs/score-history.md) — score history table: layout, navigation, scrolling
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen
+- [`docs/theme.md`](docs/theme.md) — colour palette rationale, roles, and dynamic-colour policy

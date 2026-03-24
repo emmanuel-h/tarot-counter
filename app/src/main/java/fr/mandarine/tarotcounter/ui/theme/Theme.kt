@@ -1,58 +1,77 @@
 package fr.mandarine.tarotcounter.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
+// ── Dark colour scheme — felt table at night ─────────────────────────────────
+// Primary surfaces are very dark green; accents are sage, gold, and rose.
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary          = GreenLight,      // sage green — buttons, active chips
+    onPrimary        = FeltDark,        // text/icons on top of primary
+    primaryContainer = Color(0xFF1E3A20), // slightly lighter felt for containers
+    onPrimaryContainer = GreenLight,
+
+    secondary        = GoldLight,       // warm gold — secondary actions
+    onSecondary      = FeltDark,
+    secondaryContainer = Color(0xFF3E2E00),
+    onSecondaryContainer = GoldLight,
+
+    tertiary         = BurgundyLight,   // soft rose — highlights / warnings
+    onTertiary       = FeltDark,
+
+    background       = FeltDark,        // full-page background
+    onBackground     = Color(0xFFE8F5E9), // off-white text on dark felt
+    surface          = Color(0xFF122614), // card/sheet surfaces — slightly lighter than background
+    onSurface        = Color(0xFFE8F5E9),
+    surfaceVariant   = Color(0xFF1A3320),
+    onSurfaceVariant = Color(0xFFB0C4B1),
 )
 
+// ── Light colour scheme — parchment in daylight ──────────────────────────────
+// Primary surfaces are warm cream; accents are deep green, amber, and burgundy.
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary          = GreenDark,       // deep forest green — buttons, active chips
+    onPrimary        = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFC8E6C9), // light green tint for containers
+    onPrimaryContainer = Color(0xFF1B5E20),
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary        = GoldDark,        // rich amber — secondary actions
+    onSecondary      = Color(0xFF1C1600),
+    secondaryContainer = Color(0xFFFFECB3),
+    onSecondaryContainer = Color(0xFF5C3A00),
+
+    tertiary         = BurgundyDark,    // deep burgundy — highlights
+    onTertiary       = Color(0xFFFFFFFF),
+
+    background       = ParchmentLight,  // warm parchment background
+    onBackground     = Color(0xFF1A1C19),
+    surface          = Color(0xFFFAF5ED), // slightly warmer card/sheet surfaces
+    onSurface        = Color(0xFF1A1C19),
+    surfaceVariant   = Color(0xFFEDE8D8),
+    onSurfaceVariant = Color(0xFF4A4A3A),
 )
 
+// ── Theme entry-point ─────────────────────────────────────────────────────────
+// dynamicColor is intentionally false: we always apply our card-game palette
+// regardless of Android version. On Android 12+ the OS would otherwise replace
+// every colour with the user's wallpaper tones, making the custom theme useless.
 @Composable
 fun TarotCounterTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // disabled — use our card-game palette consistently
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    // Pick the right scheme. Dynamic color is kept as a parameter so callers
+    // (e.g. tests) can still opt in, but the default is always false.
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+        typography  = Typography,
+        content     = content
     )
 }
