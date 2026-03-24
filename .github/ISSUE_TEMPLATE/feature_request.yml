@@ -1,0 +1,57 @@
+name: Feature / Enhancement Request
+description: Propose a new feature or improvement to the app
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to suggest a new feature or an improvement to an existing one.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences describing what you want to add or change.
+      placeholder: "e.g. Add a custom serif font for headings to give the app a classic card-game feel."
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this needed? What problem does it solve or what experience does it improve?
+      placeholder: "e.g. The current system font feels generic and doesn't match the tarot theme."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_changes
+    attributes:
+      label: Proposed Changes
+      description: List the concrete changes you have in mind (UI, logic, files, etc.).
+      placeholder: |
+        - Update `Type.kt` to use a new FontFamily for heading styles
+        - Keep body text on the system font for readability
+        - Apply to LandingScreen title, GameScreen header, FinalScoreScreen
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: A checklist of conditions that must be true for this issue to be considered done.
+      placeholder: |
+        - [ ] Heading styles use the custom font
+        - [ ] Body/label styles remain on the system font
+        - [ ] Font renders correctly in light and dark themes
+        - [ ] No layout breakage
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Screenshots, mockups, reference links, or anything else useful.
