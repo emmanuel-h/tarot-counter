@@ -502,7 +502,6 @@ fun GameScreen(
                 }
 
                 // ── Player-assigned bonuses (compact grid) ─────────────────────
-                // Four bonuses remain after removing Misère (not in official rules).
                 // Each row has a label + ⓘ info icon that shows a tooltip explaining
                 // the bonus and its point value.
                 CompactBonusGrid(
@@ -808,9 +807,6 @@ private fun FormLabel(text: String) {
 }
 
 // Compact bonus grid: shows four player-assigned bonuses as a table.
-//
-// Misère and Double Misère have been removed — they are not part of the
-// official French Tarot règlement.
 //
 // Layout:
 //   Row 0 (header):  empty label | Player1 | Player2 | …
