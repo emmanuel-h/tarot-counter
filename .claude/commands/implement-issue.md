@@ -47,10 +47,10 @@ Make the changes. Follow project conventions:
 
 ## 8. Commit and open a PR
 - Stage only the relevant files (never `.env` or secrets)
-- Write a clear conventional commit message referencing the issue number (e.g. `feat(#42): add X`)
+- Write a clear conventional commit message referencing the issue number (e.g. `feat(42): add X`)
 - Run `./gradlew lint` and fix any new warnings before committing
 - Push the branch and open a pull request with:
-  - Title following conventional commits spec with the issue number in parentheses (e.g. `feat(#42): add score history`)
+  - Title following conventional commits spec with the issue number in parentheses (e.g. `feat(42): add score history`)
   - A relevant description of the changes
 
 ## 9. Validate
