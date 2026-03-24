@@ -40,7 +40,10 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -442,77 +445,74 @@ fun GameScreen(
                             }
                         }
                     }
-                    // Right half: points text field
+                    // Right half: points entry — segmented toggle + text field on one row
                     Column(modifier = Modifier.weight(1f)) {
-                        // ── Mode toggle ────────────────────────────────────────
-                        // Players can count either the taker's or the defenders' points —
-                        // whichever is easier to add up at the table. The taker's points
-                        // are always derived as: takerPoints = 91 − defenderPoints.
-                        FormLabel(strings.pointsCountedFor)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = !defenderMode,
-                                onClick  = {
-                                    defenderMode = false
-                                    pointsText   = ""  // clear field on mode switch
-                                }
-                            )
-                            Text(
-                                text     = strings.takerMode,
-                                style    = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                            RadioButton(
-                                selected = defenderMode,
-                                onClick  = {
-                                    defenderMode = true
-                                    pointsText   = ""  // clear field on mode switch
-                                }
-                            )
-                            Text(
-                                text  = strings.defenderMode,
-                                style = MaterialTheme.typography.bodyMedium
+                        FormLabel(strings.pointsScoredByTaker)
+                        Spacer(Modifier.height(8.dp))
+                        // ── Inline toggle + input ──────────────────────────────
+                        // The two segments let the user pick which camp's points to type.
+                        // Selecting "Defenders" is just a convenience — the taker's points
+                        // are derived on confirm as: takerPoints = 91 − defenderPoints.
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Segmented button: Attacker | Defenders
+                            // `itemShape` gives the correct rounded-start / rounded-end corners.
+                            SingleChoiceSegmentedButtonRow(modifier = Modifier.wrapContentWidth()) {
+                                SegmentedButton(
+                                    selected = !defenderMode,
+                                    onClick  = {
+                                        defenderMode = false
+                                        pointsText   = ""  // clear field when switching camps
+                                    },
+                                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                                ) { Text(strings.attackerMode) }
+                                SegmentedButton(
+                                    selected = defenderMode,
+                                    onClick  = {
+                                        defenderMode = true
+                                        pointsText   = ""  // clear field when switching camps
+                                    },
+                                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                                ) { Text(strings.defenderMode) }
+                            }
+                            OutlinedTextField(
+                                value = pointsText,
+                                onValueChange = { input ->
+                                    // Accept only digit characters and at most two of them
+                                    // (the highest valid value, 91, has two digits).
+                                    if (input.all { it.isDigit() } && input.length <= 2) {
+                                        pointsText = input
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction    = ImeAction.Done
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = { keyboardController?.hide() }
+                                ),
+                                placeholder     = { Text("0") },
+                                // When the value is out of range, mark the field red and
+                                // replace the range hint with a descriptive error message.
+                                isError         = pointsError,
+                                supportingText  = {
+                                    if (pointsError) {
+                                        Text(
+                                            text  = strings.pointsOutOfRange,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    } else {
+                                        // Normal hint: remind the user of the valid range.
+                                        Text(strings.pointsRange)
+                                    }
+                                },
+                                singleLine      = true,
+                                // testTag lets UI tests identify and interact with this field.
+                                modifier        = Modifier.weight(1f).testTag("points_input")
                             )
                         }
-                        Spacer(Modifier.height(4.dp))
-                        // Label changes to reflect which camp's points the user is entering.
-                        FormLabel(if (defenderMode) strings.pointsScoredByDefenders else strings.pointsScoredByTaker)
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = pointsText,
-                            onValueChange = { input ->
-                                // Accept only digit characters and at most two of them
-                                // (the highest valid value, 91, has two digits).
-                                if (input.all { it.isDigit() } && input.length <= 2) {
-                                    pointsText = input
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction    = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = { keyboardController?.hide() }
-                            ),
-                            placeholder     = { Text("0") },
-                            // When the value is out of range, mark the field red and
-                            // replace the range hint with a descriptive error message.
-                            isError         = pointsError,
-                            supportingText  = {
-                                if (pointsError) {
-                                    Text(
-                                        text  = strings.pointsOutOfRange,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                } else {
-                                    // Normal hint: remind the user of the valid range.
-                                    Text(strings.pointsRange)
-                                }
-                            },
-                            singleLine      = true,
-                            // testTag lets UI tests identify and interact with this field.
-                            modifier        = Modifier.fillMaxWidth().testTag("points_input")
-                        )
                     }
                 }
 

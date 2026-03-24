@@ -320,38 +320,18 @@ class AppLocaleTest {
     // Verifies the four new strings added for the taker/defender radio-button toggle.
 
     @Test
-    fun en_pointsScoredByDefenders_is_present() {
-        assertEquals("Points scored by defenders", appStrings(AppLocale.EN).pointsScoredByDefenders)
-    }
-
-    @Test
-    fun fr_pointsScoredByDefenders_is_present() {
-        assertEquals("Points marqués par les défenseurs", appStrings(AppLocale.FR).pointsScoredByDefenders)
-    }
-
-    @Test
-    fun en_pointsCountedFor_is_present() {
-        assertEquals("Count points for:", appStrings(AppLocale.EN).pointsCountedFor)
-    }
-
-    @Test
-    fun fr_pointsCountedFor_is_present() {
-        assertEquals("Points comptés pour :", appStrings(AppLocale.FR).pointsCountedFor)
-    }
-
-    @Test
-    fun en_takerMode_and_defenderMode_differ() {
+    fun en_attackerMode_and_defenderMode_differ() {
         val strings = appStrings(AppLocale.EN)
-        assertNotEquals(strings.takerMode, strings.defenderMode)
-        assertEquals("Taker", strings.takerMode)
+        assertNotEquals(strings.attackerMode, strings.defenderMode)
+        assertEquals("Attacker", strings.attackerMode)
         assertEquals("Defenders", strings.defenderMode)
     }
 
     @Test
-    fun fr_takerMode_and_defenderMode_differ() {
+    fun fr_attackerMode_and_defenderMode_differ() {
         val strings = appStrings(AppLocale.FR)
-        assertNotEquals(strings.takerMode, strings.defenderMode)
-        assertEquals("Preneur", strings.takerMode)
+        assertNotEquals(strings.attackerMode, strings.defenderMode)
+        assertEquals("Attaquant", strings.attackerMode)
         assertEquals("Défenseurs", strings.defenderMode)
     }
 }
