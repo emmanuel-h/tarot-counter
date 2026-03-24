@@ -127,15 +127,43 @@ class GameScreenTest {
     }
 
     @Test
-    fun details_form_shows_bouts_chips_0_through_3() {
+    fun details_form_shows_bouts_dropdown_with_0_through_3() {
+        // Issue #9: bouts is now an ExposedDropdownMenuBox instead of FilterChips.
         launchGame()
         composeTestRule.onNodeWithText("Garde").performClick()
-        // Bouts chips: 0, 1, 2, 3
+
+        // The dropdown anchor (text field) must be visible with the default value "0".
+        composeTestRule.onNodeWithTag("bouts_dropdown").assertIsDisplayed()
+
+        // Open the dropdown to reveal all options.
+        composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
+
+        // All four options (0–3) should now be visible in the expanded menu.
         listOf("0", "1", "2", "3").forEach { n ->
             composeTestRule.onAllNodesWithText(n).fetchSemanticsNodes().let { nodes ->
-                assertTrue("Bouts chip '$n' should be visible", nodes.isNotEmpty())
+                assertTrue("Bouts dropdown option '$n' should be visible", nodes.isNotEmpty())
             }
         }
+    }
+
+    @Test
+    fun selecting_a_bout_value_from_dropdown_updates_selection() {
+        // Opening the dropdown and picking "2" should update the displayed value.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // Open the dropdown.
+        composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
+
+        // Tap the "2" option.
+        composeTestRule.onAllNodesWithText("2").fetchSemanticsNodes().let { nodes ->
+            assertTrue("Option '2' should be visible in the open dropdown", nodes.isNotEmpty())
+        }
+        // The first node with text "2" belongs to the dropdown menu item — click it.
+        composeTestRule.onAllNodesWithText("2")[0].performClick()
+
+        // After selection the dropdown anchor should now display "2".
+        composeTestRule.onNodeWithTag("bouts_dropdown").assertIsDisplayed()
     }
 
     @Test

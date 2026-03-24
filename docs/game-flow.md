@@ -40,7 +40,7 @@ Tapping the active chip again (or **← Change contract**) collapses the form an
 
 | Field              | Type                        | Description |
 |--------------------|-----------------------------|-------------|
-| Bouts (oudlers)    | 0 · 1 · 2 · 3 chips         | Number of oudlers in the taker's tricks |
+| Bouts (oudlers)    | Dropdown (0 / 1 / 2 / 3)   | Number of oudlers in the taker's tricks |
 | Points             | Number input (0–91)         | Points scored by the taker. Values outside this range show an error and disable the Confirm button. |
 | Partner            | None or any player (5-player only) | The player called by the taker as a silent partner |
 | Petit au bout      | None or any player          | Player who captured the 1 of trump on the last trick |

@@ -26,13 +26,17 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -79,7 +83,7 @@ import java.util.UUID
 //                   so the game is persisted even if the app is closed on the Final Score screen.
 // onEndGame:        called when the user presses "New Game"; navigates back to the setup screen.
 // modifier:         passed in from the parent (e.g. Scaffold padding).
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(
     playerNames: List<String>,
@@ -380,18 +384,54 @@ fun GameScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Left half: bout chips
+                    // Left half: bouts dropdown
+                    // Replaced from FilterChips to an ExposedDropdownMenuBox to save
+                    // screen space and improve UX (issue #9).
                     Column(modifier = Modifier.weight(1f)) {
                         FormLabel(strings.numberOfBouts)
                         Spacer(Modifier.height(8.dp))
-                        // FlowRow wraps if the half-width is too narrow (rare).
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (n in 0..3) {
-                                FilterChip(
-                                    selected = bouts == n,
-                                    onClick  = { bouts = n },
-                                    label    = { Text(n.toString()) }
-                                )
+
+                        // Tracks whether the dropdown menu is currently open.
+                        var boutsExpanded by remember { mutableStateOf(false) }
+
+                        // ExposedDropdownMenuBox is a Material3 combo box:
+                        // - The text field shows the current selection and a trailing arrow.
+                        // - Tapping it opens a menu with the four options (0–3).
+                        ExposedDropdownMenuBox(
+                            expanded         = boutsExpanded,
+                            onExpandedChange = { boutsExpanded = !boutsExpanded },
+                            modifier         = Modifier.testTag("bouts_dropdown")
+                        ) {
+                            OutlinedTextField(
+                                value          = bouts.toString(),
+                                onValueChange  = {},
+                                readOnly       = true,
+                                // The trailing chevron icon flips when the menu opens.
+                                trailingIcon   = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = boutsExpanded)
+                                },
+                                colors         = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                singleLine     = true,
+                                // menuAnchor() links the text field to its popup menu.
+                                modifier       = Modifier
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                    .fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(
+                                expanded         = boutsExpanded,
+                                onDismissRequest = { boutsExpanded = false }
+                            ) {
+                                // One menu item per valid bout count (0 through 3).
+                                for (n in 0..3) {
+                                    DropdownMenuItem(
+                                        text             = { Text(n.toString()) },
+                                        onClick          = {
+                                            bouts         = n
+                                            boutsExpanded = false
+                                        },
+                                        contentPadding   = ExposedDropdownMenuDefaults.ItemContentPadding
+                                    )
+                                }
                             }
                         }
                     }
