@@ -65,6 +65,10 @@ data class AppStrings(
     val skipRound: String,
     val numberOfBouts: String,
     val pointsScoredByTaker: String,
+    // Segmented-button label for the attacker (taker) side of the toggle.
+    val attackerMode: String,
+    // Segmented-button label for the defenders' side of the toggle.
+    val defenderMode: String,
     val partnerCalledByTaker: String,
     val confirmRound: String,
     val changeContract: String,
@@ -162,6 +166,8 @@ val EnStrings = AppStrings(
     skipRound             = "Skip round",
     numberOfBouts         = "Number of bouts (oudlers)",
     pointsScoredByTaker   = "Points scored by taker",
+    attackerMode          = "Attacker",
+    defenderMode          = "Defenders",
     partnerCalledByTaker  = "Partner (called by taker)",
     confirmRound          = "Confirm round",
     changeContract        = "← Change contract",
@@ -235,6 +241,8 @@ val FrStrings = AppStrings(
     skipRound             = "Passer la manche",
     numberOfBouts         = "Nombre de bouts (oudlers)",
     pointsScoredByTaker   = "Points marqués par le preneur",
+    attackerMode          = "Attaquant",
+    defenderMode          = "Défenseurs",
     partnerCalledByTaker  = "Appelé (par le preneur)",
     confirmRound          = "Valider la manche",
     changeContract        = "← Changer de contrat",

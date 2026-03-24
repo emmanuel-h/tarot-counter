@@ -315,4 +315,23 @@ class AppLocaleTest {
     fun chelem_not_announced_realized_localized_en() {
         assertEquals("Not announced, realized", Chelem.NOT_ANNOUNCED_REALIZED.localizedName(AppLocale.EN))
     }
+
+    // ── Defender-mode strings ─────────────────────────────────────────────────
+    // Verifies the four new strings added for the taker/defender radio-button toggle.
+
+    @Test
+    fun en_attackerMode_and_defenderMode_differ() {
+        val strings = appStrings(AppLocale.EN)
+        assertNotEquals(strings.attackerMode, strings.defenderMode)
+        assertEquals("Attacker", strings.attackerMode)
+        assertEquals("Defenders", strings.defenderMode)
+    }
+
+    @Test
+    fun fr_attackerMode_and_defenderMode_differ() {
+        val strings = appStrings(AppLocale.FR)
+        assertNotEquals(strings.attackerMode, strings.defenderMode)
+        assertEquals("Attaquant", strings.attackerMode)
+        assertEquals("Défenseurs", strings.defenderMode)
+    }
 }

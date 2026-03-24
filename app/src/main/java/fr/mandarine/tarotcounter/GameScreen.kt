@@ -40,6 +40,9 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -355,6 +358,9 @@ fun GameScreen(
                 // Declared inside key() so they are reset when the contract changes.
                 var bouts         by remember { mutableIntStateOf(0) }
                 var pointsText    by remember { mutableStateOf("") }
+                // When true the user enters the defenders' points instead of the taker's.
+                // The taker's points are derived on submit: takerPoints = 91 − defenderPoints.
+                var defenderMode  by remember { mutableStateOf(false) }
                 var selectedPartner  by remember { mutableStateOf<String?>(null) }
                 var petitAuBout   by remember { mutableStateOf<String?>(null) }
                 var poignee       by remember { mutableStateOf<String?>(null) }
@@ -438,10 +444,33 @@ fun GameScreen(
                             }
                         }
                     }
-                    // Right half: points text field
+                    // Right half: points entry — segmented toggle stacked above text field
                     Column(modifier = Modifier.weight(1f)) {
                         FormLabel(strings.pointsScoredByTaker)
                         Spacer(Modifier.height(8.dp))
+                        // ── Camp toggle ────────────────────────────────────────
+                        // The two segments let the user pick which camp's points to type.
+                        // Selecting "Defenders" is a convenience — the taker's points are
+                        // derived on confirm as: takerPoints = 91 − defenderPoints.
+                        // `fillMaxWidth` makes the toggle use the same width as the field below.
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            SegmentedButton(
+                                selected = !defenderMode,
+                                onClick  = {
+                                    defenderMode = false
+                                    pointsText   = ""  // clear field when switching camps
+                                },
+                                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                            ) { Text(strings.attackerMode) }
+                            SegmentedButton(
+                                selected = defenderMode,
+                                onClick  = {
+                                    defenderMode = true
+                                    pointsText   = ""  // clear field when switching camps
+                                },
+                                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                            ) { Text(strings.defenderMode) }
+                        }
                         OutlinedTextField(
                             value = pointsText,
                             onValueChange = { input ->
@@ -641,7 +670,11 @@ fun GameScreen(
                     enabled = !pointsError,
                     onClick = {
                         // Parse the typed points; default to 0 if empty, clamp to 0–91.
-                        val points = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0
+                        val enteredPoints = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0
+                        // When the user counted the defenders' points, convert to taker's points.
+                        // The total points in a round always sum to 91:
+                        //   takerPoints = 91 − defenderPoints
+                        val points = if (defenderMode) 91 - enteredPoints else enteredPoints
                         recordPlayed(
                             contract,
                             RoundDetails(

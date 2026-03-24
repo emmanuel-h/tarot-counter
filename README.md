@@ -8,7 +8,7 @@ TarotCounter guides players through a game round by round:
 
 1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique
 2. **Contract selection** — the current taker picks their contract (or skips)
-3. **Scoring details** — enter bouts, points scored (0–91; an error is shown and Confirm is disabled for out-of-range values), partner (5-player), and any bonuses
+3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first
 5. **Score history table** — tap the bar-chart icon next to "Scores" to see a round-by-round table of cumulative scores for every player
 6. **End Game / Final Score** — tap "End Game" at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted), and a "New Game" button

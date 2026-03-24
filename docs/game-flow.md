@@ -41,7 +41,8 @@ Tapping the active chip again (or **← Change contract**) collapses the form an
 | Field              | Type                        | Description |
 |--------------------|-----------------------------|-------------|
 | Bouts (oudlers)    | Dropdown (0 / 1 / 2 / 3)   | Number of oudlers in the taker's tricks |
-| Points             | Number input (0–91)         | Points scored by the taker. Values outside this range show an error and disable the Confirm button. |
+| Points mode        | Radio buttons (Taker / Defenders) | Choose which camp's points to enter. The total always sums to 91, so entering defender points is equivalent. |
+| Points             | Number input (0–91)         | Points scored by the selected camp. When "Defenders" is chosen the app converts to taker points on confirm (`takerPoints = 91 − defenderPoints`). Values outside 0–91 show an error and disable the Confirm button. |
 | Partner            | None or any player (5-player only) | The player called by the taker as a silent partner |
 | Petit au bout      | Checkbox per player         | Player who captured the 1 of trump on the last trick |
 | Poignée            | Checkbox per player         | Player who showed a poignée (10+ trumps) |
