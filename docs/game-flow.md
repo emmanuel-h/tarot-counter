@@ -47,7 +47,7 @@ Tapping the active chip again (or **← Change contract**) collapses the form an
 | Poignée            | Checkbox per player         | Player who showed a poignée (10+ trumps) |
 | Double poignée     | Checkbox per player         | Player who showed a double poignée (13+ trumps) |
 | Triple poignée     | Checkbox per player         | Player who showed a triple poignée (15+ trumps) |
-| Chelem             | See table below             | Grand slam outcome |
+| Chelem             | Dropdown + player selector  | Grand slam outcome and who called it |
 
 The four player-assigned bonuses are displayed in a compact grid. Each row shows a **label** with an ⓘ info icon immediately next to it (not pushed to the edge), and one **checkbox per player**. Ticking a checkbox assigns that bonus to that player; ticking it again clears the assignment. At most one player can hold each bonus at a time.
 
@@ -58,11 +58,13 @@ The four player-assigned bonuses are displayed in a compact grid. Each row shows
 | Value                      | Meaning                                          | Bonus per defender |
 |----------------------------|--------------------------------------------------|--------------------|
 | None                       | No grand slam                                    | 0                  |
-| Announced & realized       | Taker announced and won every trick              | +400               |
-| Not announced, realized    | Taker won every trick without announcing         | +200               |
-| Announced, not realized    | Taker announced but failed to win every trick    | −200               |
+| Announced & realized       | Caller announced and the attacking team won every trick | +400          |
+| Not announced, realized    | Attacking team won every trick without announcing | +200              |
+| Announced, not realized    | Caller announced but the attacking team failed   | −200               |
 
 The bonus is a flat amount exchanged between the taker and each defender individually — it is **not** multiplied by the contract. A positive bonus means the taker collects that amount from each defender; a negative bonus means the taker pays that amount to each defender. The partner (5-player) is not involved in the chelem bonus. The result is always zero-sum.
+
+**Chelem player**: when a non-None chelem option is selected a second selector appears — "Who called the chelem?". Available choices are the taker and (in 5-player games) the partner if one has been selected. Once a player is chosen and the chelem is of the *announced* type, a note is shown reminding the table that **that player leads the first trick of the round**, overriding the normal turn order.
 
 Tapping **Confirm round** saves the result and moves to the next round.
 Tapping **← Change contract** goes back to step 1 without saving.
@@ -164,7 +166,7 @@ The **History** button in the top-right corner opens a full scrollable score tab
 
 - `Contract` enum — four contracts with `displayName` and `multiplier`.
 - `Chelem` enum — four grand slam outcomes (`NONE`, `ANNOUNCED_REALIZED`, `ANNOUNCED_NOT_REALIZED`, `NOT_ANNOUNCED_REALIZED`).
-- `RoundDetails` data class — all scoring fields: bouts, points, `partnerName` (5-player only), and the player-assigned/chelem bonuses.
+- `RoundDetails` data class — all scoring fields: bouts, points, `partnerName` (5-player only), player-assigned bonuses, the chelem outcome, and `chelemPlayer` (which player called/achieved the chelem — null when `chelem == NONE`).
 - `RoundResult` data class — round number, taker name, contract (`null` if skipped), details (`null` if skipped), `won` (`null` if skipped), and `playerScores` (empty map if skipped).
 - `requiredPoints(bouts)` — returns the minimum points needed to win for a given bout count.
 - `takerWon(bouts, points)` — returns `true` if points ≥ `requiredPoints(bouts)`.

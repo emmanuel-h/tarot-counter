@@ -69,6 +69,58 @@ class GameModelsTest {
         assertEquals("Not announced, realized", Chelem.NOT_ANNOUNCED_REALIZED.displayName)
     }
 
+    // ── RoundDetails.chelemPlayer ─────────────────────────────────────────────
+
+    @Test
+    fun `RoundDetails chelemPlayer defaults to null`() {
+        // When no chelemPlayer is specified the field must be null (backward-compatible default).
+        val details = RoundDetails(
+            bouts         = 2,
+            points        = 50,
+            partnerName   = null,
+            petitAuBout   = null,
+            poignee       = null,
+            doublePoignee = null,
+            chelem        = Chelem.NONE
+        )
+        assertNull(details.chelemPlayer)
+    }
+
+    @Test
+    fun `RoundDetails records chelemPlayer when set`() {
+        // The player who called the chelem should be stored without modification.
+        val details = RoundDetails(
+            bouts         = 2,
+            points        = 50,
+            partnerName   = null,
+            petitAuBout   = null,
+            poignee       = null,
+            doublePoignee = null,
+            chelem        = Chelem.ANNOUNCED_REALIZED,
+            chelemPlayer  = "Alice"
+        )
+        assertEquals("Alice", details.chelemPlayer)
+    }
+
+    @Test
+    fun `RoundDetails chelemPlayer can be the partner in 5-player game`() {
+        // In a 5-player game the partner can call the chelem. The field should accept
+        // any non-null string — it is not restricted to the taker.
+        val details = RoundDetails(
+            bouts         = 3,
+            points        = 91,
+            partnerName   = "Bob",
+            petitAuBout   = null,
+            poignee       = null,
+            doublePoignee = null,
+            chelem        = Chelem.ANNOUNCED_REALIZED,
+            chelemPlayer  = "Bob"  // partner called the chelem
+        )
+        assertNotNull(details.chelemPlayer)
+        assertEquals("Bob", details.chelemPlayer)
+        assertEquals("Bob", details.partnerName)
+    }
+
     // ── petitAuBoutBonus ──────────────────────────────────────────────────────
 
     @Test

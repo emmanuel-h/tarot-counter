@@ -46,7 +46,12 @@ data class RoundDetails(
     val poignee: String?,       // player who showed a poignée (10+ trumps), or null
     val doublePoignee: String?, // player who showed a double poignée (13+ trumps), or null
     val triplePoignee: String? = null, // player who showed a triple poignée (15+ trumps), or null
-    val chelem: Chelem          // grand slam outcome
+    val chelem: Chelem,         // grand slam outcome
+    // The player who called or achieved the chelem. Null when chelem == NONE.
+    // In a 3- or 4-player game only the taker can call it; in a 5-player game the
+    // partner can also announce a chelem. When a chelem is announced, that player
+    // leads the first trick of the round — regardless of the normal turn order.
+    val chelemPlayer: String? = null
 )
 
 // Returns the minimum number of points the taker needs to win, based on

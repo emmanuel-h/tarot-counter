@@ -361,6 +361,9 @@ fun GameScreen(
                 var doublePoignee by remember { mutableStateOf<String?>(null) }
                 var triplePoignee by remember { mutableStateOf<String?>(null) }
                 var chelem        by remember { mutableStateOf(Chelem.NONE) }
+                // The player who called/achieved the chelem. Reset to null whenever chelem
+                // changes back to NONE (no chelem in this round).
+                var chelemPlayer  by remember { mutableStateOf<String?>(null) }
 
                 // Derived error flag — recomputed on every recomposition when pointsText changes.
                 // True only when the typed value parses to an integer that exceeds 91.
@@ -539,12 +542,83 @@ fun GameScreen(
                     )
                 }
                 Spacer(Modifier.height(6.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (c in Chelem.entries) {
-                        FilterChip(
-                            selected = chelem == c,
-                            onClick  = { chelem = c },
-                            label    = { Text(c.localizedName(locale)) }
+
+                // Tracks whether the chelem dropdown menu is open.
+                var chelemExpanded by remember { mutableStateOf(false) }
+
+                // ExposedDropdownMenuBox is the Material 3 combo-box pattern (same as bouts).
+                // The text field shows the current selection; tapping it opens the menu.
+                ExposedDropdownMenuBox(
+                    expanded         = chelemExpanded,
+                    onExpandedChange = { chelemExpanded = !chelemExpanded },
+                    modifier         = Modifier.testTag("chelem_dropdown")
+                ) {
+                    OutlinedTextField(
+                        value         = chelem.localizedName(locale),
+                        onValueChange = {},
+                        readOnly      = true,
+                        trailingIcon  = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = chelemExpanded)
+                        },
+                        colors        = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        singleLine    = true,
+                        modifier      = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded         = chelemExpanded,
+                        onDismissRequest = { chelemExpanded = false }
+                    ) {
+                        for (c in Chelem.entries) {
+                            DropdownMenuItem(
+                                text           = { Text(c.localizedName(locale)) },
+                                onClick        = {
+                                    // When the user picks a new chelem option, reset the
+                                    // associated player — the previous selection is no longer valid.
+                                    if (chelem != c) chelemPlayer = null
+                                    chelem         = c
+                                    chelemExpanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
+                }
+
+                // ── Chelem player selector ─────────────────────────────────────
+                // Only shown when a non-NONE chelem outcome is selected. The user picks
+                // which player called or achieved the chelem — this player leads the first
+                // trick of the round, overriding the usual turn order.
+                //
+                // Available choices: taker + partner (5-player only). In 3/4-player games
+                // only the taker can call chelem, so the selector is still shown to make the
+                // association explicit, but the partner option is omitted.
+                if (chelem != Chelem.NONE) {
+                    Spacer(Modifier.height(8.dp))
+                    // The eligible players are the taker and — in 5-player — the partner.
+                    val chelemCandidates = buildList {
+                        add(currentTaker)
+                        if (displayNames.size == 5 && selectedPartner != null) {
+                            add(selectedPartner!!)
+                        }
+                    }
+                    PlayerChipSelector(
+                        label          = strings.chelemPlayerLabel,
+                        noneLabel      = strings.noneOption,
+                        selectedPlayer = chelemPlayer,
+                        playerNames    = chelemCandidates,
+                        onSelect       = { chelemPlayer = it }
+                    )
+                    // Informational note: the chelem caller plays first this round.
+                    // This reminder is shown only when a specific player has been selected.
+                    if (chelemPlayer != null &&
+                        (chelem == Chelem.ANNOUNCED_REALIZED || chelem == Chelem.ANNOUNCED_NOT_REALIZED)) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text  = strings.chelemPlaysFirst(chelemPlayer!!),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -570,7 +644,9 @@ fun GameScreen(
                                 poignee       = poignee,
                                 doublePoignee = doublePoignee,
                                 triplePoignee = triplePoignee,
-                                chelem        = chelem
+                                chelem        = chelem,
+                                // chelemPlayer is null when chelem == NONE.
+                                chelemPlayer  = if (chelem == Chelem.NONE) null else chelemPlayer
                             )
                         )
                     },

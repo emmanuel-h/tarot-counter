@@ -53,7 +53,7 @@ Player-assigned bonuses are entered via a compact grid with one checkbox per pla
 
 - **Petit au bout** — player who captured the 1 of trump on the last trick
 - **Poignée / Double poignée / Triple poignée** — trump distribution bonuses (10 / 13 / 15 trumps shown)
-- **Chelem** — grand slam (announced+won, announced+lost, unannounced+won, or none)
+- **Chelem** — grand slam outcome selected from a dropdown (announced+won, announced+lost, unannounced+won, or none), with an additional player selector to record who called it. When an announced chelem is selected and a player is chosen, the app reminds the table that this player leads the first trick.
 
 ## Architecture
 

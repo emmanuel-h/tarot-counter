@@ -68,8 +68,13 @@ data class AppStrings(
     val scores: String,
     val history: String,
     val endGame: String,
-    // Section label above the Chelem chips.
+    // Section label above the Chelem dropdown.
     val chelemLabel: String,
+    // Label for the player selector shown below the chelem dropdown when a non-None option is chosen.
+    val chelemPlayerLabel: String,
+    // Informational note shown when a chelem is announced, reminding the table that the
+    // named player leads the first trick. E.g. "Alice plays first this round."
+    val chelemPlaysFirst: (playerName: String) -> String,
     // "None" chip in the partner selector (5-player games only).
     val noneOption: String,
     // Compact bonus grid row labels — all French Tarot terms, unchanged in both languages.
@@ -158,6 +163,8 @@ val EnStrings = AppStrings(
     history               = "History",
     endGame               = "End Game",
     chelemLabel           = "Chelem (grand slam)",
+    chelemPlayerLabel     = "Who called the chelem?",
+    chelemPlaysFirst      = { name -> "$name plays first this round." },
     noneOption            = "None",
     petit                 = "Petit",
     poignee               = "Poignée",
@@ -228,6 +235,8 @@ val FrStrings = AppStrings(
     history               = "Historique",
     endGame               = "Fin de partie",
     chelemLabel           = "Chelem (grand chelem)",
+    chelemPlayerLabel     = "Qui a annoncé le chelem ?",
+    chelemPlaysFirst      = { name -> "$name joue en premier ce tour." },
     noneOption            = "Personne",
     petit                 = "Petit",
     poignee               = "Poignée",
