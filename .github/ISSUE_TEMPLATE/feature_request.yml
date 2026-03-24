@@ -23,7 +23,7 @@ body:
       description: Why is this needed? What problem does it solve or what experience does it improve?
       placeholder: "e.g. The current system font feels generic and doesn't match the tarot theme."
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: proposed_changes
@@ -35,7 +35,7 @@ body:
         - Keep body text on the system font for readability
         - Apply to LandingScreen title, GameScreen header, FinalScoreScreen
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: acceptance_criteria
@@ -48,7 +48,7 @@ body:
         - [ ] Font renders correctly in light and dark themes
         - [ ] No layout breakage
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: context
