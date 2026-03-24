@@ -21,6 +21,7 @@ Read the relevant source files before writing any code. Understand existing patt
 - Existing screens and composables
 
 ## 4. Plan the implementation
+Use the kotlin-specialist skills to ensure high-quality code.
 Write a concise plan (bullet points) and show it to the user before starting. Cover:
 - Which files to create or modify
 - Any new dependencies needed in `gradle/libs.versions.toml`
