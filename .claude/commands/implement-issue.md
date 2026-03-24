@@ -22,8 +22,6 @@ Write a concise plan (bullet points) and show it to the user before starting. Co
 - Any new dependencies needed in `gradle/libs.versions.toml`
 - How the change fits the existing architecture
 
-Wait for user confirmation before proceeding.
-
 ## 4. Implement
 Make the changes. Follow project conventions:
 - Kotlin 2.x idiomatic style
