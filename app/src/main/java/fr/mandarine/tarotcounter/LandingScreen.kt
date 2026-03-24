@@ -160,13 +160,6 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = strings.playerNamesLabel,
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
         // Resolve display names: blank fields fall back to the localized "Player N" equivalent.
         // This ensures that leaving two fields blank is treated as a duplicate.
         val resolvedNames = playerNames.mapIndexed { i, name ->
@@ -181,6 +174,28 @@ fun LandingScreen(
 
         // The button is disabled and a warning is shown whenever any duplicate exists.
         val hasDuplicates = duplicateFlags.any { it }
+
+        // "Start Game" button placed ABOVE the name fields so it stays visible when the
+        // on-screen keyboard is open. The user can start immediately (names fall back to
+        // "Player N") or fill the fields first — either way the button is reachable
+        // without closing the keyboard.
+        // `enabled = !hasDuplicates` prevents starting a game when names clash.
+        Button(
+            onClick = { onStartGame(playerNames.toList()) },
+            enabled = !hasDuplicates,
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text(strings.startGame)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = strings.playerNamesLabel,
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Loop over each player slot and render a text field for their name.
         for (i in playerNames.indices) {
@@ -202,19 +217,7 @@ fun LandingScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // "Start Game" button. Tapping it calls `onStartGame` with a snapshot of the
-        // current names. `toList()` converts the mutable state list to a regular
-        // immutable List<String> so it's safe to pass to another screen.
-        // `enabled = !hasDuplicates` prevents starting a game when names clash.
-        Button(
-            onClick = { onStartGame(playerNames.toList()) },
-            enabled = !hasDuplicates,
-            modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            Text(strings.startGame)
-        }
+        Spacer(modifier = Modifier.height(16.dp))
 
         // ── Past Games ────────────────────────────────────────────────────────
         // Only shown when there is at least one saved game on the device.
