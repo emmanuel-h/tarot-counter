@@ -12,6 +12,15 @@
             "command": "jq -r '.tool_input.file_path // \"\"' | grep -q 'src/main.*\\.kt$' && echo '{\"systemMessage\": \"Checklist for src/main .kt change:\\n1. Tests - add or update unit/UI tests in src/test/ or src/androidTest/\\n2. Docs - update docs/ if this affects game flow, data models, or screen behavior.\"}' || true"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | grep -q 'implement-issue\\.md$' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"implement-issue.md was just modified. Re-read it at .claude/commands/implement-issue.md and update the memory file at ~/.claude/projects/-home-manu-AndroidStudioProjects-TarotCounter/memory/feedback_implement_issue_workflow.md to reflect any changes.\"}}' || true"
+          }
+        ]
       }
     ],
     "Stop": [
