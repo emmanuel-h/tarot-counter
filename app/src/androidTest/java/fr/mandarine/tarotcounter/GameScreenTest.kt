@@ -1,11 +1,15 @@
 package fr.mandarine.tarotcounter
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertTrue
@@ -377,5 +381,59 @@ class GameScreenTest {
             .performClick()
         // Should be back at round 1 contract selection.
         composeTestRule.onNodeWithText("Round 1").assertIsDisplayed()
+    }
+
+    // ── Spec: points field validation (issue #8) ──────────────────────────────
+    // The user must not be able to enter a value outside 0–91.
+    // Entering a value > 91 shows an error message and disables the Confirm button.
+
+    @Test
+    fun entering_value_above_91_shows_error_message() {
+        // Open the details form so the points field is visible.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // Type an out-of-range value (92) into the points field.
+        composeTestRule.onNodeWithTag("points_input").performTextInput("92")
+
+        // The error string defined in EnStrings.pointsOutOfRange should appear.
+        composeTestRule
+            .onNodeWithText(EnStrings.pointsOutOfRange)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun entering_value_above_91_disables_confirm_button() {
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // Type 99 — clearly out of range.
+        composeTestRule.onNodeWithTag("points_input").performTextInput("99")
+
+        // Confirm button must be disabled so the round cannot be submitted.
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    @Test
+    fun entering_91_does_not_show_error() {
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // 91 is the maximum allowed value — it must not trigger an error.
+        composeTestRule.onNodeWithTag("points_input").performTextInput("91")
+
+        composeTestRule
+            .onNodeWithText(EnStrings.pointsOutOfRange)
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun entering_91_keeps_confirm_button_enabled() {
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        composeTestRule.onNodeWithTag("points_input").performTextInput("91")
+
+        composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
     }
 }

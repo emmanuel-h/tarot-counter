@@ -55,6 +55,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -357,6 +358,13 @@ fun GameScreen(
                 var triplePoignee by remember { mutableStateOf<String?>(null) }
                 var chelem        by remember { mutableStateOf(Chelem.NONE) }
 
+                // Derived error flag — recomputed on every recomposition when pointsText changes.
+                // True only when the typed value parses to an integer that exceeds 91.
+                // An empty field is not an error (it defaults to 0 on Confirm).
+                // Declared here (not inside the Column) so both the TextField and the
+                // Confirm button can read the same value.
+                val pointsError = pointsText.toIntOrNull()?.let { it > 91 } == true
+
                 // Used to hide the software keyboard when the user taps "Done" on
                 // the numeric keyboard after entering the points value.
                 val keyboardController = LocalSoftwareKeyboardController.current
@@ -394,7 +402,8 @@ fun GameScreen(
                         OutlinedTextField(
                             value = pointsText,
                             onValueChange = { input ->
-                                // Only accept up to two digits (max score is 91).
+                                // Accept only digit characters and at most two of them
+                                // (the highest valid value, 91, has two digits).
                                 if (input.all { it.isDigit() } && input.length <= 2) {
                                     pointsText = input
                                 }
@@ -407,11 +416,23 @@ fun GameScreen(
                                 onDone = { keyboardController?.hide() }
                             ),
                             placeholder     = { Text("0") },
-                            // Persistent hint below the field showing the valid range,
-                            // so users understand why a third digit is not accepted.
-                            supportingText  = { Text(strings.pointsRange) },
+                            // When the value is out of range, mark the field red and
+                            // replace the range hint with a descriptive error message.
+                            isError         = pointsError,
+                            supportingText  = {
+                                if (pointsError) {
+                                    Text(
+                                        text  = strings.pointsOutOfRange,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                } else {
+                                    // Normal hint: remind the user of the valid range.
+                                    Text(strings.pointsRange)
+                                }
+                            },
                             singleLine      = true,
-                            modifier        = Modifier.fillMaxWidth()
+                            // testTag lets UI tests identify and interact with this field.
+                            modifier        = Modifier.fillMaxWidth().testTag("points_input")
                         )
                     }
                 }
@@ -492,6 +513,9 @@ fun GameScreen(
 
                 // ── Confirm / back ─────────────────────────────────────────────
                 Button(
+                    // Disabled while the points field shows an error so the user cannot
+                    // submit an out-of-range value.
+                    enabled = !pointsError,
                     onClick = {
                         // Parse the typed points; default to 0 if empty, clamp to 0–91.
                         val points = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0

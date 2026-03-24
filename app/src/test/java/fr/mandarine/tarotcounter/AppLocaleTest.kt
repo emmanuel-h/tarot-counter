@@ -194,4 +194,28 @@ class AppLocaleTest {
     fun fr_lostOutcome_with_score() {
         assertEquals(" — Perdu (-40)", appStrings(AppLocale.FR).lostOutcome(" (-40)"))
     }
+
+    // ── pointsOutOfRange error string ─────────────────────────────────────────
+
+    @Test
+    fun en_pointsOutOfRange_is_non_empty() {
+        // The error string must be present so the UI can display it in the TextField.
+        val msg = appStrings(AppLocale.EN).pointsOutOfRange
+        assert(msg.isNotBlank()) { "EN pointsOutOfRange should not be blank" }
+    }
+
+    @Test
+    fun fr_pointsOutOfRange_is_non_empty() {
+        val msg = appStrings(AppLocale.FR).pointsOutOfRange
+        assert(msg.isNotBlank()) { "FR pointsOutOfRange should not be blank" }
+    }
+
+    @Test
+    fun en_and_fr_pointsOutOfRange_are_different() {
+        // Both locales must provide distinct translations — they must not fall back to the same string.
+        assertNotEquals(
+            appStrings(AppLocale.EN).pointsOutOfRange,
+            appStrings(AppLocale.FR).pointsOutOfRange
+        )
+    }
 }
