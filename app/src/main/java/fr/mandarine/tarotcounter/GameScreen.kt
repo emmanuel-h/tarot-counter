@@ -530,60 +530,70 @@ fun GameScreen(
                 Spacer(Modifier.height(12.dp))
 
                 // ── Chelem (grand slam) ────────────────────────────────────────
-                // Row puts the label and the ⓘ tooltip icon side by side.
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    FormLabel(strings.chelemLabel)
-                    BonusInfoIcon(
-                        title       = strings.chelemLabel,
-                        body        = strings.chelemTooltipBody
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
+                // The dropdown is self-labelled: it shows "Chelem" when nothing is
+                // selected (Chelem.NONE) and the chosen outcome's name otherwise.
+                // This removes the need for a separate section header above the field.
+                // The ⓘ tooltip icon is placed immediately to the right of the dropdown.
 
                 // Tracks whether the chelem dropdown menu is open.
                 var chelemExpanded by remember { mutableStateOf(false) }
 
-                // ExposedDropdownMenuBox is the Material 3 combo-box pattern (same as bouts).
-                // The text field shows the current selection; tapping it opens the menu.
-                ExposedDropdownMenuBox(
-                    expanded         = chelemExpanded,
-                    onExpandedChange = { chelemExpanded = !chelemExpanded },
-                    modifier         = Modifier.testTag("chelem_dropdown")
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier              = Modifier.fillMaxWidth()
                 ) {
-                    OutlinedTextField(
-                        value         = chelem.localizedName(locale),
-                        onValueChange = {},
-                        readOnly      = true,
-                        trailingIcon  = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = chelemExpanded)
-                        },
-                        colors        = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        singleLine    = true,
-                        modifier      = Modifier
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
+                    // ExposedDropdownMenuBox is the Material 3 combo-box pattern (same as bouts).
+                    // weight(1f) lets it fill the row minus the ⓘ icon space.
+                    ExposedDropdownMenuBox(
                         expanded         = chelemExpanded,
-                        onDismissRequest = { chelemExpanded = false }
+                        onExpandedChange = { chelemExpanded = !chelemExpanded },
+                        modifier         = Modifier
+                            .weight(1f)
+                            .testTag("chelem_dropdown")
                     ) {
-                        for (c in Chelem.entries) {
-                            DropdownMenuItem(
-                                text           = { Text(c.localizedName(locale)) },
-                                onClick        = {
-                                    // When the user picks a new chelem option, reset the
-                                    // associated player — the previous selection is no longer valid.
-                                    if (chelem != c) chelemPlayer = null
-                                    chelem         = c
-                                    chelemExpanded = false
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                            )
+                        OutlinedTextField(
+                            // Show the placeholder "Chelem" when no outcome is selected,
+                            // or the chosen outcome's name when one is active.
+                            value         = if (chelem == Chelem.NONE)
+                                                strings.chelemPlaceholder
+                                            else
+                                                chelem.localizedName(locale),
+                            onValueChange = {},
+                            readOnly      = true,
+                            trailingIcon  = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = chelemExpanded)
+                            },
+                            colors        = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            singleLine    = true,
+                            modifier      = Modifier
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded         = chelemExpanded,
+                            onDismissRequest = { chelemExpanded = false }
+                        ) {
+                            for (c in Chelem.entries) {
+                                DropdownMenuItem(
+                                    text           = { Text(c.localizedName(locale)) },
+                                    onClick        = {
+                                        // When the user picks a new chelem option, reset the
+                                        // associated player — the previous selection is no longer valid.
+                                        if (chelem != c) chelemPlayer = null
+                                        chelem         = c
+                                        chelemExpanded = false
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                )
+                            }
                         }
                     }
+                    // ⓘ icon explains the chelem bonus amounts.
+                    BonusInfoIcon(
+                        title = strings.chelemLabel,
+                        body  = strings.chelemTooltipBody
+                    )
                 }
 
                 // ── Chelem player selector ─────────────────────────────────────

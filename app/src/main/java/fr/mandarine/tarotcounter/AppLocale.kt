@@ -68,8 +68,11 @@ data class AppStrings(
     val scores: String,
     val history: String,
     val endGame: String,
-    // Section label above the Chelem dropdown.
+    // Tooltip title and section label for the chelem bonus (still used by the ⓘ icon).
     val chelemLabel: String,
+    // Text shown inside the dropdown field when no chelem is selected (Chelem.NONE).
+    // This acts as a self-describing placeholder so no separate section header is needed.
+    val chelemPlaceholder: String,
     // Label for the player selector shown below the chelem dropdown when a non-None option is chosen.
     val chelemPlayerLabel: String,
     // Informational note shown when a chelem is announced, reminding the table that the
@@ -163,6 +166,7 @@ val EnStrings = AppStrings(
     history               = "History",
     endGame               = "End Game",
     chelemLabel           = "Chelem (grand slam)",
+    chelemPlaceholder     = "Chelem",
     chelemPlayerLabel     = "Who called the chelem?",
     chelemPlaysFirst      = { name -> "$name plays first this round." },
     noneOption            = "None",
@@ -235,6 +239,7 @@ val FrStrings = AppStrings(
     history               = "Historique",
     endGame               = "Fin de partie",
     chelemLabel           = "Chelem (grand chelem)",
+    chelemPlaceholder     = "Chelem",
     chelemPlayerLabel     = "Qui a annoncé le chelem ?",
     chelemPlaysFirst      = { name -> "$name joue en premier ce tour." },
     noneOption            = "Personne",

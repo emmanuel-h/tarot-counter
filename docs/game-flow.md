@@ -47,7 +47,7 @@ Tapping the active chip again (or **← Change contract**) collapses the form an
 | Poignée            | Checkbox per player         | Player who showed a poignée (10+ trumps) |
 | Double poignée     | Checkbox per player         | Player who showed a double poignée (13+ trumps) |
 | Triple poignée     | Checkbox per player         | Player who showed a triple poignée (15+ trumps) |
-| Chelem             | Dropdown + player selector  | Grand slam outcome and who called it |
+| Chelem             | Self-labelled dropdown + player selector | Grand slam outcome and who called it. Shows "Chelem" when nothing is selected, otherwise the chosen outcome's name. |
 
 The four player-assigned bonuses are displayed in a compact grid. Each row shows a **label** with an ⓘ info icon immediately next to it (not pushed to the edge), and one **checkbox per player**. Ticking a checkbox assigns that bonus to that player; ticking it again clears the assignment. At most one player can hold each bonus at a time.
 
