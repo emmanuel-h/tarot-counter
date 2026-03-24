@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -33,16 +34,18 @@ import androidx.compose.ui.unit.dp
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
+import java.util.Locale as JavaLocale
 
 // LandingScreen lets the user configure how many players there are and enter their names.
 // It also shows:
+//   - a language switcher (🇬🇧 / 🇫🇷) in the top-right corner
 //   - a "Resume Game" card (if there is an unfinished game saved from a previous session)
 //   - a "Past Games" list at the bottom (if any games have been completed)
 //
 // onStartGame:     lambda called when the user presses "Start Game" with a list of names.
 // onResumeGame:    lambda called when the user taps "Resume" — passes the saved state back
 //                  to MainActivity so GameScreen can be initialized from it.
+// onLocaleChange:  lambda called when the user taps a flag to switch language.
 // inProgressGame:  a game that was interrupted mid-session, or null if there is none.
 // pastGames:       list of completed games; defaults to empty for the @Preview below.
 @Composable
@@ -51,8 +54,13 @@ fun LandingScreen(
     inProgressGame: InProgressGame? = null,
     pastGames: List<SavedGame> = emptyList(),
     onStartGame: (List<String>) -> Unit = {},
-    onResumeGame: (InProgressGame) -> Unit = {}
+    onResumeGame: (InProgressGame) -> Unit = {},
+    onLocaleChange: (AppLocale) -> Unit = {}
 ) {
+    // Read the active locale from the composition tree and resolve all strings.
+    val locale = LocalAppLocale.current
+    val strings = appStrings(locale)
+
     // `remember` keeps a value alive across recompositions (UI redraws).
     // `mutableIntStateOf` creates an integer that, when changed, triggers a redraw.
     var selectedPlayers by remember { mutableIntStateOf(3) }
@@ -64,8 +72,6 @@ fun LandingScreen(
     // Column stacks children vertically. `verticalScroll` makes it scrollable
     // in case the content (name fields + button) doesn't fit on smaller screens.
     // `imePadding()` shrinks this Column by the keyboard height when the IME is open.
-    // Combined with `verticalScroll`, this means all text fields remain reachable by
-    // scrolling even while the keyboard is visible.
     // `Arrangement.Top` is the correct choice for scrollable columns: centering fights
     // with overflow and can clip content when the keyboard reduces the available height.
     Column(
@@ -77,10 +83,34 @@ fun LandingScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+
+        // ── Language switcher ─────────────────────────────────────────────────
+        // Two flag chips aligned to the right edge of the screen.
+        // The chip for the active locale is shown as selected (filled background).
+        // The chips use emoji flags — these render as colour flag icons on Android.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            FilterChip(
+                selected = locale == AppLocale.EN,
+                onClick  = { onLocaleChange(AppLocale.EN) },
+                label    = { Text("🇬🇧") }
+            )
+            Spacer(Modifier.width(8.dp))
+            FilterChip(
+                selected = locale == AppLocale.FR,
+                onClick  = { onLocaleChange(AppLocale.FR) },
+                label    = { Text("🇫🇷") }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Text displays a string. MaterialTheme.typography gives us pre-defined
         // text styles that match Material Design (headlineLarge is a big bold title).
         Text(
-            text = "Compteur de points",
+            text = strings.appTitle,
             style = MaterialTheme.typography.headlineLarge
         )
 
@@ -90,6 +120,7 @@ fun LandingScreen(
             Spacer(modifier = Modifier.height(24.dp))
             ResumeGameCard(
                 game = inProgressGame,
+                strings = strings,
                 onResume = { onResumeGame(inProgressGame) }
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -99,7 +130,7 @@ fun LandingScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Number of players",
+            text = strings.numberOfPlayers,
             style = MaterialTheme.typography.titleMedium
         )
 
@@ -130,42 +161,40 @@ fun LandingScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Player names",
+            text = strings.playerNamesLabel,
             style = MaterialTheme.typography.titleMedium
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Resolve display names: blank fields fall back to "Player N" (same logic as GameScreen).
-        // This ensures that leaving two fields blank is treated as a duplicate ("Player 1" twice).
-        val resolvedNames = playerNames.mapIndexed { i, name -> name.ifBlank { "Player ${i + 1}" } }
+        // Resolve display names: blank fields fall back to the localized "Player N" equivalent.
+        // This ensures that leaving two fields blank is treated as a duplicate.
+        val resolvedNames = playerNames.mapIndexed { i, name ->
+            name.ifBlank { strings.playerFallback(i + 1) }
+        }
 
         // Build a set of lower-cased names to detect duplicates case-insensitively.
-        // `lowerNames[i]` is the resolved name for player i, lowercased.
         val lowerNames = resolvedNames.map { it.lowercase() }
 
         // `duplicateFlags[i]` is true when the same resolved name appears more than once.
-        // We count occurrences in `lowerNames`; if count > 1 the slot is a duplicate.
         val duplicateFlags = lowerNames.map { name -> lowerNames.count { it == name } > 1 }
 
         // The button is disabled and a warning is shown whenever any duplicate exists.
         val hasDuplicates = duplicateFlags.any { it }
 
         // Loop over each player slot and render a text field for their name.
-        // `playerNames.indices` gives us 0, 1, 2 (or up to 4 for 5 players).
         for (i in playerNames.indices) {
             // OutlinedTextField is a Material Design text input with a visible border.
-            // `value` is the current text; `onValueChange` updates it when the user typed.
             // `isError` turns the border red when this slot's name conflicts with another.
             // `supportingText` shows a small hint below the field (only when there is an error).
             OutlinedTextField(
                 value = playerNames[i],
                 onValueChange = { playerNames[i] = it }, // `it` is the new string the user typed
-                label = { Text("Player ${i + 1}") },
+                label = { Text(strings.playerFallback(i + 1)) },
                 singleLine = true,                        // prevent multi-line input
                 isError = duplicateFlags[i],
                 supportingText = if (duplicateFlags[i]) {
-                    { Text("Name already used") }
+                    { Text(strings.nameAlreadyUsed) }
                 } else null,
                 modifier = Modifier
                     .fillMaxWidth(0.8f)                   // 80% of screen width
@@ -184,7 +213,7 @@ fun LandingScreen(
             enabled = !hasDuplicates,
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Start Game")
+            Text(strings.startGame)
         }
 
         // ── Past Games ────────────────────────────────────────────────────────
@@ -195,7 +224,7 @@ fun LandingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Past Games",
+                text = strings.pastGames,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -203,7 +232,7 @@ fun LandingScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             for (game in pastGames) {
-                PastGameCard(game = game)
+                PastGameCard(game = game, strings = strings)
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -218,9 +247,14 @@ fun LandingScreen(
 // Tapping "Resume" calls onResume, which navigates straight into GameScreen with
 // the saved state (player names, round history, starting index).
 @Composable
-private fun ResumeGameCard(game: InProgressGame, onResume: () -> Unit) {
+private fun ResumeGameCard(
+    game: InProgressGame,
+    strings: AppStrings,
+    onResume: () -> Unit
+) {
     val roundsPlayed = game.rounds.size
-    val roundLabel = if (roundsPlayed == 1) "1 round played" else "$roundsPlayed rounds played"
+    // Builds e.g. "Round 3 · 2 rounds played" using the localized templates.
+    val roundLabel = strings.roundsPlayed(roundsPlayed)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -235,7 +269,7 @@ private fun ResumeGameCard(game: InProgressGame, onResume: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "Resume Game",
+                text = strings.resumeGameTitle,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -247,7 +281,7 @@ private fun ResumeGameCard(game: InProgressGame, onResume: () -> Unit) {
             )
             Text(
                 // Show how far the game has progressed, e.g. "Round 4 · 3 rounds played".
-                text = "Round ${game.currentRound} · $roundLabel",
+                text = strings.resumeRoundDetail(game.currentRound, roundLabel),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -256,7 +290,7 @@ private fun ResumeGameCard(game: InProgressGame, onResume: () -> Unit) {
                 onClick = onResume,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Resume")
+                Text(strings.resume)
             }
         }
     }
@@ -270,31 +304,29 @@ private fun ResumeGameCard(game: InProgressGame, onResume: () -> Unit) {
 //   - how many rounds were played
 //   - the date the game was saved
 @Composable
-private fun PastGameCard(game: SavedGame) {
+private fun PastGameCard(game: SavedGame, strings: AppStrings) {
     // Compute the winner(s) from the final scores that were saved with the game.
     // `findWinners` returns a list to handle the case where two players are tied.
     val winners = findWinners(game.finalScores)
 
-    // Build a human-readable winner line.
+    // Build a human-readable winner line using the localized string templates.
     val winnerText = when {
-        winners.isEmpty() -> "No rounds played"
+        winners.isEmpty() -> strings.noRoundsPlayed
         winners.size == 1 -> {
             val score = game.finalScores[winners.first()] ?: 0
             // Prepend "+" for positive scores so the sign is always explicit.
             val sign = if (score >= 0) "+" else ""
-            "Winner: ${winners.first()} ($sign$score)"
+            strings.winnerResult(winners.first(), sign, score)
         }
-        else -> "Tie: ${winners.joinToString(" & ")}"
+        else -> strings.tieResult(winners.joinToString(" & "))
     }
 
     // Format the timestamp as a readable date (e.g. "23/03/2026").
-    // `SimpleDateFormat` is the standard Java date formatter available on all API levels.
-    // `Locale.getDefault()` ensures the format follows the user's regional settings.
-    val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    // `JavaLocale.getDefault()` ensures the format follows the user's regional settings.
+    val dateStr = SimpleDateFormat("dd/MM/yyyy", JavaLocale.getDefault())
         .format(Date(game.datestamp))
 
     val roundCount = game.rounds.size
-    val roundLabel = if (roundCount == 1) "1 round" else "$roundCount rounds"
 
     // Card draws a rounded, elevated surface — a good visual container for a list item.
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -316,7 +348,7 @@ private fun PastGameCard(game: SavedGame) {
             )
             // Round count and date on the third line, separated by a dot.
             Text(
-                text = "$roundLabel · $dateStr",
+                text = "${strings.roundCount(roundCount)} · $dateStr",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -47,8 +47,19 @@ class LandingScreenTest {
 
     @Test
     fun screen_shows_app_title() {
+        // The default locale (AppLocale.EN) renders the English title.
         launch()
-        composeTestRule.onNodeWithText("Compteur de points").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Tarot Counter").assertIsDisplayed()
+    }
+
+    // ── Spec: language switcher is shown ──────────────────────────────────────
+
+    @Test
+    fun language_switcher_shows_both_flags() {
+        launch()
+        // Both flag emoji chips must be present on the landing screen.
+        composeTestRule.onNodeWithText("🇬🇧").assertIsDisplayed()
+        composeTestRule.onNodeWithText("🇫🇷").assertIsDisplayed()
     }
 
     // ── Spec: player-count chips 3, 4, 5 ─────────────────────────────────────

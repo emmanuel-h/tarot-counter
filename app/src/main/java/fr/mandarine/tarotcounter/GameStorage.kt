@@ -33,6 +33,9 @@ private val GAMES_KEY = stringPreferencesKey("saved_games")
 // There is at most one in-progress game at a time; it is a single JSON object (not an array).
 private val IN_PROGRESS_KEY = stringPreferencesKey("in_progress_game")
 
+// The key under which the user's chosen language is stored ("EN" or "FR").
+private val LOCALE_KEY = stringPreferencesKey("app_locale")
+
 // How many past games to keep on the device.
 // Older games beyond this limit are dropped when a new game is saved.
 private const val MAX_SAVED_GAMES = 20
@@ -91,6 +94,23 @@ class GameStorage(private val context: Context) {
     suspend fun clearInProgressGame() {
         context.dataStore.edit { prefs ->
             prefs.remove(IN_PROGRESS_KEY)
+        }
+    }
+
+    // Returns a Flow that emits the user's saved locale preference, or null if none was saved.
+    // null means "use the system locale" — MainActivity interprets it that way.
+    fun loadLocale(): Flow<AppLocale?> =
+        context.dataStore.data
+            .catch { emit(emptyPreferences()) }
+            .map { prefs ->
+                prefs[LOCALE_KEY]?.let { runCatching { AppLocale.valueOf(it) }.getOrNull() }
+            }
+
+    // Persists the user's chosen locale to DataStore.
+    // `locale.name` stores the enum constant name ("EN" or "FR") as a plain string.
+    suspend fun saveLocale(locale: AppLocale) {
+        context.dataStore.edit { prefs ->
+            prefs[LOCALE_KEY] = locale.name
         }
     }
 

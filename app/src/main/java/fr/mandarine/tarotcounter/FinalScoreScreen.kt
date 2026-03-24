@@ -69,6 +69,9 @@ fun FinalScoreScreen(
     onNewGame: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Read the active locale and resolve all strings once at the top of the composable.
+    val strings = appStrings(LocalAppLocale.current)
+
     // `computeFinalTotals` sums each player's per-round scores across all rounds.
     // It lives in GameModels so it can be unit-tested without Compose.
     val totals = computeFinalTotals(playerNames, roundHistory)
@@ -101,7 +104,7 @@ fun FinalScoreScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to game"
+                    contentDescription = strings.backToGame
                 )
             }
         }
@@ -116,7 +119,7 @@ fun FinalScoreScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Game Over",
+            text = strings.gameOver,
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -140,7 +143,7 @@ fun FinalScoreScreen(
                 if (winners.size == 1) {
                     // Single winner ─ show "Winner", the name, and their final score.
                     Text(
-                        text = "Winner",
+                        text = strings.winner,
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -155,14 +158,14 @@ fun FinalScoreScreen(
                     val score = totals[winners.first()] ?: 0
                     val sign = if (score >= 0) "+" else ""
                     Text(
-                        text = "$sign$score pts",
+                        text = strings.scoreDisplay(sign, score),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 } else if (winners.isNotEmpty()) {
                     // Tie ─ list all co-winners.
                     Text(
-                        text = "It's a tie!",
+                        text = strings.itsATie,
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -190,7 +193,7 @@ fun FinalScoreScreen(
         if (roundHistory.isEmpty()) {
             // No rounds were played — show a simple notice instead of an empty table.
             Text(
-                text = "No rounds played",
+                text = strings.noRoundsPlayed,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -200,9 +203,9 @@ fun FinalScoreScreen(
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
             ) {
-                // Header row: "Round" label + one header per player name.
+                // Header row: localized "Round" label + one header per player name.
                 FinalScoreTableRow(
-                    cells = listOf("Round") + playerNames,
+                    cells = listOf(strings.roundColumn) + playerNames,
                     isHeader = true,
                     winnerColumnIndices = winnerColumnIndices
                 )
@@ -248,7 +251,7 @@ fun FinalScoreScreen(
             onClick = onNewGame,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("New Game")
+            Text(strings.newGame)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -261,7 +264,7 @@ fun FinalScoreScreen(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Back to game")
+            Text(strings.backToGame)
         }
     }
 }

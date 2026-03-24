@@ -46,6 +46,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             initialValue = null
         )
 
+    // locale exposes the user's saved language preference, or null if none has been saved yet.
+    // MainActivity uses null to mean "fall back to the device's system locale".
+    val locale: StateFlow<AppLocale?> = storage.loadLocale()
+        .stateIn(
+            scope        = viewModelScope,
+            started      = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null
+        )
+
     // Saves the completed game to the past-games list and clears the in-progress state.
     //
     // This is called when the user presses "End Game" (not "New Game"), so the game is
@@ -77,6 +86,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun clearInProgressGame() {
         viewModelScope.launch {
             storage.clearInProgressGame()
+        }
+    }
+
+    // Persists the user's chosen language so it is restored on the next app launch.
+    fun setLocale(locale: AppLocale) {
+        viewModelScope.launch {
+            storage.saveLocale(locale)
         }
     }
 }

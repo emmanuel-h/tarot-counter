@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-// Width for the "Round" column — short because round numbers only go up to ~99.
+// Width for the "Round" / "Manche" column — short because round numbers only go up to ~99.
 private val ROUND_COL_WIDTH: Dp = 64.dp
 
 // Width for each player column — wide enough for score strings like "+1000"
@@ -37,7 +37,7 @@ private val PLAYER_COL_WIDTH: Dp = 80.dp
  * ScoreHistoryScreen displays the score evolution as a table.
  *
  * Layout:
- *   - Header: back arrow + "Score history" title
+ *   - Header: back arrow + "Score history" title (localized)
  *   - Table: one row per completed round, one column per player
  *     - Each cell shows the player's **cumulative** total after that round,
  *       matching exactly what the scoreboard shows on the game screen.
@@ -63,6 +63,9 @@ fun ScoreHistoryScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Read the active locale and resolve all strings once at the top of the composable.
+    val strings = appStrings(LocalAppLocale.current)
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -75,11 +78,11 @@ fun ScoreHistoryScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to game"
+                    contentDescription = strings.backToGame
                 )
             }
             Text(
-                text = "Score history",
+                text = strings.scoreHistory,
                 style = MaterialTheme.typography.headlineSmall
             )
         }
@@ -97,9 +100,9 @@ fun ScoreHistoryScreen(
                 .horizontalScroll(rememberScrollState())
                 .verticalScroll(rememberScrollState())
         ) {
-            // Column headers: "Round", then one header per player name.
+            // Column headers: localized "Round" header, then one header per player name.
             ScoreTableRow(
-                cells = listOf("Round") + playerNames,
+                cells = listOf(strings.roundColumn) + playerNames,
                 isHeader = true
             )
             HorizontalDivider()

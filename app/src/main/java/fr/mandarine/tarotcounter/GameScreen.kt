@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import java.util.UUID
@@ -52,7 +56,7 @@ import java.util.UUID
 // GameScreen handles the full round-by-round flow of a Tarot game on a single scrollable page.
 //
 // All information is presented together: the compact scoreboard, the contract selection,
-// and — once a contract is chosen — the scoring details form. There is no longer a separate
+// and — once a contract is chosen — the scoring details form. There is no separate
 // step 2 screen; everything lives in one scrollable column.
 //
 // playerNames:      the list of players set up on the previous screen.
@@ -75,6 +79,10 @@ fun GameScreen(
     onEndGame: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Read the active locale from the composition tree and resolve all strings once.
+    val locale = LocalAppLocale.current
+    val strings = appStrings(locale)
+
     // Current round number — restored from the saved state when resuming, otherwise 1.
     var currentRound by remember { mutableIntStateOf(inProgressGame?.currentRound ?: 1) }
 
@@ -100,9 +108,16 @@ fun GameScreen(
     // Controls whether the final score screen overlay is shown.
     var showFinalScore by remember { mutableStateOf(false) }
 
-    // Returns the display name for a player: their typed name, or "Player N" if blank.
+    // Controls whether the "Skip round?" confirmation dialog is visible.
+    var showSkipDialog by remember { mutableStateOf(false) }
+
+    // Controls whether the "End game?" confirmation dialog is visible.
+    var showEndGameDialog by remember { mutableStateOf(false) }
+
+    // Returns the display name for a player: their typed name, or the localized
+    // fallback (e.g. "Player 1" in English, "Joueur 1" in French) if blank.
     fun displayName(index: Int): String =
-        playerNames[index].ifBlank { "Player ${index + 1}" }
+        playerNames[index].ifBlank { strings.playerFallback(index + 1) }
 
     // Derive the current taker from the starting index and the round number.
     val currentTakerIndex = (startingIndex + currentRound - 1) % playerNames.size
@@ -208,7 +223,7 @@ fun GameScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Round $currentRound",
+                text = strings.roundHeader(currentRound),
                 style = MaterialTheme.typography.headlineMedium
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -216,7 +231,7 @@ fun GameScreen(
                     HistoryButton(onClick = { showScoreHistory = true })
                     Spacer(Modifier.width(8.dp))
                 }
-                EndGameButton(onClick = { endGame() })
+                EndGameButton(onClick = { showEndGameDialog = true })
             }
         }
 
@@ -225,7 +240,11 @@ fun GameScreen(
         // in view without leaving the page.
         if (roundHistory.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
-            CompactScoreboard(displayNames = displayNames, roundHistory = roundHistory)
+            CompactScoreboard(
+                displayNames = displayNames,
+                roundHistory = roundHistory,
+                scoresLabel  = strings.scores
+            )
         }
 
         Spacer(Modifier.height(12.dp))
@@ -237,7 +256,7 @@ fun GameScreen(
         // that contract (and expands the details form below). Tapping the already-
         // selected chip deselects it and collapses the form.
         Text(
-            text = "$currentTaker — choose a contract:",
+            text = strings.chooseContract(currentTaker),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.align(Alignment.Start)
         )
@@ -248,7 +267,7 @@ fun GameScreen(
                 FilterChip(
                     selected = selectedContract == c,
                     onClick  = { selectedContract = if (selectedContract == c) null else c },
-                    label    = { Text(c.displayName) }
+                    label    = { Text(c.localizedName(locale)) }
                 )
             }
         }
@@ -256,11 +275,57 @@ fun GameScreen(
         Spacer(Modifier.height(8.dp))
 
         // Outlined (less prominent) so it is visually secondary to the contract chips.
+        // Tapping opens a confirmation dialog rather than skipping immediately,
+        // preventing accidental round skips.
         OutlinedButton(
-            onClick  = { recordSkipped() },
+            onClick  = { showSkipDialog = true },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Skip round")
+            Text(strings.skipRound)
+        }
+
+        // ── Skip round confirmation dialog ────────────────────────────────────
+        if (showSkipDialog) {
+            AlertDialog(
+                onDismissRequest = { showSkipDialog = false },
+                title   = { Text(strings.skipRoundConfirmTitle) },
+                text    = { Text(strings.skipRoundConfirmBody) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showSkipDialog = false
+                        recordSkipped()
+                    }) {
+                        Text(strings.skipRound)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showSkipDialog = false }) {
+                        Text(strings.cancel)
+                    }
+                }
+            )
+        }
+
+        // ── End game confirmation dialog ──────────────────────────────────────
+        if (showEndGameDialog) {
+            AlertDialog(
+                onDismissRequest = { showEndGameDialog = false },
+                title   = { Text(strings.endGameConfirmTitle) },
+                text    = { Text(strings.endGameConfirmBody) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showEndGameDialog = false
+                        endGame()
+                    }) {
+                        Text(strings.endGame)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEndGameDialog = false }) {
+                        Text(strings.cancel)
+                    }
+                }
+            )
         }
 
         // ── Inline round details ──────────────────────────────────────────────
@@ -289,53 +354,64 @@ fun GameScreen(
                 // the numeric keyboard after entering the points value.
                 val keyboardController = LocalSoftwareKeyboardController.current
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
                 HorizontalDivider()
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // ── Bouts (oudlers) ───────────────────────────────────────────
-                FormLabel("Number of bouts (oudlers)")
-                Spacer(Modifier.height(8.dp))
-                // FlowRow wraps chips to the next line if the row is too narrow.
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (n in 0..3) {
-                        FilterChip(
-                            selected = bouts == n,
-                            onClick  = { bouts = n },
-                            label    = { Text(n.toString()) }
+                // ── Bouts + Points side by side ───────────────────────────────
+                // Placing these in a Row cuts one section of vertical space compared
+                // to stacking them, helping everything fit on one screen.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Left half: bout chips
+                    Column(modifier = Modifier.weight(1f)) {
+                        FormLabel(strings.numberOfBouts)
+                        Spacer(Modifier.height(8.dp))
+                        // FlowRow wraps if the half-width is too narrow (rare).
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (n in 0..3) {
+                                FilterChip(
+                                    selected = bouts == n,
+                                    onClick  = { bouts = n },
+                                    label    = { Text(n.toString()) }
+                                )
+                            }
+                        }
+                    }
+                    // Right half: points text field
+                    Column(modifier = Modifier.weight(1f)) {
+                        FormLabel(strings.pointsScoredByTaker)
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = pointsText,
+                            onValueChange = { input ->
+                                // Only accept up to two digits (max score is 91).
+                                if (input.all { it.isDigit() } && input.length <= 2) {
+                                    pointsText = input
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction    = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { keyboardController?.hide() }
+                            ),
+                            placeholder     = { Text("0") },
+                            // Persistent hint below the field showing the valid range,
+                            // so users understand why a third digit is not accepted.
+                            supportingText  = { Text(strings.pointsRange) },
+                            singleLine      = true,
+                            modifier        = Modifier.fillMaxWidth()
                         )
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
-
-                // ── Points ────────────────────────────────────────────────────
-                FormLabel("Points scored by taker (0–91)")
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = pointsText,
-                    onValueChange = { input ->
-                        // Only accept up to two digits (max score is 91).
-                        if (input.all { it.isDigit() } && input.length <= 2) {
-                            pointsText = input
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction    = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { keyboardController?.hide() }
-                    ),
-                    placeholder = { Text("0") },
-                    singleLine  = true,
-                    // fillMaxWidth(0.4f) gives a compact field — points are at most two digits.
-                    modifier = Modifier.fillMaxWidth(0.4f)
-                )
-
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
                 HorizontalDivider()
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
 
                 // ── Partner selection (5-player only) ─────────────────────────
                 // In a 5-player game the taker calls a silent partner before the round.
@@ -343,7 +419,8 @@ fun GameScreen(
                 if (displayNames.size == 5) {
                     val partnerOptions = displayNames.filter { it != currentTaker }
                     PlayerChipSelector(
-                        label          = "Partner (called by taker)",
+                        label          = strings.partnerCalledByTaker,
+                        noneLabel      = strings.noneOption,
                         selectedPlayer = selectedPartner,
                         playerNames    = partnerOptions,
                         onSelect       = { selectedPartner = it }
@@ -353,38 +430,46 @@ fun GameScreen(
                     Spacer(Modifier.height(16.dp))
                 }
 
-                // ── Player-assigned bonuses ────────────────────────────────────
-                // Each bonus belongs to a specific player (or nobody).
-                PlayerChipSelector("Petit au bout",   petitAuBout,   displayNames) { petitAuBout   = it }
-                Spacer(Modifier.height(12.dp))
-                PlayerChipSelector("Misère",          misere,        displayNames) { misere        = it }
-                Spacer(Modifier.height(12.dp))
-                PlayerChipSelector("Double misère",   doubleMisere,  displayNames) { doubleMisere  = it }
-                Spacer(Modifier.height(12.dp))
-                PlayerChipSelector("Poignée",         poignee,       displayNames) { poignee       = it }
-                Spacer(Modifier.height(12.dp))
-                PlayerChipSelector("Double poignée",  doublePoignee, displayNames) { doublePoignee = it }
-                Spacer(Modifier.height(12.dp))
-                PlayerChipSelector("Triple poignée",  triplePoignee, displayNames) { triplePoignee = it }
+                // ── Player-assigned bonuses (compact grid) ─────────────────────
+                // All six bonuses are shown as a single grid: one row per bonus,
+                // one column per player (plus a "—" column for "nobody").
+                // This replaces six separate selectors and saves most of the vertical space.
+                CompactBonusGrid(
+                    playerNames     = displayNames,
+                    bonusLabels     = listOf(
+                        strings.petit,
+                        strings.misere,
+                        strings.doubleMisere,
+                        strings.poignee,
+                        strings.doublePoignee,
+                        strings.triplePoignee
+                    ),
+                    petitAuBout     = petitAuBout,    onPetit         = { petitAuBout   = it },
+                    misere          = misere,          onMisere        = { misere        = it },
+                    doubleMisere    = doubleMisere,    onDoubleMisere  = { doubleMisere  = it },
+                    poignee         = poignee,         onPoignee       = { poignee       = it },
+                    doublePoignee   = doublePoignee,   onDoublePoignee = { doublePoignee = it },
+                    triplePoignee   = triplePoignee,   onTriplePoignee = { triplePoignee = it }
+                )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
                 HorizontalDivider()
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
 
                 // ── Chelem (grand slam) ────────────────────────────────────────
-                FormLabel("Chelem (grand slam)")
-                Spacer(Modifier.height(8.dp))
+                FormLabel(strings.chelemLabel)
+                Spacer(Modifier.height(6.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     for (c in Chelem.entries) {
                         FilterChip(
                             selected = chelem == c,
                             onClick  = { chelem = c },
-                            label    = { Text(c.displayName) }
+                            label    = { Text(c.localizedName(locale)) }
                         )
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
                 // ── Confirm / back ─────────────────────────────────────────────
                 Button(
@@ -410,12 +495,12 @@ fun GameScreen(
                     },
                     modifier = Modifier.fillMaxWidth(0.8f)
                 ) {
-                    Text("Confirm round")
+                    Text(strings.confirmRound)
                 }
 
                 // Secondary action: deselect the contract and collapse the form.
                 TextButton(onClick = { selectedContract = null }) {
-                    Text("← Change contract")
+                    Text(strings.changeContract)
                 }
             }
         }
@@ -429,16 +514,26 @@ fun GameScreen(
             Spacer(Modifier.height(12.dp))
 
             for (round in roundHistory.reversed()) {
-                val contractText = round.contract?.displayName ?: "Skipped"
-                val detailsText  = round.details?.let { " · ${it.bouts} bouts · ${it.points} pts" } ?: ""
-                val takerScore   = round.playerScores[round.takerName]
-                val outcomeText  = when (round.won) {
-                    true  -> { val s = if (takerScore != null) " (+$takerScore)" else ""; " — Won$s" }
-                    false -> { val s = if (takerScore != null) " ($takerScore)" else ""; " — Lost$s" }
+                // Build each part of the history line from localized string templates.
+                val contractText = round.contract?.localizedName(locale) ?: strings.skipped
+                val detailsText  = round.details?.let {
+                    strings.boutsPointsDetail(it.bouts, it.points)
+                } ?: ""
+                val takerScore = round.playerScores[round.takerName]
+                val outcomeText = when (round.won) {
+                    true  -> {
+                        val s = if (takerScore != null) " (+$takerScore)" else ""
+                        strings.wonOutcome(s)
+                    }
+                    false -> {
+                        val s = if (takerScore != null) " ($takerScore)" else ""
+                        strings.lostOutcome(s)
+                    }
                     null  -> ""
                 }
                 Text(
-                    text  = "Round ${round.roundNumber}: ${round.takerName} — $contractText$detailsText$outcomeText",
+                    text  = strings.roundHistoryPrefix(round.roundNumber, round.takerName) +
+                            contractText + detailsText + outcomeText,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(4.dp))
@@ -455,12 +550,13 @@ fun GameScreen(
 @Composable
 private fun CompactScoreboard(
     displayNames: List<String>,
-    roundHistory: List<RoundResult>
+    roundHistory: List<RoundResult>,
+    scoresLabel: String
 ) {
-    // "Scores" label — required by the GameScreen spec and checked by tests.
+    // The label is required by the spec and checked by tests.
     // fillMaxWidth() makes the text span the card width, so it aligns left naturally.
     Text(
-        text  = "Scores",
+        text  = scoresLabel,
         style = MaterialTheme.typography.titleSmall,
         modifier = Modifier.fillMaxWidth()
     )
@@ -499,10 +595,11 @@ private fun CompactScoreboard(
 
 // ── Shared composables ────────────────────────────────────────────────────────
 
-// A tonal button with a bar-chart icon and "History" label.
+// A tonal button with a bar-chart icon and the localized "History" label.
 // Used in the game screen header to open the full score history overlay.
 @Composable
 fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val strings = appStrings(LocalAppLocale.current)
     FilledTonalButton(onClick = onClick, modifier = modifier) {
         Icon(
             imageVector        = Icons.Default.BarChart,
@@ -510,14 +607,15 @@ fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             modifier           = Modifier.size(ButtonDefaults.IconSize)
         )
         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text("History")
+        Text(strings.history)
     }
 }
 
-// A tonal button with a flag icon and "End Game" label.
+// A tonal button with a flag icon and the localized "End Game" label.
 // Always shown so the user can stop the game at any point.
 @Composable
 fun EndGameButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val strings = appStrings(LocalAppLocale.current)
     FilledTonalButton(onClick = onClick, modifier = modifier) {
         Icon(
             imageVector        = Icons.Default.Flag,
@@ -525,7 +623,7 @@ fun EndGameButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             modifier           = Modifier.size(ButtonDefaults.IconSize)
         )
         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text("End Game")
+        Text(strings.endGame)
     }
 }
 
@@ -542,16 +640,130 @@ private fun FormLabel(text: String) {
     )
 }
 
+// Compact bonus grid: shows all six player-assigned bonuses as a table.
+//
+// Layout:
+//   Row 0 (header):  empty label | "—" | Player1 | Player2 | …
+//   Row 1–6 (data):  bonus label | ◉/○  |  ◉/○    |  ◉/○    | …
+//
+// Each cell holds a RadioButton. Tapping an already-selected player deselects
+// (sets back to null / nobody), mirroring the old PlayerChipSelector behaviour.
+//
+// `bonusLabels` is a list of six localized label strings passed in from GameScreen,
+// avoiding the need for CompactBonusGrid itself to read the composition local.
+@Composable
+private fun CompactBonusGrid(
+    playerNames: List<String>,
+    bonusLabels: List<String>,
+    petitAuBout: String?,     onPetit: (String?) -> Unit,
+    misere: String?,          onMisere: (String?) -> Unit,
+    doubleMisere: String?,    onDoubleMisere: (String?) -> Unit,
+    poignee: String?,         onPoignee: (String?) -> Unit,
+    doublePoignee: String?,   onDoublePoignee: (String?) -> Unit,
+    triplePoignee: String?,   onTriplePoignee: (String?) -> Unit
+) {
+    // Pair each bonus label with its current value and setter.
+    val bonuses = bonusLabels.zip(
+        listOf(
+            Pair(petitAuBout,   onPetit),
+            Pair(misere,        onMisere),
+            Pair(doubleMisere,  onDoubleMisere),
+            Pair(poignee,       onPoignee),
+            Pair(doublePoignee, onDoublePoignee),
+            Pair(triplePoignee, onTriplePoignee)
+        )
+    )
+
+    // Number of selectable options = "nobody" + one per player.
+    val colCount    = playerNames.size + 1
+    val labelWeight = 0.36f
+    // Each option column gets an equal share of the remaining width.
+    val colWeight   = (1f - labelWeight) / colCount
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+
+        // ── Header row: column titles ─────────────────────────────────────────
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Empty space over the label column.
+            Spacer(Modifier.weight(labelWeight))
+            // "—" column: represents "nobody / None".
+            Text(
+                text     = "—",
+                style    = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.weight(colWeight),
+                textAlign = TextAlign.Center
+            )
+            // One header per player.
+            for (name in playerNames) {
+                Text(
+                    text      = name,
+                    style     = MaterialTheme.typography.labelSmall,
+                    maxLines  = 1,
+                    overflow  = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier  = Modifier.weight(colWeight)
+                )
+            }
+        }
+
+        // ── One row per bonus ─────────────────────────────────────────────────
+        for ((label, valueAndSetter) in bonuses) {
+            val (value, onSelect) = valueAndSetter
+            Row(
+                // heightIn(min = 48.dp) enforces Material's recommended minimum touch-target
+                // height, making the radio buttons easier to tap on small screens.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Abbreviated bonus name on the left.
+                // bodySmall (vs the previous labelSmall) is one step larger in the type
+                // scale, improving readability without breaking the grid layout.
+                Text(
+                    text     = label,
+                    style    = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(labelWeight)
+                )
+
+                // "—" (nobody) cell.
+                RadioButton(
+                    selected = value == null,
+                    onClick  = { onSelect(null) },
+                    modifier = Modifier.weight(colWeight)
+                )
+
+                // One cell per player: tap to assign, tap again to deselect.
+                for (name in playerNames) {
+                    RadioButton(
+                        selected = value == name,
+                        onClick  = { onSelect(if (value == name) null else name) },
+                        modifier = Modifier.weight(colWeight)
+                    )
+                }
+            }
+        }
+    }
+}
+
 // Shows a "None" chip followed by one chip per player.
 // Tapping a player assigns that player to the bonus; tapping the selected
 // player again (or "None") clears the assignment.
 //
+// label:          localized section header text.
+// noneLabel:      localized label for the "nobody" option chip.
 // selectedPlayer: the currently assigned player name, or null if nobody is assigned.
 // onSelect:       called with the new player name, or null to clear.
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PlayerChipSelector(
     label: String,
+    noneLabel: String,
     selectedPlayer: String?,
     playerNames: List<String>,
     onSelect: (String?) -> Unit
@@ -562,7 +774,7 @@ private fun PlayerChipSelector(
         FilterChip(
             selected = selectedPlayer == null,
             onClick  = { onSelect(null) },
-            label    = { Text("None") }
+            label    = { Text(noneLabel) }
         )
         for (name in playerNames) {
             // Tapping the already-selected player deselects them (null = nobody).
