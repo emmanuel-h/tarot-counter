@@ -43,8 +43,6 @@ data class RoundDetails(
     val points: Int,            // points scored by the taker (0–91)
     val partnerName: String?,   // taker's called partner (5-player only); null otherwise
     val petitAuBout: String?,   // player who captured the 1 of trump on the last trick, or null
-    val misere: String?,        // player who declared misère, or null
-    val doubleMisere: String?,  // player who declared double misère, or null
     val poignee: String?,       // player who showed a poignée (10+ trumps), or null
     val doublePoignee: String?, // player who showed a double poignée (13+ trumps), or null
     val triplePoignee: String? = null, // player who showed a triple poignée (15+ trumps), or null

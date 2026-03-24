@@ -21,20 +21,27 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -42,7 +49,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -343,8 +352,6 @@ fun GameScreen(
                 var pointsText    by remember { mutableStateOf("") }
                 var selectedPartner  by remember { mutableStateOf<String?>(null) }
                 var petitAuBout   by remember { mutableStateOf<String?>(null) }
-                var misere        by remember { mutableStateOf<String?>(null) }
-                var doubleMisere  by remember { mutableStateOf<String?>(null) }
                 var poignee       by remember { mutableStateOf<String?>(null) }
                 var doublePoignee by remember { mutableStateOf<String?>(null) }
                 var triplePoignee by remember { mutableStateOf<String?>(null) }
@@ -431,22 +438,24 @@ fun GameScreen(
                 }
 
                 // ── Player-assigned bonuses (compact grid) ─────────────────────
-                // All six bonuses are shown as a single grid: one row per bonus,
-                // one column per player (plus a "—" column for "nobody").
-                // This replaces six separate selectors and saves most of the vertical space.
+                // Four bonuses remain after removing Misère (not in official rules).
+                // Each row has a label + ⓘ info icon that shows a tooltip explaining
+                // the bonus and its point value.
                 CompactBonusGrid(
                     playerNames     = displayNames,
                     bonusLabels     = listOf(
                         strings.petit,
-                        strings.misere,
-                        strings.doubleMisere,
                         strings.poignee,
                         strings.doublePoignee,
                         strings.triplePoignee
                     ),
+                    bonusTooltips   = listOf(
+                        strings.petitTooltipBody,
+                        strings.poigneeTooltipBody,
+                        strings.doublePoigneeTooltipBody,
+                        strings.triplePoigneeTooltipBody
+                    ),
                     petitAuBout     = petitAuBout,    onPetit         = { petitAuBout   = it },
-                    misere          = misere,          onMisere        = { misere        = it },
-                    doubleMisere    = doubleMisere,    onDoubleMisere  = { doubleMisere  = it },
                     poignee         = poignee,         onPoignee       = { poignee       = it },
                     doublePoignee   = doublePoignee,   onDoublePoignee = { doublePoignee = it },
                     triplePoignee   = triplePoignee,   onTriplePoignee = { triplePoignee = it }
@@ -457,7 +466,17 @@ fun GameScreen(
                 Spacer(Modifier.height(12.dp))
 
                 // ── Chelem (grand slam) ────────────────────────────────────────
-                FormLabel(strings.chelemLabel)
+                // Row puts the label and the ⓘ tooltip icon side by side.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    FormLabel(strings.chelemLabel)
+                    BonusInfoIcon(
+                        title       = strings.chelemLabel,
+                        body        = strings.chelemTooltipBody
+                    )
+                }
                 Spacer(Modifier.height(6.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     for (c in Chelem.entries) {
@@ -484,8 +503,6 @@ fun GameScreen(
                                 // partnerName is only meaningful in 5-player games.
                                 partnerName   = if (displayNames.size == 5) selectedPartner else null,
                                 petitAuBout   = petitAuBout,
-                                misere        = misere,
-                                doubleMisere  = doubleMisere,
                                 poignee       = poignee,
                                 doublePoignee = doublePoignee,
                                 triplePoignee = triplePoignee,
@@ -640,43 +657,50 @@ private fun FormLabel(text: String) {
     )
 }
 
-// Compact bonus grid: shows all six player-assigned bonuses as a table.
+// Compact bonus grid: shows four player-assigned bonuses as a table.
+//
+// Misère and Double Misère have been removed — they are not part of the
+// official French Tarot règlement.
 //
 // Layout:
 //   Row 0 (header):  empty label | "—" | Player1 | Player2 | …
-//   Row 1–6 (data):  bonus label | ◉/○  |  ◉/○    |  ◉/○    | …
+//   Row 1–4 (data):  label + ⓘ  | ◉/○  |  ◉/○    |  ◉/○    | …
 //
 // Each cell holds a RadioButton. Tapping an already-selected player deselects
-// (sets back to null / nobody), mirroring the old PlayerChipSelector behaviour.
+// (sets back to null / nobody).  The ⓘ icon next to each label opens a
+// RichTooltip explaining the bonus and its point value.
 //
-// `bonusLabels` is a list of six localized label strings passed in from GameScreen,
-// avoiding the need for CompactBonusGrid itself to read the composition local.
+// `bonusLabels`   : four localized label strings (parallel to the state params).
+// `bonusTooltips` : four tooltip body strings shown when the ⓘ is tapped.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CompactBonusGrid(
     playerNames: List<String>,
     bonusLabels: List<String>,
+    bonusTooltips: List<String>,
     petitAuBout: String?,     onPetit: (String?) -> Unit,
-    misere: String?,          onMisere: (String?) -> Unit,
-    doubleMisere: String?,    onDoubleMisere: (String?) -> Unit,
     poignee: String?,         onPoignee: (String?) -> Unit,
     doublePoignee: String?,   onDoublePoignee: (String?) -> Unit,
     triplePoignee: String?,   onTriplePoignee: (String?) -> Unit
 ) {
-    // Pair each bonus label with its current value and setter.
-    val bonuses = bonusLabels.zip(
-        listOf(
-            Pair(petitAuBout,   onPetit),
-            Pair(misere,        onMisere),
-            Pair(doubleMisere,  onDoubleMisere),
-            Pair(poignee,       onPoignee),
-            Pair(doublePoignee, onDoublePoignee),
-            Pair(triplePoignee, onTriplePoignee)
-        )
+    // Zip labels + tooltips + state pairs into one list for the grid loop.
+    data class BonusRow(
+        val label: String,
+        val tooltip: String,
+        val value: String?,
+        val onSelect: (String?) -> Unit
+    )
+    val bonuses = listOf(
+        BonusRow(bonusLabels[0], bonusTooltips[0], petitAuBout,   onPetit),
+        BonusRow(bonusLabels[1], bonusTooltips[1], poignee,        onPoignee),
+        BonusRow(bonusLabels[2], bonusTooltips[2], doublePoignee,  onDoublePoignee),
+        BonusRow(bonusLabels[3], bonusTooltips[3], triplePoignee,  onTriplePoignee)
     )
 
     // Number of selectable options = "nobody" + one per player.
     val colCount    = playerNames.size + 1
-    val labelWeight = 0.36f
+    // Slightly wider label column to accommodate the label text + ⓘ icon.
+    val labelWeight = 0.42f
     // Each option column gets an equal share of the remaining width.
     val colWeight   = (1f - labelWeight) / colCount
 
@@ -710,8 +734,7 @@ private fun CompactBonusGrid(
         }
 
         // ── One row per bonus ─────────────────────────────────────────────────
-        for ((label, valueAndSetter) in bonuses) {
-            val (value, onSelect) = valueAndSetter
+        for (row in bonuses) {
             Row(
                 // heightIn(min = 48.dp) enforces Material's recommended minimum touch-target
                 // height, making the radio buttons easier to tap on small screens.
@@ -720,29 +743,34 @@ private fun CompactBonusGrid(
                     .heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Abbreviated bonus name on the left.
-                // bodySmall (vs the previous labelSmall) is one step larger in the type
-                // scale, improving readability without breaking the grid layout.
-                Text(
-                    text     = label,
-                    style    = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(labelWeight)
-                )
+                // Label cell: bonus name + ⓘ tooltip icon, side by side.
+                Row(
+                    modifier = Modifier.weight(labelWeight),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text     = row.label,
+                        style    = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    // ⓘ icon opens a RichTooltip explaining the bonus and its value.
+                    BonusInfoIcon(title = row.label, body = row.tooltip)
+                }
 
                 // "—" (nobody) cell.
                 RadioButton(
-                    selected = value == null,
-                    onClick  = { onSelect(null) },
+                    selected = row.value == null,
+                    onClick  = { row.onSelect(null) },
                     modifier = Modifier.weight(colWeight)
                 )
 
                 // One cell per player: tap to assign, tap again to deselect.
                 for (name in playerNames) {
                     RadioButton(
-                        selected = value == name,
-                        onClick  = { onSelect(if (value == name) null else name) },
+                        selected = row.value == name,
+                        onClick  = { row.onSelect(if (row.value == name) null else name) },
                         modifier = Modifier.weight(colWeight)
                     )
                 }
@@ -782,6 +810,47 @@ private fun PlayerChipSelector(
                 selected = selectedPlayer == name,
                 onClick  = { onSelect(if (selectedPlayer == name) null else name) },
                 label    = { Text(name) }
+            )
+        }
+    }
+}
+
+// ── Bonus tooltip icon ────────────────────────────────────────────────────────
+//
+// A small ⓘ IconButton that shows a Material3 RichTooltip on tap.
+// Used in the bonus grid label cells and next to the Chelem section header.
+//
+// title : the bonus name shown as the tooltip heading.
+// body  : multi-line explanation text (rules + point value) shown below the title.
+//
+// The tooltip is set as `isPersistent = true` so it stays open until the user
+// dismisses it — important on mobile where there is no hover event to close it.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BonusInfoIcon(title: String, body: String) {
+    val tooltipState = rememberTooltipState(isPersistent = true)
+    val scope        = rememberCoroutineScope()
+
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
+        tooltip = {
+            // RichTooltip supports a title and a multi-line body text.
+            RichTooltip(title = { Text(title) }) {
+                Text(body)
+            }
+        },
+        state = tooltipState
+    ) {
+        // Small icon button — 20 dp keeps it compact inside the label column.
+        IconButton(
+            onClick  = { scope.launch { tooltipState.show() } },
+            modifier = Modifier.size(20.dp)
+        ) {
+            Icon(
+                imageVector        = Icons.Default.Info,
+                contentDescription = null,
+                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier           = Modifier.size(14.dp)
             )
         }
     }

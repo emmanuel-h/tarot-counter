@@ -268,8 +268,6 @@ class GameModelsTest {
             points        = 56,
             partnerName   = null,
             petitAuBout   = null,
-            misere        = null,
-            doubleMisere  = null,
             poignee       = null,
             doublePoignee = null,
             chelem        = Chelem.NONE
@@ -310,8 +308,6 @@ class GameModelsTest {
             points        = 91,
             partnerName   = null,
             petitAuBout   = null,
-            misere        = null,
-            doubleMisere  = null,
             poignee       = null,
             doublePoignee = null,
             chelem        = Chelem.NONE
@@ -328,16 +324,12 @@ class GameModelsTest {
             points        = 0,
             partnerName   = null,
             petitAuBout   = null,
-            misere        = null,
-            doubleMisere  = null,
             poignee       = null,
             doublePoignee = null,
             chelem        = Chelem.NONE
         )
         assertNull(details.partnerName)
         assertNull(details.petitAuBout)
-        assertNull(details.misere)
-        assertNull(details.doubleMisere)
         assertNull(details.poignee)
         assertNull(details.doublePoignee)
         assertEquals(Chelem.NONE, details.chelem)
@@ -350,8 +342,6 @@ class GameModelsTest {
             points        = 50,
             partnerName   = "Bob",  // taker called Bob as partner
             petitAuBout   = null,
-            misere        = null,
-            doubleMisere  = null,
             poignee       = null,
             doublePoignee = null,
             chelem        = Chelem.NONE
@@ -415,8 +405,7 @@ class GameModelsTest {
             details     = RoundDetails(
                 bouts = 1, points = 51,
                 partnerName = null,
-                petitAuBout = null, misere = null, doubleMisere = null,
-                poignee = null, doublePoignee = null, chelem = Chelem.NONE
+                petitAuBout = null, poignee = null, doublePoignee = null, chelem = Chelem.NONE
             ),
             won = takerWon(bouts = 1, points = 51)
         )
@@ -433,8 +422,7 @@ class GameModelsTest {
             details     = RoundDetails(
                 bouts = 0, points = 40,
                 partnerName = null,
-                petitAuBout = null, misere = null, doubleMisere = null,
-                poignee = null, doublePoignee = null, chelem = Chelem.NONE
+                petitAuBout = null, poignee = null, doublePoignee = null, chelem = Chelem.NONE
             ),
             won = takerWon(bouts = 0, points = 40)
         )
@@ -448,15 +436,11 @@ class GameModelsTest {
             points        = 51,
             partnerName   = null,
             petitAuBout   = "Alice",
-            misere        = "Bob",
-            doubleMisere  = null,
             poignee       = "Alice",
             doublePoignee = null,
             chelem        = Chelem.ANNOUNCED_REALIZED
         )
         assertEquals("Alice", details.petitAuBout)
-        assertEquals("Bob",   details.misere)
-        assertNull(details.doubleMisere)
         assertEquals("Alice", details.poignee)
         assertNull(details.doublePoignee)
         assertEquals(Chelem.ANNOUNCED_REALIZED, details.chelem)
@@ -597,8 +581,6 @@ class GameModelsTest {
         points        = 50,
         partnerName   = partnerName,
         petitAuBout   = petitAuBout,
-        misere        = null,
-        doubleMisere  = null,
         poignee       = poignee,
         doublePoignee = doublePoignee,
         triplePoignee = triplePoignee,
