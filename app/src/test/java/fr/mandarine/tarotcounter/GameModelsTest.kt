@@ -935,4 +935,100 @@ class GameModelsTest {
         val winners = findWinners(totals)
         assertEquals(listOf("Alice"), winners)
     }
+
+    // ── requiredPoints — invalid input ────────────────────────────────────────
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `requiredPoints throws IllegalArgumentException for negative bouts`() {
+        // The function documents that bouts must be 0–3.
+        // A negative value is clearly invalid and should not silently return a wrong threshold.
+        requiredPoints(-1)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `requiredPoints throws IllegalArgumentException for bouts greater than 3`() {
+        // The maximum number of oudlers in French Tarot is 3 (21, Petit, Excuse).
+        // Passing 4 is a caller bug and should be caught immediately.
+        requiredPoints(4)
+    }
+
+    // ── computePlayerScores — 4-player win ────────────────────────────────────
+
+    @Test
+    fun `computePlayerScores 4-player win — taker gets 3x, defenders get -1x, sum is 0`() {
+        // 4 players, no partner: numDefenders = 3, takerMultiplier = 3.
+        // Taker wins: Alice gets +3 × 40 = +120; each defender gets −40.
+        // Sum: 120 − 40 − 40 − 40 = 0.
+        val players = listOf("Alice", "Bob", "Charlie", "Dave")
+        val scores = computePlayerScores(
+            allPlayers  = players,
+            takerName   = "Alice",
+            partnerName = null,
+            won         = true,
+            roundScore  = 40
+        )
+        assertEquals(+120, scores["Alice"])   // taker: +3 × 40
+        assertEquals(-40,  scores["Bob"])     // defender: −40
+        assertEquals(-40,  scores["Charlie"]) // defender: −40
+        assertEquals(-40,  scores["Dave"])    // defender: −40
+        assertEquals(0, scores.values.sum())  // zero-sum invariant
+    }
+
+    // ── applyBonuses — partner achieves petit au bout (5-player) ─────────────
+
+    @Test
+    fun `applyBonuses — petit au bout by partner benefits taker, partner score unchanged (5-player)`() {
+        // In a 5-player game Alice (taker) called Bob (partner). Charlie, Dave, Eve are defenders.
+        // Garde (×2) → pabAmount = 20. Bob (partner) captured the Petit → pabSign = +1
+        // because the partner belongs to the taker's camp.
+        //
+        // Per-player delta:
+        //   Alice (taker) : +pabSign × 20 × 3 = +60   → 60 + 60 = +120
+        //   Bob (partner) : score unchanged              → stays at +30
+        //   Each defender : -pabSign × 20 = -20         → -30 - 20 = -50
+        //
+        // The partner's score is NOT modified even though they achieved the bonus — that
+        // point flows entirely to the taker (see applyBonuses comment in GameModels.kt).
+        val base = mapOf(
+            "Alice" to +60, "Bob" to +30,
+            "Charlie" to -30, "Dave" to -30, "Eve" to -30
+        )
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(partnerName = "Bob", petitAuBout = "Bob"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+120, result["Alice"])
+        assertEquals(+30,  result["Bob"])     // partner: unchanged despite capturing the Petit
+        assertEquals(-50,  result["Charlie"])
+        assertEquals(-50,  result["Dave"])
+        assertEquals(-50,  result["Eve"])
+        assertEquals(0, result.values.sum())
+    }
+
+    // ── applyBonuses — 3-player game (numDefenders = 2) ──────────────────────
+
+    @Test
+    fun `applyBonuses — petit au bout in 3-player game uses numDefenders of 2`() {
+        // 3-player: Alice (taker), Bob and Charlie (defenders). numDefenders = 2.
+        // Prise (×1) → pabAmount = 10. Taker (Alice) achieved petit au bout → pabSign = +1.
+        // Alice delta = +1 × 10 × 2 = +20 → 50 + 20 = +70
+        // Bob/Charlie delta = -1 × 10 = -10 → -25 - 10 = -35 each
+        val base = mapOf("Alice" to +50, "Bob" to -25, "Charlie" to -25)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.PRISE,
+            details      = details(petitAuBout = "Alice"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 2
+        )
+        assertEquals(+70, result["Alice"])
+        assertEquals(-35, result["Bob"])
+        assertEquals(-35, result["Charlie"])
+        assertEquals(0, result.values.sum())
+    }
 }

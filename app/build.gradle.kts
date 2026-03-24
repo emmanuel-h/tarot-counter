@@ -36,6 +36,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    testOptions {
+        // Allow Android framework classes (e.g. Application) to be instantiated on the JVM
+        // by returning default values (0 / false / null) instead of throwing RuntimeException.
+        // Required for GameViewModelTest, which creates Application() without a device.
+        unitTests.isReturnDefaultValues = true
+    }
     buildFeatures {
         compose = true
     }
@@ -58,6 +64,7 @@ dependencies {
     // ViewModel for Compose — lets us call viewModel() inside a Composable function.
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
