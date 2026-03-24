@@ -18,11 +18,11 @@ The game is divided into **rounds**. The taker for each round is determined auto
 - **Round 1** — a random player is chosen as the first taker.
 - **Round 2+** — players take turns in the order they were entered on the setup screen, cycling back to the first player after the last one.
 
-Each round follows a two-step flow:
+Everything is presented on **a single scrollable page**: the compact scoreboard, the contract chips, the inline details form, and the round history log are all visible without navigating to a separate screen.
 
-#### Step 1 — Pick a contract
+#### Contract selection
 
-The current taker's name is shown. Available contracts (weakest → strongest):
+The current taker's name is shown above a row of FilterChips — one per contract (weakest → strongest):
 
 | Contract     | Multiplier | Description                    |
 |--------------|:----------:|-------------------------------|
@@ -33,9 +33,10 @@ The current taker's name is shown. Available contracts (weakest → strongest):
 
 The taker can also **Skip round** to record the round without any details.
 
-#### Step 2 — Round details (`RoundDetailsForm`)
+#### Inline round details
 
-After a contract is chosen, the user fills in the scoring details:
+After a contract chip is selected, the scoring details form expands below it on the same page.
+Tapping the active chip again (or **← Change contract**) collapses the form and deselects the contract.
 
 | Field              | Type                        | Description |
 |--------------------|-----------------------------|-------------|
@@ -138,25 +139,26 @@ The partner (5-player) does not participate in the poignée bonus exchange. The 
 
 **Example:** 4-player game, double poignée (30 pts), declared by a defender, taker loses → taker pays 30 to each of the 3 defenders (−90 for taker, +30 for each defender).
 
-## Scoreboard & Round History
+## Compact Scoreboard & Round History
 
-After each round is completed the game screen shows:
+After the first round is completed the game screen shows a persistent **compact scoreboard** at the top of the page — one column per player with their name and running total. This stays visible at all times without opening a separate screen.
 
-1. **Scores** — cumulative score per player across all completed rounds.
-2. **History** — a round-by-round log, newest first.
+Below the round input, a full round-by-round log is displayed newest-first:
 
 ```
 Scores
-Alice: +80
-Bob:   -40
-Charlie: -40
+┌─────────────────────────┐
+│ Alice   Bob    Charlie  │
+│  +80    -40     -40     │
+└─────────────────────────┘
 
-History
 Round 2: Bob — Prise · 0 bouts · 50 pts — Lost (-31)
 Round 1: Alice — Garde · 2 bouts · 56 pts — Won (+80)
 ```
 
 Skipped rounds show no outcome and do not affect scores.
+
+The **History** button in the top-right corner opens a full scrollable score table overlay (with running cumulative totals) for detailed review.
 
 ## Data Model
 

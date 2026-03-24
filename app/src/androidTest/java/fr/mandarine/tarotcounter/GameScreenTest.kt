@@ -14,15 +14,16 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * UI tests for GameScreen and RoundDetailsForm.
+ * UI tests for GameScreen.
  *
  * These run on a device or emulator via AndroidJUnit4.
  * Run with: ./gradlew connectedAndroidTest
  *
  * Spec (docs/game-flow.md — Game Screen):
- *   Step 1 — Pick a contract (5 options + Skip round)
- *   Step 2 — RoundDetailsForm (bouts, points, bonuses, chelem, Confirm / ← Change contract)
- *   Round history — shown newest-first after the first round is complete.
+ *   Contract selection — FilterChips for Prise/Garde/Garde Sans/Garde Contre + Skip round.
+ *   Inline details form — bouts, points, bonuses, chelem, Confirm / ← Change contract.
+ *   All visible on a single scrollable page alongside the compact scoreboard.
+ *   Round history — shown newest-first at the bottom of the page.
  */
 @RunWith(AndroidJUnit4::class)
 class GameScreenTest {
