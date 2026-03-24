@@ -39,8 +39,17 @@ Make the changes. Follow project conventions:
 - Add or update files in `docs/` describing the feature
 - Keep `README.md` in sync (game rules, screens, bonuses, architecture changes)
 
-## 7. Commit and push
+## 7. Prepare the branch and open a PR
+- Checkout `main` and pull latest before starting any work
+- Create a new branch named `<issue-number>-<short-description>` (e.g. `42-add-score-history`)
 - Stage only the relevant files (never `.env` or secrets)
 - Write a clear conventional commit message referencing the issue number (e.g. `feat: add X (#42)`)
 - Run `./gradlew lint` and fix any new warnings before committing
-- Push to the current branch with `git push`
+- Push the branch and open a pull request with:
+  - Title following conventional commits spec with the issue number in parentheses (e.g. `feat: add score history (#42)`)
+  - A relevant description of the changes
+
+## 8. Validate
+Ask the user to validate the ticket.
+- If they say **"go"**: merge the PR (`gh pr merge --squash`) and close the issue (`gh issue close <number>`)
+- Otherwise: restart from step 3 (Plan) incorporating the requested changes, then ask for validation again
