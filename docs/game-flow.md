@@ -43,13 +43,13 @@ Tapping the active chip again (or **← Change contract**) collapses the form an
 | Bouts (oudlers)    | Dropdown (0 / 1 / 2 / 3)   | Number of oudlers in the taker's tricks |
 | Points             | Number input (0–91)         | Points scored by the taker. Values outside this range show an error and disable the Confirm button. |
 | Partner            | None or any player (5-player only) | The player called by the taker as a silent partner |
-| Petit au bout      | None or any player          | Player who captured the 1 of trump on the last trick |
-| Misère             | None or any player          | Player who declared misère |
-| Double misère      | None or any player          | Player who declared double misère |
-| Poignée            | None or any player          | Player who showed a poignée (10+ trumps) |
-| Double poignée     | None or any player          | Player who showed a double poignée (13+ trumps) |
-| Triple poignée     | None or any player          | Player who showed a triple poignée (15+ trumps) |
+| Petit au bout      | Checkbox per player         | Player who captured the 1 of trump on the last trick |
+| Poignée            | Checkbox per player         | Player who showed a poignée (10+ trumps) |
+| Double poignée     | Checkbox per player         | Player who showed a double poignée (13+ trumps) |
+| Triple poignée     | Checkbox per player         | Player who showed a triple poignée (15+ trumps) |
 | Chelem             | See table below             | Grand slam outcome |
+
+The four player-assigned bonuses are displayed in a compact grid. Each row shows a **label** with an ⓘ info icon immediately next to it (not pushed to the edge), and one **checkbox per player**. Ticking a checkbox assigns that bonus to that player; ticking it again clears the assignment. At most one player can hold each bonus at a time.
 
 **Partner selection** is only shown in 5-player games. The taker secretly calls a partner; their identity affects score distribution at the end of the round.
 

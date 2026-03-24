@@ -49,9 +49,10 @@ Scores are zero-sum. The taker receives `±(n−1) × roundScore` for 3/4-player
 
 ### Bonuses Tracked per Round
 
+Player-assigned bonuses are entered via a compact grid with one checkbox per player. Ticking a checkbox assigns that bonus; ticking it again clears it.
+
 - **Petit au bout** — player who captured the 1 of trump on the last trick
-- **Misère / Double misère** — declarations
-- **Poignée / Double poignée** — trump distribution bonuses
+- **Poignée / Double poignée / Triple poignée** — trump distribution bonuses (10 / 13 / 15 trumps shown)
 - **Chelem** — grand slam (announced+won, announced+lost, unannounced+won, or none)
 
 ## Architecture

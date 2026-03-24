@@ -39,7 +39,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -727,11 +727,12 @@ private fun FormLabel(text: String) {
 // official French Tarot règlement.
 //
 // Layout:
-//   Row 0 (header):  empty label | "—" | Player1 | Player2 | …
-//   Row 1–4 (data):  label + ⓘ  | ◉/○  |  ◉/○    |  ◉/○    | …
+//   Row 0 (header):  empty label | Player1 | Player2 | …
+//   Row 1–4 (data):  label + ⓘ  | ☑/☐    | ☑/☐    | …
 //
-// Each cell holds a RadioButton. Tapping an already-selected player deselects
-// (sets back to null / nobody).  The ⓘ icon next to each label opens a
+// Each player cell holds a Checkbox. Ticking it assigns that player;
+// ticking the already-checked player clears the assignment (sets to null).
+// The ⓘ icon sits immediately to the right of each label text and opens a
 // RichTooltip explaining the bonus and its point value.
 //
 // `bonusLabels`   : four localized label strings (parallel to the state params).
@@ -761,8 +762,8 @@ private fun CompactBonusGrid(
         BonusRow(bonusLabels[3], bonusTooltips[3], triplePoignee,  onTriplePoignee)
     )
 
-    // Number of selectable options = "nobody" + one per player.
-    val colCount    = playerNames.size + 1
+    // Number of selectable options = one per player (nobody column removed).
+    val colCount    = playerNames.size
     // Slightly wider label column to accommodate the label text + ⓘ icon.
     val labelWeight = 0.42f
     // Each option column gets an equal share of the remaining width.
@@ -777,14 +778,7 @@ private fun CompactBonusGrid(
         ) {
             // Empty space over the label column.
             Spacer(Modifier.weight(labelWeight))
-            // "—" column: represents "nobody / None".
-            Text(
-                text     = "—",
-                style    = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.weight(colWeight),
-                textAlign = TextAlign.Center
-            )
-            // One header per player.
+            // One header per player (nobody/— column removed).
             for (name in playerNames) {
                 Text(
                     text      = name,
@@ -807,7 +801,9 @@ private fun CompactBonusGrid(
                     .heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Label cell: bonus name + ⓘ tooltip icon, side by side.
+                // Label cell: bonus name with ⓘ tooltip icon stuck right after the text.
+                // Note: the Text has no weight modifier so it only takes as much space as
+                // its content needs, keeping the ⓘ adjacent instead of pushed to the edge.
                 Row(
                     modifier = Modifier.weight(labelWeight),
                     verticalAlignment = Alignment.CenterVertically
@@ -816,25 +812,21 @@ private fun CompactBonusGrid(
                         text     = row.label,
                         style    = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        overflow = TextOverflow.Ellipsis
                     )
-                    // ⓘ icon opens a RichTooltip explaining the bonus and its value.
+                    // ⓘ icon sits immediately after the label text.
                     BonusInfoIcon(title = row.label, body = row.tooltip)
                 }
 
-                // "—" (nobody) cell.
-                RadioButton(
-                    selected = row.value == null,
-                    onClick  = { row.onSelect(null) },
-                    modifier = Modifier.weight(colWeight)
-                )
-
-                // One cell per player: tap to assign, tap again to deselect.
+                // One Checkbox per player.
+                // Ticking an unchecked box assigns that player; ticking an already-checked
+                // box clears the assignment (sets value back to null).
                 for (name in playerNames) {
-                    RadioButton(
-                        selected = row.value == name,
-                        onClick  = { row.onSelect(if (row.value == name) null else name) },
+                    Checkbox(
+                        checked         = row.value == name,
+                        onCheckedChange = { checked ->
+                            row.onSelect(if (checked) name else null)
+                        },
                         modifier = Modifier.weight(colWeight)
                     )
                 }
