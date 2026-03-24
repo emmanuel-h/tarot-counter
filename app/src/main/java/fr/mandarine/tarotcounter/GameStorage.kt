@@ -45,11 +45,29 @@ private const val MAX_SAVED_GAMES = 20
 // if a new field is added later, old saved data won't throw an error.
 private val json = Json { ignoreUnknownKeys = true }
 
+// ── Storage interface ────────────────────────────────────────────────────────
+//
+// GameStorageInterface defines the contract that both the real DataStore-backed
+// implementation and any test fakes must satisfy.
+//
+// Declaring the abstraction here lets GameViewModel (and any future callers)
+// depend only on the interface, making it possible to substitute a simple
+// in-memory fake in unit tests — no Android device or DataStore needed.
+interface GameStorageInterface {
+    fun loadGames(): Flow<List<SavedGame>>
+    fun loadInProgressGame(): Flow<InProgressGame?>
+    fun loadLocale(): Flow<AppLocale?>
+    suspend fun addGame(game: SavedGame)
+    suspend fun saveInProgressGame(game: InProgressGame)
+    suspend fun clearInProgressGame()
+    suspend fun saveLocale(locale: AppLocale)
+}
+
 // GameStorage handles all DataStore read and write operations for saved games.
 //
 // It is a simple class (not a singleton object) so it can be instantiated with a
 // Context — DataStore is context-aware and needs the app context to locate its file.
-class GameStorage(private val context: Context) {
+class GameStorage(private val context: Context) : GameStorageInterface {
 
     // Returns a Flow that emits the current list of saved games whenever it changes.
     //
@@ -58,7 +76,7 @@ class GameStorage(private val context: Context) {
     //
     // `catch` intercepts I/O exceptions (e.g. corrupted file) and emits empty
     // preferences instead of crashing, so the app degrades gracefully.
-    fun loadGames(): Flow<List<SavedGame>> =
+    override fun loadGames(): Flow<List<SavedGame>> =
         context.dataStore.data
             .catch { emit(emptyPreferences()) }   // handle read errors gracefully
             .map { prefs ->
@@ -72,7 +90,7 @@ class GameStorage(private val context: Context) {
 
     // Returns a Flow that emits the current in-progress game, or null if there is none.
     // The emission pattern is the same as loadGames(): it re-emits whenever DataStore changes.
-    fun loadInProgressGame(): Flow<InProgressGame?> =
+    override fun loadInProgressGame(): Flow<InProgressGame?> =
         context.dataStore.data
             .catch { emit(emptyPreferences()) }
             .map { prefs ->
@@ -83,7 +101,7 @@ class GameStorage(private val context: Context) {
 
     // Overwrites the in-progress game with the latest state.
     // Called after every round so the saved state is always up to date.
-    suspend fun saveInProgressGame(game: InProgressGame) {
+    override suspend fun saveInProgressGame(game: InProgressGame) {
         context.dataStore.edit { prefs ->
             prefs[IN_PROGRESS_KEY] = json.encodeToString(game)
         }
@@ -91,7 +109,7 @@ class GameStorage(private val context: Context) {
 
     // Removes the in-progress game from DataStore.
     // Called when the game is explicitly ended (New Game) or a fresh game is started.
-    suspend fun clearInProgressGame() {
+    override suspend fun clearInProgressGame() {
         context.dataStore.edit { prefs ->
             prefs.remove(IN_PROGRESS_KEY)
         }
@@ -99,7 +117,7 @@ class GameStorage(private val context: Context) {
 
     // Returns a Flow that emits the user's saved locale preference, or null if none was saved.
     // null means "use the system locale" — MainActivity interprets it that way.
-    fun loadLocale(): Flow<AppLocale?> =
+    override fun loadLocale(): Flow<AppLocale?> =
         context.dataStore.data
             .catch { emit(emptyPreferences()) }
             .map { prefs ->
@@ -108,7 +126,7 @@ class GameStorage(private val context: Context) {
 
     // Persists the user's chosen locale to DataStore.
     // `locale.name` stores the enum constant name ("EN" or "FR") as a plain string.
-    suspend fun saveLocale(locale: AppLocale) {
+    override suspend fun saveLocale(locale: AppLocale) {
         context.dataStore.edit { prefs ->
             prefs[LOCALE_KEY] = locale.name
         }
@@ -119,7 +137,7 @@ class GameStorage(private val context: Context) {
     // `suspend` means this function must be called from a coroutine (it does I/O).
     // `DataStore.edit` is a suspend function that atomically reads, modifies, and
     // writes the preferences — it is safe to call from multiple coroutines.
-    suspend fun addGame(game: SavedGame) {
+    override suspend fun addGame(game: SavedGame) {
         context.dataStore.edit { prefs ->
             val raw = prefs[GAMES_KEY] ?: "[]"
             val existing = runCatching { json.decodeFromString<List<SavedGame>>(raw) }

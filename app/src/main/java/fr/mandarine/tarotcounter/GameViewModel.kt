@@ -16,10 +16,20 @@ import kotlinx.coroutines.launch
 //
 // The ViewModel is created once per activity and lives until the activity is
 // permanently destroyed (e.g. back-pressed to home, or "New Game" action here).
-class GameViewModel(application: Application) : AndroidViewModel(application) {
+//
+// Constructor strategy:
+//   - The `internal` primary constructor accepts a GameStorageInterface so unit
+//     tests can inject a FakeGameStorage without touching Android DataStore.
+//   - The secondary constructor (the one used by Android's ViewModelProvider)
+//     takes only the Application and wires up the real DataStore-backed storage.
+class GameViewModel internal constructor(
+    application: Application,
+    private val storage: GameStorageInterface
+) : AndroidViewModel(application) {
 
-    // Storage layer — handles all DataStore read/write operations.
-    private val storage = GameStorage(application)
+    // This is the constructor Android's ViewModelProvider calls via reflection.
+    // It delegates to the primary constructor with the real storage implementation.
+    constructor(application: Application) : this(application, GameStorage(application))
 
     // pastGames exposes the list of completed saved games as a StateFlow so Compose
     // can observe it with `collectAsState()`.
