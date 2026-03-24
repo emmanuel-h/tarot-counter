@@ -55,7 +55,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -66,6 +65,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 // GameScreen handles the full round-by-round flow of a Tarot game on a single scrollable page.
 //
@@ -198,7 +198,7 @@ fun GameScreen(
             playerNames  = displayNames,
             roundHistory = roundHistory,
             onBack       = { showFinalScore = false },
-            onNewGame    = { onEndGame() },
+            onNewGame    = onEndGame,
             modifier     = modifier
         )
         return
@@ -608,9 +608,9 @@ fun GameScreen(
                     // The eligible players are the taker and — in 5-player — the partner.
                     val chelemCandidates = buildList {
                         add(currentTaker)
-                        if (displayNames.size == 5 && selectedPartner != null) {
-                            add(selectedPartner!!)
-                        }
+                        // In a 5-player game the partner (if chosen) can also call chelem.
+                        // Using ?.let avoids a force-unwrap while preserving the same logic.
+                        if (displayNames.size == 5) selectedPartner?.let { add(it) }
                     }
                     PlayerChipSelector(
                         label          = strings.chelemPlayerLabel,
@@ -806,6 +806,16 @@ private fun FormLabel(text: String) {
     )
 }
 
+// Holds the display data and state callbacks for one row of the bonus grid.
+// Declared at file scope (not inside the composable) so it is not recreated on
+// every recomposition of CompactBonusGrid.
+private data class BonusRow(
+    val label: String,
+    val tooltip: String,
+    val value: String?,
+    val onSelect: (String?) -> Unit
+)
+
 // Compact bonus grid: shows four player-assigned bonuses as a table.
 //
 // Layout:
@@ -831,12 +841,6 @@ private fun CompactBonusGrid(
     triplePoignee: String?,   onTriplePoignee: (String?) -> Unit
 ) {
     // Zip labels + tooltips + state pairs into one list for the grid loop.
-    data class BonusRow(
-        val label: String,
-        val tooltip: String,
-        val value: String?,
-        val onSelect: (String?) -> Unit
-    )
     val bonuses = listOf(
         BonusRow(bonusLabels[0], bonusTooltips[0], petitAuBout,   onPetit),
         BonusRow(bonusLabels[1], bonusTooltips[1], poignee,        onPoignee),
