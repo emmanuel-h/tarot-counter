@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -95,17 +97,24 @@ fun ScoreHistoryScreen(
         // Two scroll directions: left↔right for many players, up↓down for many rounds.
         // We use a plain Column (not LazyColumn) inside two nested scroll modifiers,
         // which is fine for Tarot games (typical: tens of rounds, 3–5 players).
-        Column(
-            modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Column headers: localized "Round" header, then one header per player name.
-            ScoreTableRow(
-                cells = listOf(strings.roundColumn) + playerNames,
-                isHeader = true
-            )
-            HorizontalDivider()
+        //
+        // The Box wrapper lets us overlay a scroll-hint arrow when the table extends
+        // beyond the right edge of the screen. The Icon sits at Alignment.TopEnd so
+        // it is visible when the user first opens the screen and naturally disappears
+        // as they scroll down — exactly when the hint is no longer needed.
+        val hScrollState = rememberScrollState()
+        Box {
+            Column(
+                modifier = Modifier
+                    .horizontalScroll(hScrollState)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Column headers: localized "Round" header, then one header per player name.
+                ScoreTableRow(
+                    cells = listOf(strings.roundColumn) + playerNames,
+                    isHeader = true
+                )
+                HorizontalDivider()
 
             // `runningTotals` accumulates each player's score as we iterate rounds.
             // We start everyone at 0 and add their per-round delta on each iteration.
@@ -134,6 +143,22 @@ fun ScoreHistoryScreen(
                 ScoreTableRow(cells = cells, isHeader = false)
             }
         }
+
+            // Arrow hint: floats at the top-right corner of the Box.
+            // Visible when there is more content to the right (i.e. ≥4–5 players).
+            // Automatically disappears when the user scrolls right (canScrollForward = false).
+            if (hScrollState.canScrollForward) {
+                Icon(
+                    imageVector        = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier           = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(16.dp)
+                )
+            }
+        }   // end Box
     }
 }
 

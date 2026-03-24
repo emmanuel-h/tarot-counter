@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -198,11 +199,17 @@ fun FinalScoreScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-            ) {
+            // Box lets us overlay a scroll-hint arrow when the table is wider than
+            // the screen. The Icon anchors to Alignment.TopEnd so it is immediately
+            // visible when the user arrives at this screen and disappears once they
+            // scroll the table to the right.
+            val hScrollState = rememberScrollState()
+            Box {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(hScrollState)
+                ) {
                 // Header row: localized "Round" label + one header per player name.
                 FinalScoreTableRow(
                     cells = listOf(strings.roundColumn) + playerNames,
@@ -240,7 +247,21 @@ fun FinalScoreScreen(
                         winnerColumnIndices = winnerColumnIndices
                     )
                 }
-            }
+            }   // end Column
+
+                // Arrow hint: visible when the table extends beyond the right screen edge.
+                if (hScrollState.canScrollForward) {
+                    Icon(
+                        imageVector        = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier           = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(16.dp)
+                    )
+                }
+            }   // end Box
         }
 
         Spacer(modifier = Modifier.height(32.dp))

@@ -258,6 +258,9 @@ private fun ResumeGameCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        // Elevated shadow makes the Resume card stand out from the Past Games list below
+        // and signals that it represents an active, time-sensitive action.
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -268,9 +271,12 @@ private fun ResumeGameCard(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            // titleMedium (vs the previous labelLarge) gives the card a clear heading
+            // that's immediately readable at a glance — matching the visual weight
+            // of a section title rather than a small chip label.
             Text(
                 text = strings.resumeGameTitle,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
