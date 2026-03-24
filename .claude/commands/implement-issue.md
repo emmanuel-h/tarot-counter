@@ -27,6 +27,7 @@ Write a concise plan (bullet points) and show it to the user before starting. Co
 - How the change fits the existing architecture
 
 ## 5. Implement
+Use the kotlin-specialist skills to ensure high-quality code.
 Make the changes. Follow project conventions:
 - Kotlin 2.x idiomatic style
 - Jetpack Compose + Material 3
