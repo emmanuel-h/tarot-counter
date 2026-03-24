@@ -1,6 +1,7 @@
 package fr.mandarine.tarotcounter
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -13,24 +14,21 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.SportsScore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -233,21 +231,35 @@ fun GameScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // ── Header: round number + action buttons ─────────────────────────────
-        Row(
+        // ── Header: history button | centered round number | end-game button ──
+        // Box lets us layer two Rows: one for the side buttons (SpaceBetween)
+        // and one for the centered title, so the title is truly centered
+        // regardless of the buttons' widths.
+        Box(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            contentAlignment = Alignment.Center
         ) {
+            // Centered round label — always in the middle of the full width.
             Text(
                 text = strings.roundHeader(currentRound),
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                textAlign = TextAlign.Center
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Side buttons sit in a Row that spans the full width.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // History button — only shown once at least one round has been recorded.
                 if (roundHistory.isNotEmpty()) {
                     HistoryButton(onClick = { showScoreHistory = true })
-                    Spacer(Modifier.width(8.dp))
+                } else {
+                    // Invisible placeholder keeps the round number centered even
+                    // when the history button is not yet visible.
+                    Spacer(Modifier.size(48.dp))
                 }
+                // End Game button — always shown so the user can stop at any time.
                 EndGameButton(onClick = { showEndGameDialog = true })
             }
         }
@@ -790,35 +802,33 @@ private fun CompactScoreboard(
 
 // ── Shared composables ────────────────────────────────────────────────────────
 
-// A tonal button with a bar-chart icon and the localized "History" label.
-// Used in the game screen header to open the full score history overlay.
+// An icon-only button with a bar-chart icon for opening the score history overlay.
+// Using IconButton (no text) keeps the header compact; the contentDescription
+// ensures screen readers still announce the purpose of the button.
 @Composable
 fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val strings = appStrings(LocalAppLocale.current)
-    FilledTonalButton(onClick = onClick, modifier = modifier) {
+    IconButton(onClick = onClick, modifier = modifier) {
         Icon(
             imageVector        = Icons.Default.BarChart,
-            contentDescription = null,
-            modifier           = Modifier.size(ButtonDefaults.IconSize)
+            // Accessible label read by TalkBack — same text that was previously the button label.
+            contentDescription = strings.history
         )
-        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text(strings.history)
     }
 }
 
-// A tonal button with a flag icon and the localized "End Game" label.
-// Always shown so the user can stop the game at any point.
+// An icon-only button with a checkered-flag icon for ending the game.
+// SportsScore (a finish/checkered flag) is clearer than the generic Flag icon
+// and matches the "stop / finish line" semantic requested in issue #21.
 @Composable
 fun EndGameButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val strings = appStrings(LocalAppLocale.current)
-    FilledTonalButton(onClick = onClick, modifier = modifier) {
+    IconButton(onClick = onClick, modifier = modifier) {
         Icon(
-            imageVector        = Icons.Default.Flag,
-            contentDescription = null,
-            modifier           = Modifier.size(ButtonDefaults.IconSize)
+            imageVector        = Icons.Default.SportsScore,
+            // Accessible label read by TalkBack.
+            contentDescription = strings.endGame
         )
-        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text(strings.endGame)
     }
 }
 

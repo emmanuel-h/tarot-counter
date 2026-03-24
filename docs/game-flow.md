@@ -161,7 +161,15 @@ Round 1: Alice — Garde · 2 bouts · 56 pts — Won (+80)
 
 Skipped rounds show no outcome and do not affect scores.
 
-The **History** button in the top-right corner opens a full scrollable score table overlay (with running cumulative totals) for detailed review.
+#### Header
+
+The game screen header has three zones:
+
+| Left | Center | Right |
+|------|--------|-------|
+| **History** icon button (bar-chart icon) — opens the full score history overlay. Only shown after at least one round has been recorded. | **Round N** — the current round number, always centered. | **End Game** icon button (checkered-flag icon) — always shown, opens a confirmation dialog before stopping the game. |
+
+The **History** icon button opens a full scrollable score table overlay (with running cumulative totals) for detailed review.
 
 ## Data Model
 

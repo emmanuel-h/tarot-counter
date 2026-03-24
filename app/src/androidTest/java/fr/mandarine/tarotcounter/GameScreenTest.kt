@@ -219,7 +219,7 @@ class GameScreenTest {
     fun history_appears_after_first_round_is_skipped() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule.onNodeWithText("History").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
     }
 
     @Test
@@ -299,15 +299,15 @@ class GameScreenTest {
         // The History button only appears once at least one round has been recorded.
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()
-        // FilledTonalButton with text label — findable by its text.
-        composeTestRule.onNodeWithText("History").assertIsDisplayed()
+        // IconButton — findable by its contentDescription.
+        composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
     }
 
     @Test
     fun tapping_score_history_button_opens_history_screen() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule.onNodeWithText("History").performClick()
+        composeTestRule.onNodeWithContentDescription("History").performClick()
         composeTestRule.onNodeWithText("Score history").assertIsDisplayed()
     }
 
@@ -315,7 +315,7 @@ class GameScreenTest {
     fun back_button_on_history_screen_returns_to_game() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()  // complete round 1
-        composeTestRule.onNodeWithText("History").performClick()
+        composeTestRule.onNodeWithContentDescription("History").performClick()
         composeTestRule
             .onNodeWithContentDescription("Back to game")
             .performClick()
@@ -329,7 +329,7 @@ class GameScreenTest {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()  // complete round 1
         composeTestRule.onNodeWithText("Garde").performClick()        // enter step 2
-        composeTestRule.onNodeWithText("History").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
     }
 
     @Test
@@ -354,13 +354,13 @@ class GameScreenTest {
     fun end_game_button_is_displayed_on_step_1_from_the_start() {
         // "End Game" must be visible even before any round has been played.
         launchGame()
-        composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("End Game").assertIsDisplayed()
     }
 
     @Test
     fun tapping_end_game_on_step_1_opens_final_score_screen() {
         launchGame()
-        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithContentDescription("End Game").performClick()
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
     }
 
@@ -369,21 +369,21 @@ class GameScreenTest {
         // After selecting a contract, the End Game button should appear in the details form.
         launchGame()
         composeTestRule.onNodeWithText("Garde").performClick()
-        composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("End Game").assertIsDisplayed()
     }
 
     @Test
     fun tapping_end_game_on_step_2_opens_final_score_screen() {
         launchGame()
         composeTestRule.onNodeWithText("Garde").performClick()
-        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithContentDescription("End Game").performClick()
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
     }
 
     @Test
     fun final_score_screen_shows_new_game_button() {
         launchGame()
-        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithContentDescription("End Game").performClick()
         composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
     }
 
@@ -392,7 +392,7 @@ class GameScreenTest {
         // Complete one round so there is a score to show, then end the game.
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()  // complete round 1
-        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithContentDescription("End Game").performClick()
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
 
         // Tapping "Back to game" should return to the active round.
@@ -403,7 +403,7 @@ class GameScreenTest {
     @Test
     fun back_arrow_on_final_score_screen_returns_to_game() {
         launchGame()
-        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithContentDescription("End Game").performClick()
         composeTestRule
             .onNodeWithContentDescription("Back to game")
             .performClick()
