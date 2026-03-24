@@ -65,6 +65,14 @@ data class AppStrings(
     val skipRound: String,
     val numberOfBouts: String,
     val pointsScoredByTaker: String,
+    // Label used when the user switches to defender-points mode.
+    val pointsScoredByDefenders: String,
+    // Header shown above the radio buttons that select which camp's points to enter.
+    val pointsCountedFor: String,
+    // Radio button label for the taker's side.
+    val takerMode: String,
+    // Radio button label for the defenders' side.
+    val defenderMode: String,
     val partnerCalledByTaker: String,
     val confirmRound: String,
     val changeContract: String,
@@ -162,6 +170,10 @@ val EnStrings = AppStrings(
     skipRound             = "Skip round",
     numberOfBouts         = "Number of bouts (oudlers)",
     pointsScoredByTaker   = "Points scored by taker",
+    pointsScoredByDefenders = "Points scored by defenders",
+    pointsCountedFor      = "Count points for:",
+    takerMode             = "Taker",
+    defenderMode          = "Defenders",
     partnerCalledByTaker  = "Partner (called by taker)",
     confirmRound          = "Confirm round",
     changeContract        = "← Change contract",
@@ -235,6 +247,10 @@ val FrStrings = AppStrings(
     skipRound             = "Passer la manche",
     numberOfBouts         = "Nombre de bouts (oudlers)",
     pointsScoredByTaker   = "Points marqués par le preneur",
+    pointsScoredByDefenders = "Points marqués par les défenseurs",
+    pointsCountedFor      = "Points comptés pour :",
+    takerMode             = "Preneur",
+    defenderMode          = "Défenseurs",
     partnerCalledByTaker  = "Appelé (par le preneur)",
     confirmRound          = "Valider la manche",
     changeContract        = "← Changer de contrat",

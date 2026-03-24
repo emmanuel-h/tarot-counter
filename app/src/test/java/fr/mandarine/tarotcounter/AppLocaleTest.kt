@@ -315,4 +315,43 @@ class AppLocaleTest {
     fun chelem_not_announced_realized_localized_en() {
         assertEquals("Not announced, realized", Chelem.NOT_ANNOUNCED_REALIZED.localizedName(AppLocale.EN))
     }
+
+    // ── Defender-mode strings ─────────────────────────────────────────────────
+    // Verifies the four new strings added for the taker/defender radio-button toggle.
+
+    @Test
+    fun en_pointsScoredByDefenders_is_present() {
+        assertEquals("Points scored by defenders", appStrings(AppLocale.EN).pointsScoredByDefenders)
+    }
+
+    @Test
+    fun fr_pointsScoredByDefenders_is_present() {
+        assertEquals("Points marqués par les défenseurs", appStrings(AppLocale.FR).pointsScoredByDefenders)
+    }
+
+    @Test
+    fun en_pointsCountedFor_is_present() {
+        assertEquals("Count points for:", appStrings(AppLocale.EN).pointsCountedFor)
+    }
+
+    @Test
+    fun fr_pointsCountedFor_is_present() {
+        assertEquals("Points comptés pour :", appStrings(AppLocale.FR).pointsCountedFor)
+    }
+
+    @Test
+    fun en_takerMode_and_defenderMode_differ() {
+        val strings = appStrings(AppLocale.EN)
+        assertNotEquals(strings.takerMode, strings.defenderMode)
+        assertEquals("Taker", strings.takerMode)
+        assertEquals("Defenders", strings.defenderMode)
+    }
+
+    @Test
+    fun fr_takerMode_and_defenderMode_differ() {
+        val strings = appStrings(AppLocale.FR)
+        assertNotEquals(strings.takerMode, strings.defenderMode)
+        assertEquals("Preneur", strings.takerMode)
+        assertEquals("Défenseurs", strings.defenderMode)
+    }
 }

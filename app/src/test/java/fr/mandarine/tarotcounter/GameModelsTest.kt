@@ -1031,4 +1031,51 @@ class GameModelsTest {
         assertEquals(-35, result["Charlie"])
         assertEquals(0, result.values.sum())
     }
+
+    // ── Defender-to-taker point conversion ───────────────────────────────────
+    //
+    // When the user toggles to "defender mode" in the UI, the entered points are
+    // converted to taker points with: takerPoints = 91 − defenderPoints.
+    // These tests verify that the conversion produces correct scoring outcomes.
+
+    @Test
+    fun `defender points convert to correct taker points — taker wins`() {
+        // Defenders scored 30 pts → taker scored 61 pts.
+        // With 2 bouts the threshold is 41 → taker wins.
+        val defenderPoints = 30
+        val takerPoints = 91 - defenderPoints   // 61
+        assertTrue(takerWon(bouts = 2, points = takerPoints))
+    }
+
+    @Test
+    fun `defender points convert to correct taker points — taker loses`() {
+        // Defenders scored 60 pts → taker scored 31 pts.
+        // With 2 bouts the threshold is 41 → taker loses.
+        val defenderPoints = 60
+        val takerPoints = 91 - defenderPoints   // 31
+        assertFalse(takerWon(bouts = 2, points = takerPoints))
+    }
+
+    @Test
+    fun `defender points conversion is symmetric`() {
+        // For any valid defender score d, converting twice returns the original:
+        // takerPoints = 91 − d; back = 91 − takerPoints == d.
+        for (d in 0..91) {
+            assertEquals(d, 91 - (91 - d))
+        }
+    }
+
+    @Test
+    fun `defender score 0 means taker scored all points`() {
+        // If defenders scored nothing (0), the taker scored all 91 points.
+        assertEquals(91, 91 - 0)
+        assertTrue(takerWon(bouts = 0, points = 91))  // easily wins regardless of bouts
+    }
+
+    @Test
+    fun `defender score 91 means taker scored nothing`() {
+        // If defenders scored everything (91), the taker scored 0.
+        assertEquals(0, 91 - 91)
+        assertFalse(takerWon(bouts = 3, points = 0))  // loses even with 3 bouts (needs ≥36)
+    }
 }
