@@ -122,16 +122,11 @@ class GameStorage(private val context: Context) {
     suspend fun addGame(game: SavedGame) {
         context.dataStore.edit { prefs ->
             val raw = prefs[GAMES_KEY] ?: "[]"
-            val games = runCatching { json.decodeFromString<List<SavedGame>>(raw) }
+            val existing = runCatching { json.decodeFromString<List<SavedGame>>(raw) }
                 .getOrDefault(emptyList())
-                .toMutableList()
-            // Insert the new game at position 0 so the list stays newest-first.
-            games.add(0, game)
-            // Trim to the limit so the file doesn't grow without bound.
-            if (games.size > MAX_SAVED_GAMES) {
-                games.subList(MAX_SAVED_GAMES, games.size).clear()
-            }
-            prefs[GAMES_KEY] = json.encodeToString(games)
+            // Prepend the new game (newest-first) and trim to the allowed limit in one step.
+            val updated = (listOf(game) + existing).take(MAX_SAVED_GAMES)
+            prefs[GAMES_KEY] = json.encodeToString(updated)
         }
     }
 }

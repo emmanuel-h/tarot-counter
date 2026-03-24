@@ -1,6 +1,6 @@
 package fr.mandarine.tarotcounter
 
-import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.staticCompositionLocalOf
 
 // ── Locale enum ───────────────────────────────────────────────────────────────
 //
@@ -16,9 +16,12 @@ enum class AppLocale { EN, FR }
 // Usage:  val locale = LocalAppLocale.current
 //         val strings = appStrings(locale)
 //
+// `staticCompositionLocalOf` is used instead of `compositionLocalOf` because locale
+// changes always recompose the entire tree (via CompositionLocalProvider in MainActivity),
+// so the extra per-caller tracking of `compositionLocalOf` would add cost with no benefit.
 // The default value is EN so that Previews and tests that don't set a provider
 // still compile and render correctly.
-val LocalAppLocale = compositionLocalOf { AppLocale.EN }
+val LocalAppLocale = staticCompositionLocalOf { AppLocale.EN }
 
 // ── String bundle ─────────────────────────────────────────────────────────────
 //
