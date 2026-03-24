@@ -446,8 +446,6 @@ fun GameScreen(
                     }
                     // Right half: points entry — segmented toggle stacked above text field
                     Column(modifier = Modifier.weight(1f)) {
-                        FormLabel(strings.pointsScoredByTaker)
-                        Spacer(Modifier.height(8.dp))
                         // ── Camp toggle ────────────────────────────────────────
                         // The two segments let the user pick which camp's points to type.
                         // Selecting "Defenders" is a convenience — the taker's points are
