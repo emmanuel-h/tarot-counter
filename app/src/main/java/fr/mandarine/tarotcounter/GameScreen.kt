@@ -401,9 +401,12 @@ fun GameScreen(
                 // ── Bouts + Points side by side ───────────────────────────────
                 // Placing these in a Row cuts one section of vertical space compared
                 // to stacking them, helping everything fit on one screen.
+                // Alignment.Bottom ensures both halves share the same bottom edge,
+                // so the dropdown and the text field line up visually (issue #23).
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.Bottom
                 ) {
                     // Left half: bouts dropdown
                     // Replaced from FilterChips to an ExposedDropdownMenuBox to save
