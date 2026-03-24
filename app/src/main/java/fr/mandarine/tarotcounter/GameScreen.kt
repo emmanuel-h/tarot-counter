@@ -487,21 +487,19 @@ fun GameScreen(
                             keyboardActions = KeyboardActions(
                                 onDone = { keyboardController?.hide() }
                             ),
-                            placeholder     = { Text("0") },
+                            // Show the valid range directly in the placeholder so the
+                            // user knows what values are accepted without wasting vertical
+                            // space on a separate supporting-text hint.
+                            placeholder     = { Text("0-91") },
                             // When the value is out of range, mark the field red and
-                            // replace the range hint with a descriptive error message.
+                            // show a descriptive error message below it.
                             isError         = pointsError,
-                            supportingText  = {
-                                if (pointsError) {
-                                    Text(
-                                        text  = strings.pointsOutOfRange,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                } else {
-                                    // Normal hint: remind the user of the valid range.
-                                    Text(strings.pointsRange)
-                                }
-                            },
+                            supportingText  = if (pointsError) ({
+                                Text(
+                                    text  = strings.pointsOutOfRange,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }) else null,
                             singleLine      = true,
                             // testTag lets UI tests identify and interact with this field.
                             modifier        = Modifier.fillMaxWidth().testTag("points_input")
