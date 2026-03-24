@@ -53,5 +53,5 @@ Make the changes. Follow project conventions:
 
 ## 9. Validate
 Ask the user to validate the ticket.
-- If they say **"go"**: merge the PR (`gh pr merge --squash`) and close the issue (`gh issue close <number>`)
+- If they say **"go"**: merge the PR (`gh pr merge --squash`) and close the issue (`gh issue close <number>`). Then, checkout main and pull.
 - Otherwise: restart from step 4 (Plan) incorporating the requested changes, then ask for validation again
