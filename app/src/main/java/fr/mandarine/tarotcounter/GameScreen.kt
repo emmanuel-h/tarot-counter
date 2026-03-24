@@ -40,7 +40,6 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Checkbox
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -445,74 +444,68 @@ fun GameScreen(
                             }
                         }
                     }
-                    // Right half: points entry — segmented toggle + text field on one row
+                    // Right half: points entry — segmented toggle stacked above text field
                     Column(modifier = Modifier.weight(1f)) {
                         FormLabel(strings.pointsScoredByTaker)
                         Spacer(Modifier.height(8.dp))
-                        // ── Inline toggle + input ──────────────────────────────
+                        // ── Camp toggle ────────────────────────────────────────
                         // The two segments let the user pick which camp's points to type.
-                        // Selecting "Defenders" is just a convenience — the taker's points
-                        // are derived on confirm as: takerPoints = 91 − defenderPoints.
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Segmented button: Attacker | Defenders
-                            // `itemShape` gives the correct rounded-start / rounded-end corners.
-                            SingleChoiceSegmentedButtonRow(modifier = Modifier.wrapContentWidth()) {
-                                SegmentedButton(
-                                    selected = !defenderMode,
-                                    onClick  = {
-                                        defenderMode = false
-                                        pointsText   = ""  // clear field when switching camps
-                                    },
-                                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                                ) { Text(strings.attackerMode) }
-                                SegmentedButton(
-                                    selected = defenderMode,
-                                    onClick  = {
-                                        defenderMode = true
-                                        pointsText   = ""  // clear field when switching camps
-                                    },
-                                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                                ) { Text(strings.defenderMode) }
-                            }
-                            OutlinedTextField(
-                                value = pointsText,
-                                onValueChange = { input ->
-                                    // Accept only digit characters and at most two of them
-                                    // (the highest valid value, 91, has two digits).
-                                    if (input.all { it.isDigit() } && input.length <= 2) {
-                                        pointsText = input
-                                    }
+                        // Selecting "Defenders" is a convenience — the taker's points are
+                        // derived on confirm as: takerPoints = 91 − defenderPoints.
+                        // `fillMaxWidth` makes the toggle use the same width as the field below.
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            SegmentedButton(
+                                selected = !defenderMode,
+                                onClick  = {
+                                    defenderMode = false
+                                    pointsText   = ""  // clear field when switching camps
                                 },
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Number,
-                                    imeAction    = ImeAction.Done
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onDone = { keyboardController?.hide() }
-                                ),
-                                placeholder     = { Text("0") },
-                                // When the value is out of range, mark the field red and
-                                // replace the range hint with a descriptive error message.
-                                isError         = pointsError,
-                                supportingText  = {
-                                    if (pointsError) {
-                                        Text(
-                                            text  = strings.pointsOutOfRange,
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    } else {
-                                        // Normal hint: remind the user of the valid range.
-                                        Text(strings.pointsRange)
-                                    }
+                                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                            ) { Text(strings.attackerMode) }
+                            SegmentedButton(
+                                selected = defenderMode,
+                                onClick  = {
+                                    defenderMode = true
+                                    pointsText   = ""  // clear field when switching camps
                                 },
-                                singleLine      = true,
-                                // testTag lets UI tests identify and interact with this field.
-                                modifier        = Modifier.weight(1f).testTag("points_input")
-                            )
+                                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                            ) { Text(strings.defenderMode) }
                         }
+                        OutlinedTextField(
+                            value = pointsText,
+                            onValueChange = { input ->
+                                // Accept only digit characters and at most two of them
+                                // (the highest valid value, 91, has two digits).
+                                if (input.all { it.isDigit() } && input.length <= 2) {
+                                    pointsText = input
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction    = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { keyboardController?.hide() }
+                            ),
+                            placeholder     = { Text("0") },
+                            // When the value is out of range, mark the field red and
+                            // replace the range hint with a descriptive error message.
+                            isError         = pointsError,
+                            supportingText  = {
+                                if (pointsError) {
+                                    Text(
+                                        text  = strings.pointsOutOfRange,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                } else {
+                                    // Normal hint: remind the user of the valid range.
+                                    Text(strings.pointsRange)
+                                }
+                            },
+                            singleLine      = true,
+                            // testTag lets UI tests identify and interact with this field.
+                            modifier        = Modifier.fillMaxWidth().testTag("points_input")
+                        )
                     }
                 }
 
