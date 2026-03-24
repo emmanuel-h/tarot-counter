@@ -8,7 +8,11 @@ Use `gh issue view <number> --repo <owner>/<repo>` or fetch the URL directly wit
 - Labels, acceptance criteria, and any linked issues
 - Comments that clarify requirements
 
-## 2. Explore the codebase
+## 2. Prepare the branch
+- Checkout `main` and pull latest
+- Create a new branch named `<issue-number>-<short-description>` (e.g. `42-add-score-history`)
+
+## 3. Explore the codebase
 Read the relevant source files before writing any code. Understand existing patterns:
 - Architecture: single-module Jetpack Compose app under `fr.mandarine.tarotcounter`
 - Entry point: `MainActivity.kt`
@@ -16,32 +20,30 @@ Read the relevant source files before writing any code. Understand existing patt
 - Documentation: `/docs`
 - Existing screens and composables
 
-## 3. Plan the implementation
+## 4. Plan the implementation
 Write a concise plan (bullet points) and show it to the user before starting. Cover:
 - Which files to create or modify
 - Any new dependencies needed in `gradle/libs.versions.toml`
 - How the change fits the existing architecture
 
-## 4. Implement
+## 5. Implement
 Make the changes. Follow project conventions:
 - Kotlin 2.x idiomatic style
 - Jetpack Compose + Material 3
 - Inline comments on every non-trivial block (user is new to Kotlin/Android)
 - Support both EN and FR locales via the existing `CompositionLocal` i18n approach (see `strings.xml` and locale switching logic)
 
-## 5. Write or update tests
+## 6. Write or update tests
 - Every new feature, bug fix or improvement should be covered by existing or new tests
 - Pure logic → unit test in `src/test/` (JUnit 4)
 - Composable behaviour → Compose UI test in `src/androidTest/`
 - Run `./gradlew testDebugUnitTest` and fix any failures
 
-## 6. Update documentation
+## 7. Update documentation
 - Add or update files in `docs/` describing the feature
 - Keep `README.md` in sync (game rules, screens, bonuses, architecture changes)
 
-## 7. Prepare the branch and open a PR
-- Checkout `main` and pull latest before starting any work
-- Create a new branch named `<issue-number>-<short-description>` (e.g. `42-add-score-history`)
+## 8. Commit and open a PR
 - Stage only the relevant files (never `.env` or secrets)
 - Write a clear conventional commit message referencing the issue number (e.g. `feat: add X (#42)`)
 - Run `./gradlew lint` and fix any new warnings before committing
@@ -49,7 +51,7 @@ Make the changes. Follow project conventions:
   - Title following conventional commits spec with the issue number in parentheses (e.g. `feat: add score history (#42)`)
   - A relevant description of the changes
 
-## 8. Validate
+## 9. Validate
 Ask the user to validate the ticket.
 - If they say **"go"**: merge the PR (`gh pr merge --squash`) and close the issue (`gh issue close <number>`)
-- Otherwise: restart from step 3 (Plan) incorporating the requested changes, then ask for validation again
+- Otherwise: restart from step 4 (Plan) incorporating the requested changes, then ask for validation again
