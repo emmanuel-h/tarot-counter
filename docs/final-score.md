@@ -51,7 +51,18 @@ If the user ends the game before any round is played, the score table is replace
 | Round | 64 dp | Round number |
 | Player (×N) | 80 dp | Cumulative score after that round |
 
-The **winner's column** is highlighted with a `secondaryContainer` tint and bold text throughout the table, making it easy to track the winner's score progression.
+The **winner's column** is highlighted with a gold/amber `secondary` tint and bold text throughout the table, making it easy to track the winner's score progression.
+
+## Score Colour Coding
+
+Score cells throughout the table use semantic colours for instant legibility:
+
+| Score | Colour token | Visual |
+|---|---|---|
+| Positive (≥ 0) | `MaterialTheme.colorScheme.primary` | Green |
+| Negative (< 0) | `MaterialTheme.colorScheme.error` | Red |
+
+Both tokens adapt automatically to light and dark themes. The same `scoreColor()` helper (defined in `ScoreColor.kt`) is used by `CompactScoreboard` (GameScreen), `FinalScoreScreen`, and `ScoreHistoryScreen` so the convention is consistent everywhere scores appear.
 
 ## Navigation
 

@@ -189,6 +189,46 @@ class ScoreHistoryScreenTest {
         )
     }
 
+    // ── Spec: colour coding ───────────────────────────────────────────────────
+    // Note: Compose UI tests cannot assert exact text colours without custom
+    // semantic properties or screenshot comparison. These tests verify that the
+    // score values are still rendered after the colour-coding change (regression
+    // guard). Visual colour review is done manually or via screenshot tests.
+
+    @Test
+    fun positive_score_cell_is_displayed_after_colour_coding_applied() {
+        // Alice +50 should still render as "+50" after scoreColor is applied.
+        val history = listOf(
+            RoundResult(
+                roundNumber  = 1,
+                takerName    = "Alice",
+                contract     = Contract.GARDE,
+                details      = null,
+                won          = true,
+                playerScores = mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)
+            )
+        )
+        launchHistory(roundHistory = history)
+        composeTestRule.onNodeWithText("+50").assertIsDisplayed()
+    }
+
+    @Test
+    fun negative_score_cell_is_displayed_after_colour_coding_applied() {
+        // Bob -25 should still render as "-25" after scoreColor is applied.
+        val history = listOf(
+            RoundResult(
+                roundNumber  = 1,
+                takerName    = "Alice",
+                contract     = Contract.GARDE,
+                details      = null,
+                won          = true,
+                playerScores = mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)
+            )
+        )
+        launchHistory(roundHistory = history)
+        composeTestRule.onNodeWithText("-25").assertIsDisplayed()
+    }
+
     // ── Spec: back navigation ─────────────────────────────────────────────────
 
     @Test
