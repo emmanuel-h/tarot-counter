@@ -1060,11 +1060,10 @@ private fun BonusLabelCell(label: String, body: String, modifier: Modifier = Mod
         state    = tooltipState,
         modifier = modifier
     ) {
-        // The entire Row is tappable — clicking on the text or the icon both trigger
-        // the tooltip. `clickable` from foundation gives the standard ripple feedback.
+        // Only the text and icon are tappable — no fillMaxWidth() so the clickable
+        // area wraps the content tightly rather than spanning the full column width.
         Row(
             modifier = Modifier
-                .fillMaxWidth()
                 .clickable { scope.launch { tooltipState.show() } },
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1072,10 +1071,7 @@ private fun BonusLabelCell(label: String, body: String, modifier: Modifier = Mod
                 text     = label,
                 style    = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                // fill = false so the text only takes the space it needs, keeping
-                // the icon adjacent to the text instead of drifting to the edge.
-                modifier = Modifier.weight(1f, fill = false)
+                overflow = TextOverflow.Ellipsis
             )
             // Decorative info icon — the clickable Row above handles all input.
             Icon(
