@@ -27,14 +27,14 @@ Read the relevant source files before writing any code. Understand existing patt
 - Existing screens and composables
 
 ## 4. Plan the implementation
-Use the kotlin-specialist skills to ensure high-quality code.
+Invoke the `fullstack-dev-skills:kotlin-specialist` skill (via the Skill tool) to get idiomatic Kotlin/Compose guidance before planning.
 Write a concise plan (bullet points) and show it to the user before starting. Cover:
 - Which files to create or modify
 - Any new dependencies needed in `gradle/libs.versions.toml`
 - How the change fits the existing architecture
 
 ## 5. Implement
-Use the kotlin-specialist skills to ensure high-quality code.
+Invoke the `fullstack-dev-skills:kotlin-specialist` skill (via the Skill tool) to review the implementation approach before writing code.
 Make the changes. Follow project conventions:
 - Kotlin 2.x idiomatic style
 - Jetpack Compose + Material 3
