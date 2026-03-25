@@ -665,10 +665,6 @@ fun GameScreen(
                         Text(strings.confirmRound)
                     }
 
-                    // Secondary action: deselect the contract and collapse the form.
-                    TextButton(onClick = { selectedContract = null }) {
-                        Text(strings.changeContract)
-                    }
                 }
             }
 

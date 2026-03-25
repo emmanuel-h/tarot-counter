@@ -25,7 +25,7 @@ import org.junit.runner.RunWith
  *
  * Spec (docs/game-flow.md — Game Screen):
  *   Contract selection — FilterChips for Prise/Garde/Garde Sans/Garde Contre + Skip round.
- *   Inline details form — bouts, points, bonuses, chelem, Confirm / ← Change contract.
+ *   Inline details form — bouts, points, bonuses, chelem, Confirm.
  *   All visible on a single scrollable page alongside the compact scoreboard.
  *   Round history — shown newest-first at the bottom of the page.
  */
@@ -198,20 +198,6 @@ class GameScreenTest {
                 composeTestRule.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty()
             )
         }
-    }
-
-    // ── Spec: "← Change contract" goes back to Step 1 ────────────────────────
-
-    @Test
-    fun change_contract_button_returns_to_contract_selection() {
-        launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
-        composeTestRule.onNodeWithText("← Change contract").performClick()
-
-        // Contract buttons must be visible again.
-        composeTestRule.onNodeWithText("Garde").assertIsDisplayed()
-        // Details form must be gone.
-        composeTestRule.onNodeWithText("Confirm round").assertDoesNotExist()
     }
 
     // ── Spec: confirming a round advances the round counter ───────────────────

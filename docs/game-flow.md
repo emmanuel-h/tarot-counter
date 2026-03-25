@@ -36,7 +36,7 @@ The taker can also **Skip round** to record the round without any details.
 #### Inline round details
 
 After a contract chip is selected, the scoring details form expands below it on the same page.
-Tapping the active chip again (or **← Change contract**) collapses the form and deselects the contract.
+Tapping the active chip again collapses the form and deselects the contract.
 
 | Field              | Type                        | Description |
 |--------------------|-----------------------------|-------------|
@@ -68,7 +68,6 @@ The bonus is a flat amount exchanged between the taker and each defender individ
 **Chelem player**: when a non-None chelem option is selected a second selector appears — "Who called the chelem?". Available choices are the taker and (in 5-player games) the partner if one has been selected. Once a player is chosen and the chelem is of the *announced* type, a note is shown reminding the table that **that player leads the first trick of the round**, overriding the normal turn order.
 
 Tapping **Confirm round** saves the result and moves to the next round.
-Tapping **← Change contract** goes back to step 1 without saving.
 
 ## Win Condition
 
