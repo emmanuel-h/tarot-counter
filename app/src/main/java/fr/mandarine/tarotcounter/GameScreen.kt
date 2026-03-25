@@ -423,7 +423,12 @@ fun GameScreen(
                                         pointsText   = ""  // clear field when switching camps
                                     },
                                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                                ) { Text(strings.attackerMode) }
+                                ) {
+                                    // maxLines = 1 and softWrap = false together prevent the label from
+                                    // ever breaking onto a second line, regardless of screen width.
+                                    // This fixes the French "Défenseurs" wrapping bug on narrow screens.
+                                    Text(strings.attackerMode, maxLines = 1, softWrap = false)
+                                }
                                 SegmentedButton(
                                     selected = defenderMode,
                                     onClick  = {
@@ -431,7 +436,9 @@ fun GameScreen(
                                         pointsText   = ""  // clear field when switching camps
                                     },
                                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                                ) { Text(strings.defenderMode) }
+                                ) {
+                                    Text(strings.defenderMode, maxLines = 1, softWrap = false)
+                                }
                             }
                             OutlinedTextField(
                                 value = pointsText,
