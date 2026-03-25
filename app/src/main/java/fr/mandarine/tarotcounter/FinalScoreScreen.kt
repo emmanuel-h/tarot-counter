@@ -1,6 +1,7 @@
 package fr.mandarine.tarotcounter
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import fr.mandarine.tarotcounter.ui.theme.GoldWinnerDark
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -320,13 +322,13 @@ private fun FinalScoreTableRow(
             val cellWidth = if (index == 0) FINAL_ROUND_COL_WIDTH else FINAL_PLAYER_COL_WIDTH
             val isWinnerColumn = index in winnerColumnIndices
 
-            // Winner columns use the saturated gold/amber `secondary` token (issue #4).
-            // Other columns have no background tint.
-            val bgModifier = if (isWinnerColumn) {
-                Modifier.background(MaterialTheme.colorScheme.secondary)
-            } else {
-                Modifier
-            }
+            // Winner columns get a gold/amber background.
+            // Light mode: saturated `secondary` (rich amber) — vivid enough on parchment.
+            // Dark mode: `GoldWinnerDark` (muted dark gold) — `secondary` (GoldLight) is
+            //            too flashy on the dark felt surface, so we use a deeper tone.
+            val winnerBg = if (isSystemInDarkTheme()) GoldWinnerDark
+                           else MaterialTheme.colorScheme.secondary
+            val bgModifier = if (isWinnerColumn) Modifier.background(winnerBg) else Modifier
 
             // Semantic text colour for score cells: green (positive) or red (negative).
             // Header row and round-number column always use the default colour.
