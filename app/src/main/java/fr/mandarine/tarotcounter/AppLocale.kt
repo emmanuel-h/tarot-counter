@@ -131,6 +131,14 @@ data class AppStrings(
     // "Round" / "Manche" column header in the score table.
     val roundColumn: String,
 
+    // ── Back-navigation confirmation dialog (Final Score screen) ──────────────
+    // Shown when the user presses the system back button on the Final Score screen.
+    // The body warns that leaving will discard unsaved results.
+    val backConfirmTitle: String,
+    val backConfirmBody: String,
+    // Confirm action label — distinct from `cancel` which already exists.
+    val backConfirmLeave: String,
+
     // ── Chelem enum labels ────────────────────────────────────────────────────
     val chelemNone: String,
     val chelemAnnouncedRealized: String,
@@ -204,6 +212,10 @@ val EnStrings = AppStrings(
     scoreHistory          = "Score history",
     roundColumn           = "Round",
 
+    backConfirmTitle      = "Leave the game?",
+    backConfirmBody       = "The game results won't be saved if you leave now.",
+    backConfirmLeave      = "Leave",
+
     chelemNone               = "None",
     chelemAnnouncedRealized  = "Announced & realized",
     chelemAnnouncedNotRealized = "Announced, not realized",
@@ -275,6 +287,10 @@ val FrStrings = AppStrings(
 
     scoreHistory          = "Historique des scores",
     roundColumn           = "Manche",
+
+    backConfirmTitle      = "Quitter la partie ?",
+    backConfirmBody       = "Les résultats ne seront pas sauvegardés si vous quittez maintenant.",
+    backConfirmLeave      = "Quitter",
 
     chelemNone               = "Aucun",
     chelemAnnouncedRealized  = "Annoncé et réalisé",

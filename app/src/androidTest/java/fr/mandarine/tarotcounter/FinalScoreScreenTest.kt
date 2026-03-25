@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertTrue
@@ -26,6 +27,9 @@ import org.junit.runner.RunWith
  *   - Winner's column is highlighted (bold) in the table
  *   - Shows "No rounds played" when the history is empty
  *   - "New Game" button fires the onNewGame callback
+ *   - System back button shows a confirmation dialog (issue #38)
+ *   - Confirming the dialog fires onNewGame (navigates to landing)
+ *   - Cancelling the dialog dismisses it without navigating
  */
 @RunWith(AndroidJUnit4::class)
 class FinalScoreScreenTest {
@@ -306,5 +310,53 @@ class FinalScoreScreenTest {
         launchFinal(onNewGame = { callbackFired = true })
         composeTestRule.onNodeWithText("New Game").performClick()
         assertTrue("onNewGame callback should have been called", callbackFired)
+    }
+
+    // ── Spec: system back-button (issue #38) ─────────────────────────────────
+    // The Android system back button should NOT exit the app or return to the game
+    // immediately. Instead it shows a confirmation dialog so the user can decide
+    // whether to leave (losing unsaved results) or stay.
+
+    @Test
+    fun pressing_system_back_shows_leave_confirmation_dialog() {
+        // Spec: back on Final Score → dialog with "Leave the game?" title.
+        launchFinal()
+        // Espresso.pressBack() simulates the system back button / back gesture.
+        // BackHandler intercepts it and sets showLeaveConfirm = true.
+        Espresso.pressBack()
+        composeTestRule.onNodeWithText("Leave the game?").assertIsDisplayed()
+    }
+
+    @Test
+    fun leave_confirmation_dialog_shows_body_text() {
+        // Spec: the dialog body warns that results won't be saved.
+        launchFinal()
+        Espresso.pressBack()
+        composeTestRule
+            .onNodeWithText("The game results won't be saved if you leave now.")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun confirming_leave_dialog_fires_onNewGame_callback() {
+        // Spec: tapping "Leave" in the dialog navigates to the landing page.
+        var newGameCalled = false
+        launchFinal(onNewGame = { newGameCalled = true })
+        Espresso.pressBack()
+        composeTestRule.onNodeWithText("Leave").performClick()
+        assertTrue("Confirming the dialog should fire onNewGame", newGameCalled)
+    }
+
+    @Test
+    fun cancelling_leave_dialog_dismisses_it_without_navigating() {
+        // Spec: tapping "Cancel" closes the dialog; the Final Score screen stays.
+        var newGameCalled = false
+        launchFinal(onNewGame = { newGameCalled = true })
+        Espresso.pressBack()
+        composeTestRule.onNodeWithText("Cancel").performClick()
+        // Dialog should be gone and Game Over screen still visible.
+        composeTestRule.onNodeWithText("Leave the game?").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+        assertTrue("Cancelling should NOT fire onNewGame", !newGameCalled)
     }
 }

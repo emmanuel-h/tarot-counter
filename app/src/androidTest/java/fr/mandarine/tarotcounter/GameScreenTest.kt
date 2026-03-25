@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertTrue
@@ -572,4 +573,46 @@ class GameScreenTest {
         composeTestRule.onNodeWithTag("round_indicator_skipped").assertIsDisplayed()
         composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
     }
-}
+
+    // ── Spec: system back-button on game screen (issue #38) ───────────────────
+    // Pressing the Android system back button on the main game view (no overlay)
+    // should navigate directly to the landing page — no confirmation dialog.
+
+    @Test
+    fun pressing_system_back_on_game_screen_fires_onEndGame_callback() {
+        // Spec: back on the game screen → landing page (no dialog, immediate navigation).
+        var endGameCalled = false
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                // Wire onEndGame so we can verify the callback is called.
+                GameScreen(
+                    playerNames = players,
+                    onEndGame   = { endGameCalled = true }
+                )
+            }
+        }
+        // Espresso.pressBack() triggers the system back button.
+        // BackHandler (enabled = !showFinalScore, which starts as false) intercepts it.
+        Espresso.pressBack()
+        assertTrue("System back on game screen should call onEndGame", endGameCalled)
+    }
+
+    @Test
+    fun pressing_system_back_on_history_overlay_fires_onEndGame_callback() {
+        // Spec: back on the score-history overlay → landing page (no dialog).
+        var endGameCalled = false
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                GameScreen(
+                    playerNames = players,
+                    onEndGame   = { endGameCalled = true }
+                )
+            }
+        }
+        // Open the history overlay by tapping the "History" button.
+        composeTestRule.onNodeWithText("History").performClick()
+        // Back should still go to landing page, not back to game screen.
+        Espresso.pressBack()
+        assertTrue("System back on history overlay should call onEndGame", endGameCalled)
+    }
+}}

@@ -13,8 +13,9 @@ TarotCounter guides players through a game round by round:
 5. **Score history table** — tap the bar-chart icon (left of the header) to see a round-by-round table of cumulative scores for every player
 6. **End Game / Final Score** — tap **End Game** in the bottom bar at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted in gold/amber), and a "New Game" button
 7. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (CompactScoreboard, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
-7. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
-8. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results with a trophy icon next to the winner's name
+8. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
+9. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results with a trophy icon next to the winner's name
+10. **Back navigation** — the Android system back button always returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
 
 The app automatically rotates the taker each round, determines win/loss, and computes each player's score for the round.
 
@@ -166,3 +167,4 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen
 - [`docs/score-color.md`](docs/score-color.md) — score colour-coding convention: `scoreColor()` helper, where it is used, winner column
 - [`docs/theme.md`](docs/theme.md) — colour palette rationale, roles, and dynamic-colour policy
+- [`docs/back-navigation.md`](docs/back-navigation.md) — system back button behaviour per screen, BackHandler implementation, confirmation dialog

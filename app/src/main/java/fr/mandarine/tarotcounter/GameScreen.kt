@@ -1,5 +1,6 @@
 package fr.mandarine.tarotcounter
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -183,6 +184,17 @@ fun GameScreen(
         }
         showFinalScore = true
     }
+
+    // ── System back-button handling ───────────────────────────────────────────
+    // BackHandler intercepts the Android system back button (gesture or hardware key).
+    //
+    // A single handler covers both the main game view and the score-history overlay:
+    // pressing back on either navigates directly to the landing page (no dialog).
+    //
+    // `enabled = !showFinalScore` disables this handler when the Final Score screen
+    // is visible — that composable registers its own BackHandler (deeper in the
+    // Compose tree, therefore higher priority) which shows a confirmation dialog first.
+    BackHandler(enabled = !showFinalScore) { onEndGame() }
 
     // ── Overlay screens ───────────────────────────────────────────────────────
     // These replace the whole content when active. The main game column is not rendered.
