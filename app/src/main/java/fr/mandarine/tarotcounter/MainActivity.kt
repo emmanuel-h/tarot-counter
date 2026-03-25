@@ -34,35 +34,46 @@ class MainActivity : ComponentActivity() {
         // setContent replaces the traditional XML layout system.
         // Everything inside this block is Compose UI code.
         setContent {
-            // Wraps the whole app in our custom theme (colors, fonts, etc.)
-            TarotCounterTheme {
 
-                // `viewModel()` retrieves (or creates) the GameViewModel for this activity.
-                // The ViewModel survives screen rotations and is destroyed only when the
-                // activity is permanently finished (e.g. user presses the system back button).
-                val gameViewModel: GameViewModel = viewModel()
+            // `viewModel()` retrieves (or creates) the GameViewModel for this activity.
+            // The ViewModel survives screen rotations and is destroyed only when the
+            // activity is permanently finished (e.g. user presses the system back button).
+            val gameViewModel: GameViewModel = viewModel()
 
-                // `collectAsState()` subscribes to these StateFlows and converts them into
-                // Compose state. Any DataStore update automatically triggers a recomposition.
-                val pastGames      by gameViewModel.pastGames.collectAsState()
-                val inProgressGame by gameViewModel.inProgressGame.collectAsState()
-                val savedLocale    by gameViewModel.locale.collectAsState()
+            // `collectAsState()` subscribes to these StateFlows and converts them into
+            // Compose state. Any DataStore update automatically triggers a recomposition.
+            val pastGames      by gameViewModel.pastGames.collectAsState()
+            val inProgressGame by gameViewModel.inProgressGame.collectAsState()
+            val savedLocale    by gameViewModel.locale.collectAsState()
+            val savedTheme     by gameViewModel.theme.collectAsState()
 
-                // Determine the active locale:
-                //   1. If the user has explicitly chosen a language, use it.
-                //   2. Otherwise fall back to the device's system locale.
-                //   3. If the system locale is neither French nor English, default to English.
-                // `savedLocale` is null only before the first DataStore read completes
-                // (typically a few milliseconds); the system fallback prevents any flash.
-                val systemLocale = if (Locale.getDefault().language == "fr") AppLocale.FR
-                                   else AppLocale.EN
-                val currentLocale = savedLocale ?: systemLocale
+            // Determine the active locale:
+            //   1. If the user has explicitly chosen a language, use it.
+            //   2. Otherwise fall back to the device's system locale.
+            //   3. If the system locale is neither French nor English, default to English.
+            // `savedLocale` is null only before the first DataStore read completes
+            // (typically a few milliseconds); the system fallback prevents any flash.
+            val systemLocale = if (Locale.getDefault().language == "fr") AppLocale.FR
+                               else AppLocale.EN
+            val currentLocale = savedLocale ?: systemLocale
 
-                // CompositionLocalProvider makes `currentLocale` available to every
-                // composable in the tree via `LocalAppLocale.current`.
-                // Changing `currentLocale` triggers a recomposition of everything below,
-                // which instantly re-renders all strings in the new language.
-                CompositionLocalProvider(LocalAppLocale provides currentLocale) {
+            // Resolve the active theme: null means no preference saved yet → light mode.
+            // Light mode is the app default regardless of the device's system setting.
+            val currentTheme = savedTheme ?: AppTheme.LIGHT
+            val isDarkTheme  = currentTheme == AppTheme.DARK
+
+            // TarotCounterTheme wraps the entire UI with the persisted dark/light palette.
+            // It is placed outside CompositionLocalProvider so the theme's background
+            // and surface colours apply to the very first frame (no palette flash).
+            TarotCounterTheme(darkTheme = isDarkTheme) {
+
+                // CompositionLocalProvider makes both `currentLocale` and `currentTheme`
+                // available to every composable in the tree via `.current` accessors.
+                // Changing either value triggers a full recomposition of everything below.
+                CompositionLocalProvider(
+                    LocalAppLocale provides currentLocale,
+                    LocalAppTheme  provides currentTheme,
+                ) {
 
                     // Track which screen is visible. `by` delegation means we read/write
                     // `currentScreen` directly instead of `currentScreen.value`.
@@ -103,7 +114,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 // Persist the user's language choice and trigger a recomposition
                                 // through the StateFlow → collectAsState → CompositionLocalProvider chain.
-                                onLocaleChange = { gameViewModel.setLocale(it) }
+                                onLocaleChange = { gameViewModel.setLocale(it) },
+                                // Persist the user's theme choice and re-render the whole UI.
+                                onThemeChange  = { gameViewModel.setTheme(it) }
                             )
                             Screen.GAME -> GameScreen(
                                 playerNames     = confirmedPlayers,

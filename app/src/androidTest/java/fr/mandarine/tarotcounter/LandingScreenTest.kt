@@ -36,11 +36,20 @@ class LandingScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    /** Launches LandingScreen inside our app theme (same as production). */
-    private fun launch(onStartGame: (List<String>) -> Unit = {}) {
+    /**
+     * Launches LandingScreen inside our app theme (same as production).
+     * [onThemeChange] captures the AppTheme passed to the callback when a chip is tapped.
+     */
+    private fun launch(
+        onStartGame: (List<String>) -> Unit = {},
+        onThemeChange: (AppTheme) -> Unit = {}
+    ) {
         composeTestRule.setContent {
             TarotCounterTheme {
-                LandingScreen(onStartGame = onStartGame)
+                LandingScreen(
+                    onStartGame   = onStartGame,
+                    onThemeChange = onThemeChange
+                )
             }
         }
     }
@@ -300,6 +309,36 @@ class LandingScreenTest {
         launchWithPastGames()
         // The "Past Games" heading must be visible.
         composeTestRule.onNodeWithText("Past Games").assertIsDisplayed()
+    }
+
+    // ── Spec: theme toggle chips are shown ────────────────────────────────────
+
+    @Test
+    fun theme_toggle_shows_both_sun_and_moon_chips() {
+        launch()
+        // Both emoji chips must be present in the header row.
+        composeTestRule.onNodeWithText("☀️").assertIsDisplayed()
+        composeTestRule.onNodeWithText("🌙").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_moon_chip_calls_onThemeChange_with_DARK() {
+        var capturedTheme: AppTheme? = null
+        launch(onThemeChange = { capturedTheme = it })
+
+        composeTestRule.onNodeWithText("🌙").performClick()
+
+        assertEquals(AppTheme.DARK, capturedTheme)
+    }
+
+    @Test
+    fun tapping_sun_chip_calls_onThemeChange_with_LIGHT() {
+        var capturedTheme: AppTheme? = null
+        launch(onThemeChange = { capturedTheme = it })
+
+        composeTestRule.onNodeWithText("☀️").performClick()
+
+        assertEquals(AppTheme.LIGHT, capturedTheme)
     }
 
     // ── Spec: past game card shows winner name (issue #5) ─────────────────────

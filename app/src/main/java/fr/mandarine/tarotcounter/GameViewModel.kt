@@ -65,6 +65,15 @@ class GameViewModel internal constructor(
             initialValue = null
         )
 
+    // theme exposes the user's saved theme preference, or null if none has been saved yet.
+    // MainActivity resolves null → AppTheme.LIGHT (light mode is the default).
+    val theme: StateFlow<AppTheme?> = storage.loadTheme()
+        .stateIn(
+            scope        = viewModelScope,
+            started      = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null
+        )
+
     // Saves the completed game to the past-games list and clears the in-progress state.
     //
     // This is called when the user presses "End Game" (not "New Game"), so the game is
@@ -103,6 +112,13 @@ class GameViewModel internal constructor(
     fun setLocale(locale: AppLocale) {
         viewModelScope.launch {
             storage.saveLocale(locale)
+        }
+    }
+
+    // Persists the user's chosen theme so it is restored on the next app launch.
+    fun setTheme(theme: AppTheme) {
+        viewModelScope.launch {
+            storage.saveTheme(theme)
         }
     }
 }
