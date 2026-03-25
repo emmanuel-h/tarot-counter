@@ -1,5 +1,8 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.horizontalScroll
@@ -18,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,6 +31,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,7 +58,7 @@ private val FINAL_PLAYER_COL_WIDTH: Dp = 80.dp
  *
  * Layout:
  *   - Trophy icon + "Game Over" heading
- *   - Winner card (highlighted with primaryContainer) showing name and final score
+ *   - Winner card (gold/amber secondaryContainer) showing name and final score
  *     (or "Tie!" with all co-winner names in case of a draw)
  *   - Full round-by-round score table, with winner column(s) highlighted
  *   - "New Game" button that returns to the setup screen
@@ -103,71 +112,98 @@ fun FinalScoreScreen(
         ScreenHeader(title = strings.gameOver, onBack = onBack)
 
         // ── Decorative trophy icon ─────────────────────────────────────────────
-        // The icon is purely decorative; the title above already conveys "game over".
+        // Enlarged to 72dp and tinted gold (secondary) to make the game-ending moment
+        // feel more dramatic. The icon is purely decorative — the title conveys meaning.
         Spacer(modifier = Modifier.height(8.dp))
         Icon(
             imageVector = Icons.Default.EmojiEvents,
             contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.primary
+            modifier = Modifier.size(72.dp),
+            tint = MaterialTheme.colorScheme.secondary  // gold/amber accent
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
         // ── Winner card ───────────────────────────────────────────────────────
-        // `primaryContainer` is the Material 3 colour meant for prominent, coloured
-        // containers — it stands out clearly without being too loud.
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
+        // `secondaryContainer` is the gold/amber tinted container — aligns with the
+        // trophy icon above and the winner-column highlight in the table.
+        //
+        // The card uses a scale-in + fade-in entry animation so it "pops" into view
+        // when the screen first appears, giving the winner announcement more drama.
+        // `visible` starts false and is set to true in a LaunchedEffect so the
+        // animation fires exactly once on composition.
+        var cardVisible by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) { cardVisible = true }
+
+        AnimatedVisibility(
+            visible = cardVisible,
+            // scaleIn grows the card from 80% → 100%; fadeIn prevents a hard pop.
+            enter = scaleIn(initialScale = 0.8f) + fadeIn()
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
             ) {
-                if (winners.size == 1) {
-                    // Single winner ─ show "Winner", the name, and their final score.
-                    Text(
-                        text = strings.winner,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = winners.first(),
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    val score = totals[winners.first()] ?: 0
-                    val sign = if (score >= 0) "+" else ""
-                    Text(
-                        text = strings.scoreDisplay(sign, score),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                } else if (winners.isNotEmpty()) {
-                    // Tie ─ list all co-winners.
-                    Text(
-                        text = strings.itsATie,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = winners.joinToString(" & "),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (winners.size == 1) {
+                        // Single winner ─ show "Winner", the name (with star medal), and score.
+                        Text(
+                            text = strings.winner,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        // Row so the star icon sits inline with the winner's name.
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Small decorative star medal — contentDescription null because
+                            // the winner's name text already conveys the meaning.
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = winners.first(),
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                        val score = totals[winners.first()] ?: 0
+                        val sign = if (score >= 0) "+" else ""
+                        Text(
+                            text = strings.scoreDisplay(sign, score),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    } else if (winners.isNotEmpty()) {
+                        // Tie ─ list all co-winners. No star icon — no single champion.
+                        Text(
+                            text = strings.itsATie,
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = winners.joinToString(" & "),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                    // `winners.isEmpty()` can only happen with no players — impossible in practice.
                 }
-                // `winners.isEmpty()` can only happen with no players — impossible in practice.
             }
         }
 
@@ -266,12 +302,17 @@ fun FinalScoreScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         // ── New Game button ───────────────────────────────────────────────────
-        // This navigates back to the setup screen so a fresh game can be started.
+        // Full-width with titleMedium text so it reads as the dominant call-to-action
+        // after the winner is announced. `fillMaxWidth` is already set; the larger
+        // text size (`titleMedium` vs the default `labelLarge`) adds visual weight.
         Button(
             onClick = onNewGame,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(strings.newGame)
+            Text(
+                text = strings.newGame,
+                style = MaterialTheme.typography.titleMedium
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))

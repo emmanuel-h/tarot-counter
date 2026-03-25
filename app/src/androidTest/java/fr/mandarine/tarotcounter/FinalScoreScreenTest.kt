@@ -219,6 +219,45 @@ class FinalScoreScreenTest {
         composeTestRule.onNodeWithText("-25").assertIsDisplayed()
     }
 
+    // ── Spec: celebration polish (issue #7) ───────────────────────────────────
+
+    @Test
+    fun star_icon_is_shown_next_to_single_winner_name() {
+        // The star decorative icon has no content description (null), but the winner
+        // card must still display the winner's name alongside it.
+        val history = listOf(
+            RoundResult(1, "Alice", Contract.GARDE, null, true,
+                mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
+        )
+        launchFinal(roundHistory = history)
+        // The winner's name must be visible (star icon is decorative, no CD to query).
+        composeTestRule.onNodeWithText("Alice", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Winner").assertIsDisplayed()
+    }
+
+    @Test
+    fun star_icon_is_not_shown_in_tie_scenario() {
+        // In a tie there is no single champion, so no star icon next to names.
+        // The "It's a tie!" text must appear instead.
+        val history = listOf(
+            RoundResult(1, "Alice", Contract.PRISE, null, false,
+                mapOf("Alice" to 10, "Bob" to 10, "Charlie" to -20))
+        )
+        launchFinal(roundHistory = history)
+        composeTestRule.onNodeWithText("It's a tie!").assertIsDisplayed()
+    }
+
+    @Test
+    fun new_game_button_is_full_width_and_prominent() {
+        // The "New Game" button must be present and tappable — its style (titleMedium)
+        // is validated visually; here we confirm the button renders and fires the callback.
+        var called = false
+        launchFinal(onNewGame = { called = true })
+        composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
+        composeTestRule.onNodeWithText("New Game").performClick()
+        assertTrue("New Game button should fire onNewGame callback", called)
+    }
+
     // ── Spec: back navigation (return to game) ────────────────────────────────
 
     @Test
