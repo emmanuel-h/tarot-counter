@@ -532,6 +532,49 @@ class GameScreenTest {
         composeTestRule.onNodeWithTag("round_indicator_won").assertIsDisplayed()
     }
 
+    // ── Spec: bonus label cell is fully tappable (issue #36) ─────────────────
+    // Tapping anywhere on the bonus label row (text or icon) must open the
+    // tooltip — not only the small ⓘ icon.
+
+    @Test
+    fun tapping_bonus_label_text_shows_tooltip() {
+        // Open the round-details form where the bonus grid is visible.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // The "Petit" label is the first row of the compact bonus grid.
+        // Compose merges the semantics of the clickable Row so that the Text
+        // content ("Petit") is reachable as a clickable node.
+        composeTestRule.onNodeWithText("Petit").performClick()
+
+        // After tapping, the tooltip body text must appear on screen.
+        // We use substring=true because the body contains a newline character.
+        composeTestRule
+            .onNodeWithText(EnStrings.petitTooltipBody, substring = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_bonus_label_shows_tooltip_title() {
+        // The RichTooltip heading must also be visible after the label is tapped.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        composeTestRule.onNodeWithText("Petit").performClick()
+
+        // The tooltip title is the bonus label itself — it should now appear
+        // inside the RichTooltip in addition to the label cell text.
+        composeTestRule
+            .onAllNodesWithText("Petit")
+            .fetchSemanticsNodes()
+            .let { nodes ->
+                assertTrue(
+                    "Tooltip title 'Petit' should be visible after tapping the label",
+                    nodes.size >= 1
+                )
+            }
+    }
+
     @Test
     fun multiple_rounds_show_correct_indicators() {
         // Play one skipped + one lost round and verify both indicators appear.

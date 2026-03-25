@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -968,22 +969,15 @@ private fun CompactBonusGrid(
                     .heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Label cell: bonus name with ⓘ tooltip icon stuck right after the text.
-                // Note: the Text has no weight modifier so it only takes as much space as
-                // its content needs, keeping the ⓘ adjacent instead of pushed to the edge.
-                Row(
-                    modifier = Modifier.weight(labelWeight),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text     = row.label,
-                        style    = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    // ⓘ icon sits immediately after the label text.
-                    BonusInfoIcon(title = row.label, body = row.tooltip)
-                }
+                // Label cell: the whole row (text + ⓘ icon) is now tappable, giving a
+                // much larger touch target than the previous icon-only approach.
+                // Modifier.weight() is a RowScope extension — it must be applied here
+                // inside the enclosing Row, not inside BonusLabelCell itself.
+                BonusLabelCell(
+                    label    = row.label,
+                    body     = row.tooltip,
+                    modifier = Modifier.weight(labelWeight)
+                )
 
                 // One Checkbox per player.
                 // Ticking an unchecked box assigns that player; ticking an already-checked
@@ -1038,10 +1032,68 @@ private fun PlayerChipSelector(
     }
 }
 
-// ── Bonus tooltip icon ────────────────────────────────────────────────────────
+// ── Bonus label cell (label + ⓘ icon, fully tappable) ────────────────────────
+//
+// Wraps the entire label cell — bonus name text and the decorative ⓘ icon — in a
+// single TooltipBox so tapping anywhere on the row opens the description tooltip.
+// This gives a much larger touch target than a standalone icon button.
+//
+// label    : localized bonus name; shown as text and as the tooltip title.
+// body     : multi-line tooltip body (rules + point value).
+// modifier : passed through to TooltipBox — callers use this to apply Modifier.weight()
+//            from within the enclosing RowScope (weight is a RowScope extension and cannot
+//            be called here where no RowScope is active).
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BonusLabelCell(label: String, body: String, modifier: Modifier = Modifier) {
+    val tooltipState = rememberTooltipState(isPersistent = true)
+    val scope        = rememberCoroutineScope()
+
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
+        tooltip = {
+            // RichTooltip supports a title and a multi-line body text.
+            RichTooltip(title = { Text(label) }) {
+                Text(body)
+            }
+        },
+        state    = tooltipState,
+        modifier = modifier
+    ) {
+        // The entire Row is tappable — clicking on the text or the icon both trigger
+        // the tooltip. `clickable` from foundation gives the standard ripple feedback.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { scope.launch { tooltipState.show() } },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text     = label,
+                style    = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                // fill = false so the text only takes the space it needs, keeping
+                // the icon adjacent to the text instead of drifting to the edge.
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            // Decorative info icon — the clickable Row above handles all input.
+            Icon(
+                imageVector        = Icons.Default.Info,
+                contentDescription = null,
+                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier           = Modifier
+                    .padding(start = 2.dp)
+                    .size(14.dp)
+            )
+        }
+    }
+}
+
+// ── Bonus tooltip icon (Chelem section) ───────────────────────────────────────
 //
 // A small ⓘ IconButton that shows a Material3 RichTooltip on tap.
-// Used in the bonus grid label cells and next to the Chelem section header.
+// Used next to the Chelem dropdown header.
 //
 // title : the bonus name shown as the tooltip heading.
 // body  : multi-line explanation text (rules + point value) shown below the title.
