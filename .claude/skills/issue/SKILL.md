@@ -1,3 +1,9 @@
+---
+name: issue
+description: Create a GitHub issue based on a description
+argument-hint: <description>
+---
+
 Create a GitHub issue based on the following description: $ARGUMENTS
 
 - If it describes unexpected or broken behavior, create it as a **bug** (add the `bug` label).

@@ -1,3 +1,8 @@
+---
+name: ship
+description: Commit all changes and push to the remote repository in one step
+---
+
 Commit all changes and push to the remote repository in one step.
 
 Follow the standard commit protocol:

@@ -1,3 +1,9 @@
+---
+name: implement-issue
+description: Implement a GitHub issue end-to-end — branch, code, tests, docs, PR
+argument-hint: <issue-url-or-number>
+---
+
 Read the GitHub issue at $ARGUMENTS and implement it end-to-end in this Android/Kotlin/Jetpack Compose repository.
 
 Follow these steps in order:
