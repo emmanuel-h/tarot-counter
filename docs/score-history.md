@@ -25,8 +25,10 @@ A bar-chart icon button (⬛) appears to the right of the "Scores" heading on th
 
 ## Scrolling
 
-- **Horizontal scroll** — for 5-player games where the table is wider than the screen.
-- **Vertical scroll** — for long games with many rounds.
+- **Horizontal scroll** — for 5-player games where the table is wider than the screen (applied to the inner table Column).
+- **Vertical scroll** — for long games with many rounds (applied to the outer Column so the full page, including the header, scrolls together).
+
+The two scroll directions are intentionally separated: the outer Column owns vertical scrolling, and the inner table Column owns horizontal scrolling. This prevents scroll gesture conflicts.
 
 ## Navigation
 

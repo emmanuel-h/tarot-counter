@@ -13,11 +13,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,23 +69,15 @@ fun ScoreHistoryScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            // verticalScroll on the outer Column scrolls the entire page (header + table)
+            // vertically, so long game histories never clip off-screen.
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 8.dp)
     ) {
         // ── Screen header: back arrow + title ─────────────────────────────────
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Tapping the back arrow returns to the game without losing any state,
-            // because `showScoreHistory` in GameScreen just flips back to false.
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = strings.backToGame
-                )
-            }
-            Text(
-                text = strings.scoreHistory,
-                style = MaterialTheme.typography.headlineSmall
-            )
-        }
+        // ScreenHeader is the shared composable defined in ScreenHeader.kt —
+        // it renders a back arrow + title in a Row, consistent with FinalScoreScreen.
+        ScreenHeader(title = strings.scoreHistory, onBack = onBack)
 
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider()
@@ -105,9 +95,9 @@ fun ScoreHistoryScreen(
         val hScrollState = rememberScrollState()
         Box {
             Column(
-                modifier = Modifier
-                    .horizontalScroll(hScrollState)
-                    .verticalScroll(rememberScrollState())
+                // Only horizontal scrolling here — vertical scrolling is handled
+                // by the outer Column so the two scroll directions don't conflict.
+                modifier = Modifier.horizontalScroll(hScrollState)
             ) {
                 // Column headers: localized "Round" header, then one header per player name.
                 ScoreTableRow(
