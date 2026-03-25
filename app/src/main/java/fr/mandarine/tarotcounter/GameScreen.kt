@@ -969,15 +969,15 @@ private fun CompactBonusGrid(
                     .heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Label cell: the whole row (text + ⓘ icon) is now tappable, giving a
-                // much larger touch target than the previous icon-only approach.
-                // Modifier.weight() is a RowScope extension — it must be applied here
-                // inside the enclosing Row, not inside BonusLabelCell itself.
-                BonusLabelCell(
-                    label    = row.label,
-                    body     = row.tooltip,
-                    modifier = Modifier.weight(labelWeight)
-                )
+                // Label column: same weight-based sizing as before so checkboxes stay
+                // aligned. BonusLabelCell sits inside and only makes the text+icon
+                // tappable — the surrounding empty space in the column is not clickable.
+                Row(
+                    modifier = Modifier.weight(labelWeight),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BonusLabelCell(label = row.label, body = row.tooltip)
+                }
 
                 // One Checkbox per player.
                 // Ticking an unchecked box assigns that player; ticking an already-checked
@@ -1038,14 +1038,15 @@ private fun PlayerChipSelector(
 // single TooltipBox so tapping anywhere on the row opens the description tooltip.
 // This gives a much larger touch target than a standalone icon button.
 //
-// label    : localized bonus name; shown as text and as the tooltip title.
-// body     : multi-line tooltip body (rules + point value).
-// modifier : passed through to TooltipBox — callers use this to apply Modifier.weight()
-//            from within the enclosing RowScope (weight is a RowScope extension and cannot
-//            be called here where no RowScope is active).
+// label : localized bonus name; shown as text and as the tooltip title.
+// body  : multi-line tooltip body (rules + point value).
+//
+// Layout note: this composable is intentionally content-sized (no fillMaxWidth).
+// The enclosing Row in CompactBonusGrid carries the weight() modifier that
+// determines the label column width, keeping checkboxes properly aligned.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BonusLabelCell(label: String, body: String, modifier: Modifier = Modifier) {
+private fun BonusLabelCell(label: String, body: String) {
     val tooltipState = rememberTooltipState(isPersistent = true)
     val scope        = rememberCoroutineScope()
 
@@ -1057,38 +1058,28 @@ private fun BonusLabelCell(label: String, body: String, modifier: Modifier = Mod
                 Text(body)
             }
         },
-        state    = tooltipState,
-        modifier = modifier
+        state = tooltipState
     ) {
-        // Outer Row fills the full column width so the grid alignment (checkboxes)
-        // is preserved. It is NOT itself clickable — only the inner Row is.
+        // Only text + icon are clickable — the empty space in the label column is not.
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.clickable { scope.launch { tooltipState.show() } },
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Only the text + icon portion is tappable, keeping the empty space
-            // at the end of the label column non-interactive.
-            Row(
-                modifier = Modifier
-                    .clickable { scope.launch { tooltipState.show() } },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text     = label,
-                    style    = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                // Decorative info icon — the clickable Row above handles all input.
-                Icon(
-                    imageVector        = Icons.Default.Info,
-                    contentDescription = null,
-                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier           = Modifier
-                        .padding(start = 2.dp)
-                        .size(14.dp)
-                )
-            }
+            Text(
+                text     = label,
+                style    = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            // Decorative info icon — the clickable Row above handles all input.
+            Icon(
+                imageVector        = Icons.Default.Info,
+                contentDescription = null,
+                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier           = Modifier
+                    .padding(start = 2.dp)
+                    .size(14.dp)
+            )
         }
     }
 }
