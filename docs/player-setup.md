@@ -12,12 +12,28 @@ The landing screen lets users configure a game before it starts. It currently ha
 The screen uses a scrollable `Column`. To keep the "Start Game" button reachable even when the on-screen keyboard is open, the button is placed **above** the name input fields. The layout order is:
 
 1. Language switcher (flag chips, top-right)
-2. App title
-3. Player count chips (3 / 4 / 5)
-4. **Start Game button** ← always visible above the keyboard
-5. Player name fields
-6. Resume Game card (if an unfinished game is saved)
-7. Past Games list (if any completed games exist)
+2. Card-suit decorative header (`♠ ♥ ♦ ♣`, in primary color)
+3. App title
+4. Player count chips (3 / 4 / 5)
+5. **Start Game button** ← always visible above the keyboard
+6. Player name fields
+7. Resume Game card (if an unfinished game is saved)
+8. Past Games list (if any completed games exist)
+
+## Visual design
+
+### Decorative card-suit header
+
+A row of the four French tarot suit symbols (`♠ ♥ ♦ ♣`) appears above the app title using `displaySmall` typography and the `primary` theme color. This gives the screen an immediate card-game identity without requiring custom images.
+
+### Resume Game card accent border
+
+The `ResumeGameCard` includes a 4 dp wide vertical strip in the `primary` color on its left edge. This is achieved by placing a thin `Box` and the card's `Column` content side by side in a `Row` inside the card. The strip acts as an accent border that distinguishes the active-game card visually from the passive history cards below.
+
+### Past Games section
+
+- The section heading uses `titleLarge` (previously `titleMedium`) for stronger visual hierarchy.
+- Each `PastGameCard` displays a small trophy icon (`Icons.Default.EmojiEvents`) inline with the winner name when a single winner exists. Tie results and no-rounds results do not show the trophy.
 
 ## How it works
 
