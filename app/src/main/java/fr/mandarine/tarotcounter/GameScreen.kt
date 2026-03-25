@@ -1060,28 +1060,35 @@ private fun BonusLabelCell(label: String, body: String, modifier: Modifier = Mod
         state    = tooltipState,
         modifier = modifier
     ) {
-        // Only the text and icon are tappable — no fillMaxWidth() so the clickable
-        // area wraps the content tightly rather than spanning the full column width.
+        // Outer Row fills the full column width so the grid alignment (checkboxes)
+        // is preserved. It is NOT itself clickable — only the inner Row is.
         Row(
-            modifier = Modifier
-                .clickable { scope.launch { tooltipState.show() } },
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text     = label,
-                style    = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            // Decorative info icon — the clickable Row above handles all input.
-            Icon(
-                imageVector        = Icons.Default.Info,
-                contentDescription = null,
-                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier           = Modifier
-                    .padding(start = 2.dp)
-                    .size(14.dp)
-            )
+            // Only the text + icon portion is tappable, keeping the empty space
+            // at the end of the label column non-interactive.
+            Row(
+                modifier = Modifier
+                    .clickable { scope.launch { tooltipState.show() } },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text     = label,
+                    style    = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                // Decorative info icon — the clickable Row above handles all input.
+                Icon(
+                    imageVector        = Icons.Default.Info,
+                    contentDescription = null,
+                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier           = Modifier
+                        .padding(start = 2.dp)
+                        .size(14.dp)
+                )
+            }
         }
     }
 }
