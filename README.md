@@ -85,7 +85,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 |---|---|
 | Language | Kotlin 2.2.10 |
 | UI | Jetpack Compose (BOM 2024.09.00) |
-| Design system | Material 3 (custom card-game palette — dynamic color disabled) |
+| Design system | Material 3 (custom card-game palette — dynamic color disabled; Cinzel serif font for headings) |
 | Persistence | DataStore 1.1.1 + kotlinx.serialization 1.7.3 |
 | Min SDK | 24 (Android 7.0) |
 | Target SDK | 36 (Android 15) |
