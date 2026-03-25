@@ -464,4 +464,61 @@ class GameScreenTest {
 
         composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
     }
+
+    // ── Spec: styled round history rows (issue #6) ────────────────────────────
+    // Each history row must have a colored indicator dot whose testTag encodes
+    // the outcome: "round_indicator_won", "round_indicator_lost",
+    // or "round_indicator_skipped".
+
+    @Test
+    fun skipped_round_shows_skipped_indicator() {
+        // A skipped round must display the grey (skipped) indicator dot.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+
+        // The indicator tagged "round_indicator_skipped" must be visible.
+        composeTestRule.onNodeWithTag("round_indicator_skipped").assertIsDisplayed()
+    }
+
+    @Test
+    fun lost_round_shows_lost_indicator() {
+        // Default form values: 0 bouts, 0 points → taker needs 56 to win → Lost.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        // The indicator tagged "round_indicator_lost" must be visible.
+        composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
+    }
+
+    @Test
+    fun won_round_shows_won_indicator() {
+        // 3 bouts, 91 points → needs only 36 → Won.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // Select 3 bouts from the dropdown.
+        composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
+        composeTestRule.onAllNodesWithText("3")[0].performClick()
+
+        // Enter a winning score (91 pts with 3 bouts → 91 ≥ 36 → Won).
+        composeTestRule.onNodeWithTag("points_input").performTextInput("91")
+
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        // The indicator tagged "round_indicator_won" must be visible.
+        composeTestRule.onNodeWithTag("round_indicator_won").assertIsDisplayed()
+    }
+
+    @Test
+    fun multiple_rounds_show_correct_indicators() {
+        // Play one skipped + one lost round and verify both indicators appear.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()   // round 1 → skipped
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Confirm round").performClick() // round 2 → lost (0 pts)
+
+        composeTestRule.onNodeWithTag("round_indicator_skipped").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
+    }
 }

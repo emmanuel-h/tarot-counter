@@ -723,30 +723,18 @@ fun GameScreen(
             HorizontalDivider()
             Spacer(Modifier.height(12.dp))
 
-            for (round in roundHistory.reversed()) {
-                // Build each part of the history line from localized string templates.
-                val contractText = round.contract?.localizedName(locale) ?: strings.skipped
-                val detailsText  = round.details?.let {
-                    strings.boutsPointsDetail(it.bouts, it.points)
-                } ?: ""
-                val takerScore = round.playerScores[round.takerName]
-                val outcomeText = when (round.won) {
-                    true  -> {
-                        val s = if (takerScore != null) " (+$takerScore)" else ""
-                        strings.wonOutcome(s)
-                    }
-                    false -> {
-                        val s = if (takerScore != null) " ($takerScore)" else ""
-                        strings.lostOutcome(s)
-                    }
-                    null  -> ""
+            // reversed() so the latest round appears first (newest-first order).
+            val reversedHistory = roundHistory.reversed()
+            reversedHistory.forEachIndexed { index, round ->
+                RoundHistoryRow(round = round, locale = locale, strings = strings)
+                // Draw a thin divider between rows (but not after the last one).
+                if (index < reversedHistory.lastIndex) {
+                    HorizontalDivider(
+                        modifier  = Modifier.padding(vertical = 4.dp),
+                        thickness = 0.5.dp,
+                        color     = MaterialTheme.colorScheme.outlineVariant
+                    )
                 }
-                Text(
-                    text  = strings.roundHistoryPrefix(round.roundNumber, round.takerName) +
-                            contractText + detailsText + outcomeText,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(Modifier.height(4.dp))
             }
         }
     }
@@ -834,6 +822,86 @@ fun EndGameButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             imageVector        = Icons.Default.SportsScore,
             // Accessible label read by TalkBack.
             contentDescription = strings.endGame
+        )
+    }
+}
+
+// ── Round history row ─────────────────────────────────────────────────────────
+
+// A single styled row in the round history list.
+//
+// Layout:  [●]  Round N: Taker — Contract · details — Outcome
+//
+// The leading dot (●) is colored by outcome so the user can scan results at a
+// glance without reading the text:
+//   Won     → MaterialTheme.colorScheme.primary   (green)
+//   Lost    → MaterialTheme.colorScheme.error     (red)
+//   Skipped → MaterialTheme.colorScheme.onSurfaceVariant (muted grey)
+//
+// All colors come from Material theme tokens — never hardcoded hex values —
+// so they automatically adapt to light vs. dark mode.
+//
+// The `testTag` on the indicator dot lets UI tests assert the correct color
+// semantic without reading color values directly.
+@Composable
+private fun RoundHistoryRow(
+    round:   RoundResult,
+    locale:  AppLocale,
+    strings: AppStrings
+) {
+    // ── Build text segments ────────────────────────────────────────────────
+    val contractText = round.contract?.localizedName(locale) ?: strings.skipped
+    val detailsText  = round.details?.let {
+        strings.boutsPointsDetail(it.bouts, it.points)
+    } ?: ""
+    val takerScore   = round.playerScores[round.takerName]
+    val outcomeText  = when (round.won) {
+        true  -> {
+            val s = if (takerScore != null) " (+$takerScore)" else ""
+            strings.wonOutcome(s)
+        }
+        false -> {
+            val s = if (takerScore != null) " ($takerScore)" else ""
+            strings.lostOutcome(s)
+        }
+        null  -> ""
+    }
+
+    // ── Choose indicator color and test tag by outcome ─────────────────────
+    // `Pair<Color, String>` groups the color token with the test tag so
+    // the when expression is compact and both values stay in sync.
+    val (indicatorColor, indicatorTag) = when (round.won) {
+        true  -> MaterialTheme.colorScheme.primary         to "round_indicator_won"
+        false -> MaterialTheme.colorScheme.error           to "round_indicator_lost"
+        null  -> MaterialTheme.colorScheme.onSurfaceVariant to "round_indicator_skipped"
+    }
+
+    // ── Row: indicator dot + history text ──────────────────────────────────
+    Row(
+        modifier          = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        // Colored ● indicator — the key visual cue for won/lost/skipped.
+        // `bodyMedium` matches the text size so the dot aligns with the
+        // first line of the history text.
+        Text(
+            text     = "●  ",
+            style    = MaterialTheme.typography.bodyMedium,
+            color    = indicatorColor,
+            modifier = Modifier.testTag(indicatorTag)
+        )
+
+        // Main history text — same content as before, now on the right of the dot.
+        // `weight(1f)` lets the text wrap naturally without pushing the dot away.
+        Text(
+            text     = strings.roundHistoryPrefix(round.roundNumber, round.takerName) +
+                       contractText + detailsText + outcomeText,
+            style    = MaterialTheme.typography.bodyMedium,
+            // Prevent very long player names or bonus lists from causing layout overflow.
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
     }
 }
