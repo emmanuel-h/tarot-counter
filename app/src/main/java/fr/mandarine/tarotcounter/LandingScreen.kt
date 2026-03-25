@@ -213,21 +213,6 @@ fun LandingScreen(
         // The button is disabled and a warning is shown whenever any duplicate exists.
         val hasDuplicates = duplicateFlags.any { it }
 
-        // "Start Game" button placed ABOVE the name fields so it stays visible when the
-        // on-screen keyboard is open. The user can start immediately (names fall back to
-        // "Player N") or fill the fields first — either way the button is reachable
-        // without closing the keyboard.
-        // `enabled = !hasDuplicates` prevents starting a game when names clash.
-        Button(
-            onClick = { onStartGame(playerNames.toList()) },
-            enabled = !hasDuplicates,
-            modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            Text(strings.startGame)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         Text(
             text = strings.playerNamesLabel,
             style = MaterialTheme.typography.titleMedium
@@ -253,6 +238,19 @@ fun LandingScreen(
                     .fillMaxWidth(0.8f)                   // 80% of screen width
                     .padding(vertical = 4.dp)
             )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // "Start Game" button placed BELOW the name fields so the visual flow naturally
+        // guides the user: enter names first, then press Start.
+        // `enabled = !hasDuplicates` prevents starting a game when names clash.
+        Button(
+            onClick = { onStartGame(playerNames.toList()) },
+            enabled = !hasDuplicates,
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text(strings.startGame)
         }
 
         Spacer(modifier = Modifier.height(16.dp))

@@ -154,25 +154,25 @@ class LandingScreenTest {
         composeTestRule.onNodeWithText("Start Game").assertIsDisplayed()
     }
 
-    // The button must appear ABOVE the name input fields so it stays visible
-    // when the on-screen keyboard is open (issue #19).
+    // The button must appear BELOW the name input fields so the visual flow
+    // guides the user: enter names first, then press Start (issue #31).
     @Test
-    fun start_game_button_is_above_player_name_fields() {
+    fun start_game_button_is_below_player_name_fields() {
         launch()
         // getBoundsInRoot() returns the position of each node on screen.
-        // We compare the bottom edge of the button with the top edge of the
-        // first name field: button.bottom must be less than field.top.
+        // We compare the top edge of the button with the bottom edge of the
+        // last name field: button.top must be greater than field.bottom.
         val buttonBounds = composeTestRule
             .onNodeWithText("Start Game")
             .getBoundsInRoot()
         val fieldBounds = composeTestRule
-            .onNodeWithText("Player 1")
+            .onNodeWithText("Player 3")
             .getBoundsInRoot()
 
-        // The button's bottom edge should be above the first name-field's top edge.
-        assert(buttonBounds.bottom < fieldBounds.top) {
-            "Expected Start Game button (bottom=${buttonBounds.bottom}) to be above " +
-                "Player 1 field (top=${fieldBounds.top})"
+        // The button's top edge should be below the last name-field's bottom edge.
+        assert(buttonBounds.top > fieldBounds.bottom) {
+            "Expected Start Game button (top=${buttonBounds.top}) to be below " +
+                "Player 3 field (bottom=${fieldBounds.bottom})"
         }
     }
 

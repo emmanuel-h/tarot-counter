@@ -9,14 +9,14 @@ The landing screen lets users configure a game before it starts. It currently ha
 
 ## Layout
 
-The screen uses a scrollable `Column`. To keep the "Start Game" button reachable even when the on-screen keyboard is open, the button is placed **above** the name input fields. The layout order is:
+The screen uses a scrollable `Column`. The layout order follows the natural user flow — configure players, enter names, then start:
 
 1. Language switcher (flag chips, top-right)
 2. Card-suit decorative header (`♠ ♥ ♦ ♣`, in primary color)
 3. App title
 4. Player count chips (3 / 4 / 5)
-5. **Start Game button** ← always visible above the keyboard
-6. Player name fields
+5. Player name fields
+6. **Start Game button** ← below the name fields
 7. Resume Game card (if an unfinished game is saved)
 8. Past Games list (if any completed games exist)
 
