@@ -19,6 +19,24 @@ The Android Studio project template ships with a generic purple/pink palette (`P
 
 - `ui/theme/Color.kt` — named colour constants for both schemes
 - `ui/theme/Theme.kt` — `DarkColorScheme`, `LightColorScheme`, and `TarotCounterTheme` composable
+- `ui/theme/Type.kt` — `Typography` definition with Cinzel for headings
+
+## Typography
+
+Heading styles (`headlineLarge`, `headlineMedium`, `headlineSmall`, `titleLarge`) use **Cinzel**, a classical Roman-capitals serif font from Google Fonts bundled in `res/font/cinzel_regular.ttf`. It gives the app the look of antique engraved lettering that matches the tarot aesthetic.
+
+Body and label styles (`bodyLarge`, `bodyMedium`, `bodySmall`, `labelMedium`, …) remain on the system sans-serif font (`FontFamily.Default`) for readability at small sizes.
+
+The font file is a *variable font*, so a single TTF covers the full weight range (Regular 400 → Black 900). Two weights are declared in `CinzelFontFamily` — Normal (400) and Bold (700) — so Compose can pick the right variant when callers use `.copy(fontWeight = FontWeight.Bold)`.
+
+### Where each heading style appears
+
+| Style | Used in |
+|---|---|
+| `headlineLarge` | App title on LandingScreen |
+| `headlineMedium` | "Game Over" on FinalScoreScreen |
+| `headlineSmall` | Winner name inside the winner card |
+| `titleLarge` | Round header on GameScreen |
 
 ## Dynamic Colour
 
