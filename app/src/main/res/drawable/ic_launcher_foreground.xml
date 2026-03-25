@@ -1,19 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Foreground layer: the three oudlers (bouts) of French Tarot, fanned like a hand.
+    Foreground layer: the three bouts (oudlers) of French Tarot, fanned like a hand.
 
-      Left  card (−16°): Le Petit  — Trump I   — large "1" centre + tiny "1" in corners
-      Centre card (0°):  L'Excuse             — lutenist figure
-      Right card (+16°): Le Monde  — Trump XXI — large "21" centre + tiny "21" in corners
+      Left  card (−22°): Le Petit  — Trump I   — bold "1" in upper portion
+      Centre card (0°):  L'Excuse             — jester hat with three bells
+      Right card (+22°): Le Monde  — Trump XXI — bold "21" in upper portion
 
     All three cards share the same unrotated base shape (x=38–70, y=30–80) and are
-    rotated around pivot (54, 95) — well below the canvas — to fan out naturally.
-    Drawing order: left → right → centre (centre is topmost).
+    rotated around pivot (54, 95) — below the canvas — to fan out naturally.
+    Drawing order: left → right → centre (centre is topmost / drawn in front).
+
+    Rotation increased from 16° to 22° so the side-card numerals clear the
+    centre card and remain within the adaptive-icon safe zone (72×72 dp centred).
 
     Colour palette
         #F2E0A0  warm parchment  (card body)
-        #C4972A  antique gold    (borders)
-        #2A0F5E  deep purple     (all symbols, numbers, figure)
+        #C4972A  antique gold    (borders, bells)
+        #2A0F5E  deep purple     (numerals, jester hat body)
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -23,241 +26,181 @@
 
     <!-- ═══════════════════════════════════════════════════════════════════════
          LEFT CARD — Le Petit (Trump I)
-         Rotated −16° around (54, 95): top swings left.
+         Rotated −22° around (54, 95): top swings left, exposing the "1".
          ═══════════════════════════════════════════════════════════════════════ -->
     <group
-        android:rotation="-16"
+        android:rotation="-22"
         android:pivotX="54"
         android:pivotY="95">
 
         <!-- Parchment body -->
-        <path android:fillColor="#F2E0A0"
+        <path
+            android:fillColor="#F2E0A0"
             android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
         <!-- Gold outer border -->
-        <path android:fillColor="#00000000"
-            android:strokeColor="#C4972A" android:strokeWidth="1.5"
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#C4972A"
+            android:strokeWidth="1.5"
             android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
-        <!-- Thin gold inner frame -->
-        <path android:fillColor="#00000000"
-            android:strokeColor="#C4972A" android:strokeWidth="0.75"
+        <!-- Gold inner frame -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#C4972A"
+            android:strokeWidth="0.75"
             android:pathData="M44,34 Q42,34 42,36 V74 Q42,76 44,76 H64 Q66,76 66,74 V36 Q66,34 64,34 Z" />
 
         <!--
-            Tiny "1" in top-left corner (inside inner frame, 4×6dp).
-        -->
-        <path android:fillColor="#2A0F5E"
-            android:pathData="M43,35 H47 V41 H43 Z" />
+            Large "1" numeral — shifted toward the outer (left) edge of the card
+            so it stays visible after the −22° rotation.
 
-        <!--
-            Tiny "1" in bottom-right corner.
-        -->
-        <path android:fillColor="#2A0F5E"
-            android:pathData="M61,67 H65 V73 H61 Z" />
+            Shape: a vertical bar (x=44–54) with a diagonal serif/flag at the
+            top-left — exactly how the numeral appears on a real playing card.
 
-        <!--
-            Large "1" in the card centre — bold bar with a diagonal flag at top-left,
-            just like the numeral on a real playing card.
-
-            Path: start at flag tip (47,47), diagonal up to bar top-left (51,43),
-            across to bar top-right (58,43), down right side (58,71),
-            across bottom (50,71), up left side (50,47), back to flag base (47,47).
+            M40,50  → flag tip (bottom-left of serif)
+            L44,36  → flag top (joins the main bar at its top-left corner)
+            H54     → top-right corner of bar
+            V72     → bottom-right corner of bar
+            H44     → bottom-left corner of bar
+            V50     → back up to flag base
+            Z       → close
         -->
-        <path android:fillColor="#2A0F5E"
-            android:pathData="M47,47 L51,43 H58 V71 H50 V47 Z" />
+        <path
+            android:fillColor="#2A0F5E"
+            android:pathData="M40,50 L44,36 H54 V72 H44 V50 Z" />
 
     </group>
 
     <!-- ═══════════════════════════════════════════════════════════════════════
          RIGHT CARD — Le Monde (Trump XXI)
-         Rotated +16° around (54, 95): top swings right.
+         Rotated +22° around (54, 95): top swings right, exposing the "21".
          ═══════════════════════════════════════════════════════════════════════ -->
     <group
-        android:rotation="16"
+        android:rotation="22"
         android:pivotX="54"
         android:pivotY="95">
 
         <!-- Parchment body -->
-        <path android:fillColor="#F2E0A0"
+        <path
+            android:fillColor="#F2E0A0"
             android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
         <!-- Gold outer border -->
-        <path android:fillColor="#00000000"
-            android:strokeColor="#C4972A" android:strokeWidth="1.5"
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#C4972A"
+            android:strokeWidth="1.5"
             android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
-        <!-- Thin gold inner frame -->
-        <path android:fillColor="#00000000"
-            android:strokeColor="#C4972A" android:strokeWidth="0.75"
+        <!-- Gold inner frame -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#C4972A"
+            android:strokeWidth="0.75"
             android:pathData="M44,34 Q42,34 42,36 V74 Q42,76 44,76 H64 Q66,76 66,74 V36 Q66,34 64,34 Z" />
 
         <!--
-            Tiny "21" in top-left corner.
-            "2" drawn as 5 7-segment bars (a, b, g, e, d) at x=43–47, y=35–41.
-            "1" drawn as a plain bar at x=48–50, y=35–41.
-        -->
-        <!-- 2 – segment a (top) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M43,35 H47 V36 H43 Z" />
-        <!-- 2 – segment b (top-right) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M46,35 H47 V38 H46 Z" />
-        <!-- 2 – segment g (middle) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M43,37.5 H47 V38.5 H43 Z" />
-        <!-- 2 – segment e (bot-left) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M43,38.5 H44 V41 H43 Z" />
-        <!-- 2 – segment d (bottom) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M43,40 H47 V41 H43 Z" />
-        <!-- 1 -->
-        <path android:fillColor="#2A0F5E" android:pathData="M48,35 H50 V41 H48 Z" />
+            Large "21" numeral — drawn in 7-segment style.
 
-        <!--
-            Tiny "21" in bottom-right corner (x=58–65, y=67–73).
-        -->
-        <!-- 2 – segment a -->
-        <path android:fillColor="#2A0F5E" android:pathData="M58,67 H62 V68 H58 Z" />
-        <!-- 2 – segment b -->
-        <path android:fillColor="#2A0F5E" android:pathData="M61,67 H62 V70 H61 Z" />
-        <!-- 2 – segment g -->
-        <path android:fillColor="#2A0F5E" android:pathData="M58,69.5 H62 V70.5 H58 Z" />
-        <!-- 2 – segment e -->
-        <path android:fillColor="#2A0F5E" android:pathData="M58,70.5 H59 V73 H58 Z" />
-        <!-- 2 – segment d -->
-        <path android:fillColor="#2A0F5E" android:pathData="M58,72 H62 V73 H58 Z" />
-        <!-- 1 -->
-        <path android:fillColor="#2A0F5E" android:pathData="M63,67 H65 V73 H63 Z" />
+            At +22° rotation the LEFT side of this card is hidden behind the
+            centre card, so the digits are placed within the inner frame
+            (x=42–66) and the visible upper portion reads clearly as "21".
 
-        <!--
-            Large "21" in the card centre, 7-segment style.
-            "2" occupies x=42–54 y=42–71 (segment thickness 3dp).
-            "1" occupies x=57–63 y=42–71.
+            Digit "2" occupies x=42–54, y=36–70, segment thickness = 3dp:
+              a = top bar        (y=36–39)
+              b = top-right leg  (x=51–54, y=36–53)
+              g = middle bar     (y=53–56)
+              e = bottom-left leg(x=42–45, y=56–70)
+              d = bottom bar     (y=67–70)
 
-            Digit "2" segments:
-              a (top):       y=42–45   full width
-              b (top-right): x=51–54   upper half
-              g (middle):    y=54–57   full width
-              e (bot-left):  x=42–45   lower half
-              d (bottom):    y=68–71   full width
+            Digit "1" occupies x=55–65, y=36–70:
+              vertical bar with a small diagonal flag at top-left.
         -->
-        <!-- 2 – a -->
-        <path android:fillColor="#2A0F5E" android:pathData="M42,42 H54 V45 H42 Z" />
-        <!-- 2 – b -->
-        <path android:fillColor="#2A0F5E" android:pathData="M51,42 H54 V57 H51 Z" />
-        <!-- 2 – g -->
-        <path android:fillColor="#2A0F5E" android:pathData="M42,54 H54 V57 H42 Z" />
-        <!-- 2 – e -->
-        <path android:fillColor="#2A0F5E" android:pathData="M42,57 H45 V71 H42 Z" />
-        <!-- 2 – d -->
-        <path android:fillColor="#2A0F5E" android:pathData="M42,68 H54 V71 H42 Z" />
-        <!-- 1 -->
-        <path android:fillColor="#2A0F5E" android:pathData="M57,42 H63 V71 H57 Z" />
+        <!-- 2 – segment a (top bar) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M42,36 H54 V39 H42 Z" />
+        <!-- 2 – segment b (top-right leg) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M51,36 H54 V53 H51 Z" />
+        <!-- 2 – segment g (middle bar) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M42,53 H54 V56 H42 Z" />
+        <!-- 2 – segment e (bottom-left leg) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M42,56 H45 V70 H42 Z" />
+        <!-- 2 – segment d (bottom bar) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M42,67 H54 V70 H42 Z" />
+        <!-- 1 – vertical bar with diagonal flag (same proportions as the left card) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M53,51 L56,36 H65 V70 H56 V51 Z" />
 
     </group>
 
     <!-- ═══════════════════════════════════════════════════════════════════════
-         CENTRE CARD — L'Excuse  (drawn last = topmost)
-         No rotation. Shows a lutenist figure.
+         CENTRE CARD — L'Excuse  (drawn last = topmost / always in front)
+         No rotation. Shows a jester hat — the universal symbol of the Fool,
+         which is what L'Excuse represents in French Tarot.
          ═══════════════════════════════════════════════════════════════════════ -->
 
     <!-- Parchment body -->
-    <path android:fillColor="#F2E0A0"
+    <path
+        android:fillColor="#F2E0A0"
         android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
     <!-- Gold outer border -->
-    <path android:fillColor="#00000000"
-        android:strokeColor="#C4972A" android:strokeWidth="1.5"
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#C4972A"
+        android:strokeWidth="1.5"
         android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
-    <!-- Thin gold inner frame -->
-    <path android:fillColor="#00000000"
-        android:strokeColor="#C4972A" android:strokeWidth="0.75"
+    <!-- Gold inner frame -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#C4972A"
+        android:strokeWidth="0.75"
         android:pathData="M44,34 Q42,34 42,36 V74 Q42,76 44,76 H64 Q66,76 66,74 V36 Q66,34 64,34 Z" />
 
     <!--
-        Diamond ◆ corner markers for L'Excuse (no trump number — special card).
-        Top-left corner, centred at (44, 36).
+        Jester hat — three upward prongs with a bell at each tip and a brim
+        at the base. The centre prong is the tallest (classic fool's cap shape).
+
+        Prong tips (bottom of each bell diamond):
+          Left   prong: (41, 50)
+          Centre prong: (54, 39)   ← tallest
+          Right  prong: (67, 50)
+
+        Hat body — a W-shaped polygon connecting the prong tips with the brim:
+          M44,66  left  brim edge
+          L41,50  up to left  prong tip
+          L48,53  valley between left  and centre prongs
+          L54,39  up to centre prong tip
+          L60,53  valley between centre and right  prongs
+          L67,50  up to right prong tip
+          L64,66  right brim edge
+          Z
     -->
-    <path android:fillColor="#2A0F5E"
-        android:pathData="M44,33 L47,36 L44,39 L41,36 Z" />
-    <!-- Bottom-right, centred at (64, 72). -->
-    <path android:fillColor="#2A0F5E"
-        android:pathData="M64,69 L67,72 L64,75 L61,72 Z" />
+    <path
+        android:fillColor="#2A0F5E"
+        android:pathData="M44,66 L41,50 L48,53 L54,39 L60,53 L67,50 L64,66 Z" />
 
     <!--
-        Lutenist figure — a man playing a lute, schematic but recognisable.
-
-        Layout (all coordinates before any rotation):
-          Head circle: centre (49, 36), r=3
-          Torso rect:  x=47–51, y=39–57
-          Right arm → lute neck:  (50, 46) → (57, 41)
-          Left arm  → strumming:  (50, 46) → (44, 52)
-          Left leg:               (49, 57) → (46, 70)
-          Right leg:              (51, 57) → (54, 70)
-          Lute neck (stroke):     (57, 41) → (63, 34)
-          Tuning head (rect):     x=61–65, y=33–36
-          Lute body (bezier):     pear shape centred ~ (61, 55)
-          Strings (thin strokes): two lines along the neck
+        Hat brim — a filled horizontal band anchoring the hat to the card.
+        Slightly wider than the hat body to give a clear base line.
     -->
-
-    <!-- Head — filled circle drawn as two 180° arcs -->
-    <path android:fillColor="#2A0F5E"
-        android:pathData="M46,36 A3,3,0,0,1,52,36 A3,3,0,0,1,46,36 Z" />
-
-    <!-- Torso -->
-    <path android:fillColor="#2A0F5E"
-        android:pathData="M47,39 H51 V57 H47 Z" />
-
-    <!-- Right arm reaching up-right to hold lute neck -->
-    <path android:fillColor="#00000000"
-        android:strokeColor="#2A0F5E" android:strokeWidth="2"
-        android:pathData="M50,46 L57,41" />
-
-    <!-- Left arm reaching left, strumming the body -->
-    <path android:fillColor="#00000000"
-        android:strokeColor="#2A0F5E" android:strokeWidth="2"
-        android:pathData="M50,46 L44,52" />
-
-    <!-- Left leg -->
-    <path android:fillColor="#00000000"
-        android:strokeColor="#2A0F5E" android:strokeWidth="2"
-        android:pathData="M49,57 L46,70" />
-
-    <!-- Right leg -->
-    <path android:fillColor="#00000000"
-        android:strokeColor="#2A0F5E" android:strokeWidth="2"
-        android:pathData="M51,57 L54,70" />
+    <path
+        android:fillColor="#2A0F5E"
+        android:pathData="M39,66 H69 V71 H39 Z" />
 
     <!--
-        Lute neck — a diagonal stroke from the right-arm connection point (57,41)
-        up to the tuning head (63,34).
+        Three bells (gold diamond shapes) — one at each prong tip.
+        Gold colour distinguishes them from the hat body and evokes
+        the jingling bells on a real jester's cap.
+
+        Each diamond: M centre,top L right,mid L centre,bottom L left,mid Z
     -->
-    <path android:fillColor="#00000000"
-        android:strokeColor="#2A0F5E" android:strokeWidth="2"
-        android:pathData="M57,41 L63,34" />
-
-    <!-- Tuning head (the box at the top of the neck with the pegs) -->
-    <path android:fillColor="#2A0F5E"
-        android:pathData="M61,33 H65 V36 H61 Z" />
-
-    <!--
-        Lute body — a pear/teardrop shape to the right of the figure.
-        Drawn with cubic Béziers; roughly x=56–67, y=47–63.
-
-        M57,49  start upper-left of body
-        C59,46 65,47 66,52   curve to upper-right
-        C67,57 64,62 61,62   curve to bottom
-        C58,62 55,58 57,53   curve to left side
-        C56,47 56,49 57,49   close back to start
-    -->
-    <path android:fillColor="#2A0F5E"
-        android:pathData="M57,49 C59,46 65,47 66,52 C67,57 64,62 61,62 C58,62 55,58 57,53 C56,47 56,49 57,49 Z" />
-
-    <!-- Lute body — parchment interior so the outline reads clearly -->
-    <path android:fillColor="#F2E0A0"
-        android:pathData="M58,51 C60,48.5 64,49 65,53 C65.5,56.5 63.5,60 61,60 C58.5,60 57,57 57.5,54 C57.5,50.5 57.5,51 58,51 Z" />
-
-    <!--
-        Two strings running from neck to sound hole (thin strokes).
-        They help confirm this is a stringed instrument.
-    -->
-    <path android:fillColor="#00000000"
-        android:strokeColor="#2A0F5E" android:strokeWidth="0.8"
-        android:pathData="M59,42 L60,61" />
-    <path android:fillColor="#00000000"
-        android:strokeColor="#2A0F5E" android:strokeWidth="0.8"
-        android:pathData="M62,38 L62,61" />
+    <!-- Left bell — centred at (41, 47), half-width 3 dp -->
+    <path
+        android:fillColor="#C4972A"
+        android:pathData="M41,44 L44,47 L41,50 L38,47 Z" />
+    <!-- Centre bell — centred at (54, 35), half-width 4 dp (slightly larger) -->
+    <path
+        android:fillColor="#C4972A"
+        android:pathData="M54,31 L58,35 L54,39 L50,35 Z" />
+    <!-- Right bell — centred at (67, 47), half-width 3 dp -->
+    <path
+        android:fillColor="#C4972A"
+        android:pathData="M67,44 L70,47 L67,50 L64,47 Z" />
 
 </vector>
