@@ -16,11 +16,11 @@ The game can be ended at any time — even before the first round is played.
 ```
 ← Game Over          ← shared ScreenHeader (back arrow + title in one row)
 
-[ Trophy icon ]
+[ Trophy icon (72dp, gold) ]
 
-╔══════════════════════════╗
+╔══════════════════════════╗  ← gold/amber secondaryContainer; scale-in animation
 ║         Winner           ║  ← "Winner" label (or "It's a tie!")
-║         Alice            ║  ← Winner name in bold headline
+║   ★ Alice                ║  ← Star icon + winner name in bold headline
 ║         +200 pts         ║  ← Final cumulative score
 ╚══════════════════════════╝
 
@@ -52,6 +52,21 @@ If the user ends the game before any round is played, the score table is replace
 | Player (×N) | 80 dp | Cumulative score after that round |
 
 The **winner's column** is highlighted with a gold/amber `secondary` tint and bold text throughout the table, making it easy to track the winner's score progression.
+
+## Winner Card Visual Polish (issue #7)
+
+The winner card was enhanced to feel more celebratory:
+
+| Element | Before | After |
+|---|---|---|
+| Trophy icon size | 48dp | 72dp |
+| Trophy icon tint | `primary` (green) | `secondary` (gold/amber) |
+| Winner card color | `primaryContainer` | `secondaryContainer` (gold/amber) |
+| Winner name | Plain text | Star icon (`Icons.Default.Star`) + name inline |
+| New Game button text | `labelLarge` (default) | `titleMedium` for more visual weight |
+| Winner card entry | Instant | Scale-in (80%→100%) + fade-in animation |
+
+The tie scenario ("It's a tie!") does not show the star icon, since there is no single champion.
 
 ## Score Colour Coding
 
