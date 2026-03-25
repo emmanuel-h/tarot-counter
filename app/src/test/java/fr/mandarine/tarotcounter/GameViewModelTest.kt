@@ -280,4 +280,59 @@ class GameViewModelTest {
         assertEquals(AppLocale.EN, collected.last())
         job.cancel()
     }
+
+    // ── setTheme ──────────────────────────────────────────────────────────────
+
+    @Test
+    fun `setTheme DARK delegates to saveTheme with the correct theme`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+
+        vm.setTheme(AppTheme.DARK)
+
+        assertEquals(1, storage.saveThemeCallCount)
+        assertEquals(AppTheme.DARK, storage.lastSavedTheme)
+    }
+
+    @Test
+    fun `setTheme LIGHT delegates to saveTheme with the correct theme`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+
+        vm.setTheme(AppTheme.LIGHT)
+
+        assertEquals(AppTheme.LIGHT, storage.lastSavedTheme)
+    }
+
+    @Test
+    fun `theme initial value is null`() {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        assertNull(vm.theme.value)
+    }
+
+    @Test
+    fun `theme StateFlow reflects theme seeded before ViewModel is created`() = runTest {
+        val storage = FakeGameStorage().also { it.seedTheme(AppTheme.DARK) }
+        val vm = GameViewModel(Application(), storage)
+
+        val collected = mutableListOf<AppTheme?>()
+        val job = launch(testDispatcher) { vm.theme.collect { collected.add(it) } }
+
+        assertEquals(AppTheme.DARK, collected.last())
+        job.cancel()
+    }
+
+    @Test
+    fun `theme StateFlow updates after setTheme is called`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+
+        val collected = mutableListOf<AppTheme?>()
+        val job = launch(testDispatcher) { vm.theme.collect { collected.add(it) } }
+
+        vm.setTheme(AppTheme.DARK)
+
+        assertEquals(AppTheme.DARK, collected.last())
+        job.cancel()
+    }
 }

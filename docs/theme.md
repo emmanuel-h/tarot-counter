@@ -45,3 +45,32 @@ The `dynamicColor` parameter of `TarotCounterTheme` defaults to `false`. This me
 - The custom green/gold palette is used on **all Android versions**.
 - On Android 12+, the OS would normally replace the entire palette with colours derived from the user's wallpaper. Disabling this ensures the card-game aesthetic is always present.
 - The parameter is kept in the function signature so it can still be set to `true` in tests if needed.
+
+## Dark / Light Mode Toggle
+
+The app provides a manual theme toggle so the user can override the system setting.
+
+### Default
+
+Light mode (`darkTheme = false`) is **always** the default — the system dark-mode preference is intentionally ignored. The `TarotCounterTheme` parameter default was changed from `isSystemInDarkTheme()` to `false` as part of this feature.
+
+### UI
+
+Two `FilterChip`s — ☀️ (light) and 🌙 (dark) — appear in the **top-left** corner of the Landing Screen, mirroring the 🇬🇧 / 🇫🇷 language chips on the right. The selected chip has a filled background; the other is unselected (outlined).
+
+### Persistence
+
+The choice is stored in DataStore using `THEME_KEY = stringPreferencesKey("app_theme")` (the string `"LIGHT"` or `"DARK"`). It is loaded on startup and applied before the first frame via `TarotCounterTheme(darkTheme = isDarkTheme)`.
+
+### Architecture
+
+Follows the same pattern as locale switching:
+
+| Layer | Component |
+|---|---|
+| Model | `AppTheme` enum (`LIGHT`, `DARK`) in `AppTheme.kt` |
+| Storage | `THEME_KEY`, `loadTheme()`, `saveTheme()` in `GameStorage.kt` |
+| ViewModel | `theme: StateFlow<AppTheme?>`, `setTheme()` in `GameViewModel.kt` |
+| Composition | `LocalAppTheme` in `AppTheme.kt` (read via `LocalAppTheme.current`) |
+| UI | `TarotCounterTheme(darkTheme = isDarkTheme)` in `MainActivity.kt` |
+| Toggle | ☀️ / 🌙 `FilterChip`s in `LandingScreen.kt` |

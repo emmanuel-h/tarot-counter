@@ -44,6 +44,7 @@ import java.util.Locale as JavaLocale
 
 // LandingScreen lets the user configure how many players there are and enter their names.
 // It also shows:
+//   - a theme toggle (☀️ / 🌙) in the top-left corner
 //   - a language switcher (🇬🇧 / 🇫🇷) in the top-right corner
 //   - a "Resume Game" card (if there is an unfinished game saved from a previous session)
 //   - a "Past Games" list at the bottom (if any games have been completed)
@@ -52,6 +53,7 @@ import java.util.Locale as JavaLocale
 // onResumeGame:    lambda called when the user taps "Resume" — passes the saved state back
 //                  to MainActivity so GameScreen can be initialized from it.
 // onLocaleChange:  lambda called when the user taps a flag to switch language.
+// onThemeChange:   lambda called when the user taps ☀️ or 🌙 to switch the theme.
 // inProgressGame:  a game that was interrupted mid-session, or null if there is none.
 // pastGames:       list of completed games; defaults to empty for the @Preview below.
 @Composable
@@ -61,10 +63,12 @@ fun LandingScreen(
     pastGames: List<SavedGame> = emptyList(),
     onStartGame: (List<String>) -> Unit = {},
     onResumeGame: (InProgressGame) -> Unit = {},
-    onLocaleChange: (AppLocale) -> Unit = {}
+    onLocaleChange: (AppLocale) -> Unit = {},
+    onThemeChange: (AppTheme) -> Unit = {}
 ) {
-    // Read the active locale from the composition tree and resolve all strings.
+    // Read the active locale and theme from the composition tree.
     val locale = LocalAppLocale.current
+    val theme  = LocalAppTheme.current
     val strings = appStrings(locale)
 
     // `remember` keeps a value alive across recompositions (UI redraws).
@@ -90,25 +94,41 @@ fun LandingScreen(
         verticalArrangement = Arrangement.Top
     ) {
 
-        // ── Language switcher ─────────────────────────────────────────────────
-        // Two flag chips aligned to the right edge of the screen.
-        // The chip for the active locale is shown as selected (filled background).
-        // The chips use emoji flags — these render as colour flag icons on Android.
+        // ── Header row: theme toggle (left) + language switcher (right) ──────────
+        // Both sets of chips use Material3 FilterChip — the selected chip gets a
+        // filled background; the unselected one has only an outlined border.
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.SpaceBetween, // push groups to each edge
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
-            FilterChip(
-                selected = locale == AppLocale.EN,
-                onClick  = { onLocaleChange(AppLocale.EN) },
-                label    = { Text("🇬🇧") }
-            )
-            Spacer(Modifier.width(8.dp))
-            FilterChip(
-                selected = locale == AppLocale.FR,
-                onClick  = { onLocaleChange(AppLocale.FR) },
-                label    = { Text("🇫🇷") }
-            )
+            // ── Theme chips (left) ────────────────────────────────────────────
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = theme == AppTheme.LIGHT,
+                    onClick  = { onThemeChange(AppTheme.LIGHT) },
+                    label    = { Text("☀️") }
+                )
+                FilterChip(
+                    selected = theme == AppTheme.DARK,
+                    onClick  = { onThemeChange(AppTheme.DARK) },
+                    label    = { Text("🌙") }
+                )
+            }
+
+            // ── Language chips (right) ────────────────────────────────────────
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = locale == AppLocale.EN,
+                    onClick  = { onLocaleChange(AppLocale.EN) },
+                    label    = { Text("🇬🇧") }
+                )
+                FilterChip(
+                    selected = locale == AppLocale.FR,
+                    onClick  = { onLocaleChange(AppLocale.FR) },
+                    label    = { Text("🇫🇷") }
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))

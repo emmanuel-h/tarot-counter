@@ -36,6 +36,9 @@ private val IN_PROGRESS_KEY = stringPreferencesKey("in_progress_game")
 // The key under which the user's chosen language is stored ("EN" or "FR").
 private val LOCALE_KEY = stringPreferencesKey("app_locale")
 
+// The key under which the user's chosen theme is stored ("LIGHT" or "DARK").
+private val THEME_KEY = stringPreferencesKey("app_theme")
+
 // How many past games to keep on the device.
 // Older games beyond this limit are dropped when a new game is saved.
 private const val MAX_SAVED_GAMES = 20
@@ -57,10 +60,12 @@ interface GameStorageInterface {
     fun loadGames(): Flow<List<SavedGame>>
     fun loadInProgressGame(): Flow<InProgressGame?>
     fun loadLocale(): Flow<AppLocale?>
+    fun loadTheme(): Flow<AppTheme?>
     suspend fun addGame(game: SavedGame)
     suspend fun saveInProgressGame(game: InProgressGame)
     suspend fun clearInProgressGame()
     suspend fun saveLocale(locale: AppLocale)
+    suspend fun saveTheme(theme: AppTheme)
 }
 
 // GameStorage handles all DataStore read and write operations for saved games.
@@ -129,6 +134,25 @@ class GameStorage(private val context: Context) : GameStorageInterface {
     override suspend fun saveLocale(locale: AppLocale) {
         context.dataStore.edit { prefs ->
             prefs[LOCALE_KEY] = locale.name
+        }
+    }
+
+    // Returns a Flow that emits the user's saved theme preference, or null if none was saved.
+    // null is interpreted as AppTheme.LIGHT by MainActivity (light mode is the default).
+    override fun loadTheme(): Flow<AppTheme?> =
+        context.dataStore.data
+            .catch { emit(emptyPreferences()) }
+            .map { prefs ->
+                // `let` applies the lambda only if the value is non-null.
+                // `runCatching` guards against unexpected stored values (e.g. old data).
+                prefs[THEME_KEY]?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() }
+            }
+
+    // Persists the user's chosen theme to DataStore.
+    // `theme.name` stores the enum constant name ("LIGHT" or "DARK") as a plain string.
+    override suspend fun saveTheme(theme: AppTheme) {
+        context.dataStore.edit { prefs ->
+            prefs[THEME_KEY] = theme.name
         }
     }
 

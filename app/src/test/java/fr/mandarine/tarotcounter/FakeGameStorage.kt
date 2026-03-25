@@ -27,6 +27,7 @@ class FakeGameStorage : GameStorageInterface {
     private val _games      = MutableStateFlow<List<SavedGame>>(emptyList())
     private val _inProgress = MutableStateFlow<InProgressGame?>(null)
     private val _locale     = MutableStateFlow<AppLocale?>(null)
+    private val _theme      = MutableStateFlow<AppTheme?>(null)
 
     // ── Call counters ─────────────────────────────────────────────────────────
     // Each counter increments every time its corresponding suspend function is called.
@@ -37,6 +38,7 @@ class FakeGameStorage : GameStorageInterface {
     var saveInProgressCallCount  = 0; private set
     var clearInProgressCallCount = 0; private set
     var saveLocaleCallCount      = 0; private set
+    var saveThemeCallCount       = 0; private set
 
     // ── Last-written values ───────────────────────────────────────────────────
     // Null means the corresponding method has never been called yet.
@@ -44,6 +46,7 @@ class FakeGameStorage : GameStorageInterface {
     var lastAddedGame:       SavedGame?      = null; private set
     var lastSavedInProgress: InProgressGame? = null; private set
     var lastSavedLocale:     AppLocale?      = null; private set
+    var lastSavedTheme:      AppTheme?       = null; private set
 
     // ── Test set-up helpers ───────────────────────────────────────────────────
     // Call these before creating the ViewModel to pre-populate the fake's state.
@@ -57,11 +60,15 @@ class FakeGameStorage : GameStorageInterface {
     /** Pre-populate the saved locale (e.g. to test locale restoration). */
     fun seedLocale(locale: AppLocale)           { _locale.value = locale }
 
+    /** Pre-populate the saved theme (e.g. to test theme restoration). */
+    fun seedTheme(theme: AppTheme)              { _theme.value = theme }
+
     // ── GameStorageInterface ──────────────────────────────────────────────────
 
     override fun loadGames():          Flow<List<SavedGame>>  = _games.asStateFlow()
     override fun loadInProgressGame(): Flow<InProgressGame?>  = _inProgress.asStateFlow()
     override fun loadLocale():         Flow<AppLocale?>       = _locale.asStateFlow()
+    override fun loadTheme():          Flow<AppTheme?>        = _theme.asStateFlow()
 
     override suspend fun addGame(game: SavedGame) {
         addGameCallCount++
@@ -85,5 +92,11 @@ class FakeGameStorage : GameStorageInterface {
         saveLocaleCallCount++
         lastSavedLocale = locale
         _locale.value = locale
+    }
+
+    override suspend fun saveTheme(theme: AppTheme) {
+        saveThemeCallCount++
+        lastSavedTheme = theme
+        _theme.value = theme
     }
 }

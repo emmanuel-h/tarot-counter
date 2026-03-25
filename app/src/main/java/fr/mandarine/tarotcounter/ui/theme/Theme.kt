@@ -1,6 +1,5 @@
 package fr.mandarine.tarotcounter.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -61,7 +60,9 @@ private val LightColorScheme = lightColorScheme(
 // every colour with the user's wallpaper tones, making the custom theme useless.
 @Composable
 fun TarotCounterTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Default is false (light mode) — the user's system setting no longer drives this.
+    // Pass `darkTheme = true` when the user has chosen dark mode via the theme toggle.
+    darkTheme: Boolean = false,
     dynamicColor: Boolean = false, // disabled — use our card-game palette consistently
     content: @Composable () -> Unit
 ) {
