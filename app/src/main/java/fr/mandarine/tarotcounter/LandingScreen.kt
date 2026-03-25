@@ -1,6 +1,8 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,14 +11,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -106,6 +112,18 @@ fun LandingScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // ── Decorative card-suit row ───────────────────────────────────────────
+        // The four French tarot suit symbols serve as a thematic header above the
+        // app title, giving the screen a card-game identity at a glance.
+        // `displaySmall` is a large, airy text style — perfect for decorative glyphs.
+        Text(
+            text = "♠  ♥  ♦  ♣",
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
 
         // Text displays a string. MaterialTheme.typography gives us pre-defined
         // text styles that match Material Design (headlineLarge is a big bold title).
@@ -223,12 +241,16 @@ fun LandingScreen(
         // Only shown when there is at least one saved game on the device.
         if (pastGames.isNotEmpty()) {
             Spacer(modifier = Modifier.height(40.dp))
-            HorizontalDivider()
+            // A divider with generous vertical padding clearly separates the
+            // setup section (above) from the historical games list (below).
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             Spacer(modifier = Modifier.height(16.dp))
 
+            // titleLarge gives the section heading more visual weight than titleMedium,
+            // improving the hierarchy between the section label and the cards below it.
             Text(
                 text = strings.pastGames,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -259,6 +281,11 @@ private fun ResumeGameCard(
     // Builds e.g. "Round 3 · 2 rounds played" using the localized templates.
     val roundLabel = strings.roundsPlayed(roundsPlayed)
 
+    // Capture primary color here so it can be used inside the Box below.
+    // Composable functions can only be called from within a @Composable scope,
+    // so we read MaterialTheme values before we enter the Card content lambda.
+    val accentColor = MaterialTheme.colorScheme.primary
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         // Elevated shadow makes the Resume card stand out from the Past Games list below
@@ -268,40 +295,53 @@ private fun ResumeGameCard(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            // titleMedium (vs the previous labelLarge) gives the card a clear heading
-            // that's immediately readable at a glance — matching the visual weight
-            // of a section title rather than a small chip label.
-            Text(
-                text = strings.resumeGameTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+        // Box layers its children on top of each other.
+        // The first child (the colored strip) sits at the start edge;
+        // the second child (the content) fills the remaining space.
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // A narrow vertical strip in the primary color acts as an accent border
+            // on the left side of the card, giving it extra visual emphasis.
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(120.dp)           // tall enough to cover typical card content
+                    .background(accentColor)
             )
-            Text(
-                // Show which players are in the game.
-                text = game.playerNames.joinToString(", "),
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Text(
-                // Show how far the game has progressed, e.g. "Round 4 · 3 rounds played".
-                text = strings.resumeRoundDetail(game.currentRound, roundLabel),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = onResume,
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .weight(1f)               // fill remaining horizontal space after the strip
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(strings.resume)
+                // titleMedium (vs the previous labelLarge) gives the card a clear heading
+                // that's immediately readable at a glance — matching the visual weight
+                // of a section title rather than a small chip label.
+                Text(
+                    text = strings.resumeGameTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    // Show which players are in the game.
+                    text = game.playerNames.joinToString(", "),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    // Show how far the game has progressed, e.g. "Round 4 · 3 rounds played".
+                    text = strings.resumeRoundDetail(game.currentRound, roundLabel),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onResume,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(strings.resume)
+                }
             }
-        }
+        }   // end Row (accent strip + content)
     }
 }
 
@@ -350,11 +390,27 @@ private fun PastGameCard(game: SavedGame, strings: AppStrings) {
                 text = game.playerNames.joinToString(", "),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
             )
-            // Winner (or tie) on the second line.
-            Text(
-                text = winnerText,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            // Winner (or tie) on the second line, with a small trophy icon on the left.
+            // Row arranges the icon and text side by side, vertically centered.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Only show the trophy when there is an actual winner (not a tie or no rounds).
+                // winners.size == 1 means a single player came out on top.
+                if (winners.size == 1) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = null, // decorative icon — screen readers skip it
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = winnerText,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
             // Round count and date on the third line, separated by a dot.
             Text(
                 text = "${strings.roundCount(roundCount)} · $dateStr",

@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
@@ -40,6 +41,25 @@ class LandingScreenTest {
         composeTestRule.setContent {
             TarotCounterTheme {
                 LandingScreen(onStartGame = onStartGame)
+            }
+        }
+    }
+
+    /** Launches LandingScreen with a list of past games so the history section appears. */
+    private fun launchWithPastGames() {
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                LandingScreen(
+                    pastGames = listOf(
+                        SavedGame(
+                            id = "test-1",
+                            datestamp = System.currentTimeMillis(),
+                            playerNames = listOf("Alice", "Bob", "Charlie"),
+                            rounds = emptyList(),
+                            finalScores = mapOf("Alice" to 150, "Bob" to -75, "Charlie" to -75)
+                        )
+                    )
+                )
             }
         }
     }
@@ -244,5 +264,51 @@ class LandingScreenTest {
 
         // No more duplicates → button enabled again.
         composeTestRule.onNodeWithText("Start Game").assertIsEnabled()
+    }
+
+    // ── Spec: decorative card-suit header (issue #5) ──────────────────────────
+
+    @Test
+    fun card_suit_symbols_are_shown_above_title() {
+        launch()
+        // The four French tarot suit symbols should appear on screen.
+        composeTestRule.onNodeWithText("♠  ♥  ♦  ♣").assertIsDisplayed()
+    }
+
+    @Test
+    fun card_suit_symbols_are_above_app_title() {
+        launch()
+        // The suit symbols must appear above the title — same spatial check used for
+        // the "Start Game" button position test.
+        val suitBounds = composeTestRule
+            .onNodeWithText("♠  ♥  ♦  ♣")
+            .getBoundsInRoot()
+        val titleBounds = composeTestRule
+            .onNodeWithText("Tarot Counter")
+            .getBoundsInRoot()
+
+        assert(suitBounds.bottom <= titleBounds.top) {
+            "Expected suit symbols (bottom=${suitBounds.bottom}) to be above " +
+                "app title (top=${titleBounds.top})"
+        }
+    }
+
+    // ── Spec: "Past Games" section heading weight (issue #5) ─────────────────
+
+    @Test
+    fun past_games_heading_is_displayed_when_history_exists() {
+        launchWithPastGames()
+        // The "Past Games" heading must be visible.
+        composeTestRule.onNodeWithText("Past Games").assertIsDisplayed()
+    }
+
+    // ── Spec: past game card shows winner name (issue #5) ─────────────────────
+
+    @Test
+    fun past_game_card_shows_winner_line() {
+        launchWithPastGames()
+        // The winner result text should appear (e.g. "Alice +150") inside the card.
+        // We use a substring check via containsText to stay locale-agnostic.
+        composeTestRule.onNodeWithText("Alice", substring = true).assertIsDisplayed()
     }
 }
