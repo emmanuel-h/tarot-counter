@@ -102,17 +102,17 @@
             Digit "2" occupies x=52–61, y=35–57 (segment thickness = 2 dp).
             Digit "1" occupies x=62–66, y=35–57 (simple filled bar).
         -->
-        <!-- 2 – segment a (top bar) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M52,35 H61 V37 H52 Z" />
-        <!-- 2 – segment b (top-right leg) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M59,35 H61 V46 H59 Z" />
-        <!-- 2 – segment g (middle bar) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M52,46 H61 V48 H52 Z" />
-        <!-- 2 – segment e (bottom-left leg) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M52,48 H54 V57 H52 Z" />
-        <!-- 2 – segment d (bottom bar) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M52,55 H61 V57 H52 Z" />
-        <!-- 1 – vertical bar -->
+        <!-- 2 – segment a (top bar, 3 dp thick) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M52,35 H61 V38 H52 Z" />
+        <!-- 2 – segment b (top-right leg, 3 dp wide) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M58,35 H61 V48 H58 Z" />
+        <!-- 2 – segment g (middle bar, 3 dp thick) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M52,45 H61 V48 H52 Z" />
+        <!-- 2 – segment e (bottom-left leg, 3 dp wide) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M52,48 H55 V57 H52 Z" />
+        <!-- 2 – segment d (bottom bar, 3 dp thick) -->
+        <path android:fillColor="#2A0F5E" android:pathData="M52,54 H61 V57 H52 Z" />
+        <!-- 1 – vertical bar (4 dp wide, matches visual weight of the "2") -->
         <path android:fillColor="#2A0F5E" android:pathData="M62,35 H66 V57 H62 Z" />
 
     </group>
