@@ -795,7 +795,10 @@ private fun CompactScoreboard(
                     )
                     Text(
                         text  = "$sign$total",
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        // Green for positive/zero scores, red for negative — makes
+                        // standings readable at a glance without reading the numbers.
+                        color = scoreColor(total)
                     )
                 }
             }

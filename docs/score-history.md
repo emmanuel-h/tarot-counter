@@ -20,7 +20,7 @@ A bar-chart icon button (⬛) appears to the right of the "Scores" heading on th
 
 - **Rows** — one per completed round, oldest first (top = round 1).
 - **Columns** — one per player, in setup order, plus a "Round" column on the left.
-- **Cell values** — the player's **running total** after that round (not the per-round delta). Positive values are prefixed with `+` for quick readability.
+- **Cell values** — the player's **running total** after that round (not the per-round delta). Positive values are prefixed with `+` for quick readability. Positive scores appear in green (`primary`) and negative scores in red (`error`) — see `ScoreColor.kt`.
 - **Skipped rounds** — appear as a row where all scores are unchanged from the previous row (since skipped rounds contribute 0 points to everyone).
 
 ## Scrolling

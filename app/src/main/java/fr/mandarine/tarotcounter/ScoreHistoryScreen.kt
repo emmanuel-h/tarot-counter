@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -100,6 +101,7 @@ fun ScoreHistoryScreen(
                 modifier = Modifier.horizontalScroll(hScrollState)
             ) {
                 // Column headers: localized "Round" header, then one header per player name.
+                // No score values for the header row — labels use the default colour.
                 ScoreTableRow(
                     cells = listOf(strings.roundColumn) + playerNames,
                     isHeader = true
@@ -130,7 +132,21 @@ fun ScoreHistoryScreen(
                     }
                 }
 
-                ScoreTableRow(cells = cells, isHeader = false)
+                // Build a parallel list of integer score values for colour coding.
+                // Index 0 is null (round-number column has no semantic colour);
+                // indices 1+ hold the running total so ScoreTableRow can call scoreColor().
+                val scoreValues: List<Int?> = buildList {
+                    add(null) // round-number column — no colour
+                    for (name in playerNames) {
+                        add(runningTotals[name] ?: 0)
+                    }
+                }
+
+                ScoreTableRow(
+                    cells = cells,
+                    isHeader = false,
+                    scoreValues = scoreValues
+                )
             }
         }
 
@@ -158,15 +174,32 @@ fun ScoreHistoryScreen(
  * The first cell (index 0) uses [ROUND_COL_WIDTH]; all other cells use [PLAYER_COL_WIDTH].
  * This keeps the "Round" column compact while giving player names room to breathe.
  *
- * @param cells    Text content for each cell in left-to-right order.
- * @param isHeader If true, renders the text in bold (used for the header row).
+ * @param cells       Text content for each cell in left-to-right order.
+ * @param isHeader    If true, renders the text in bold (used for the header row).
+ * @param scoreValues Optional parallel list of raw score integers used for colour coding.
+ *                    A null entry (or a null list) means "use the default text colour".
+ *                    Non-null entries are passed to [scoreColor] so positive values appear
+ *                    green and negative values appear red.
  */
 @Composable
-private fun ScoreTableRow(cells: List<String>, isHeader: Boolean) {
+private fun ScoreTableRow(
+    cells: List<String>,
+    isHeader: Boolean,
+    scoreValues: List<Int?>? = null
+) {
     Row {
         cells.forEachIndexed { index, text ->
             // First column ("Round") is narrower; player columns are wider.
             val cellWidth = if (index == 0) ROUND_COL_WIDTH else PLAYER_COL_WIDTH
+
+            // Determine the text colour: semantic colour for score cells, default otherwise.
+            // `Color.Unspecified` tells Compose to inherit from the parent (i.e. default colour).
+            val textColor = if (!isHeader && scoreValues != null) {
+                val value = scoreValues.getOrNull(index)
+                if (value != null) scoreColor(value) else Color.Unspecified
+            } else {
+                Color.Unspecified
+            }
 
             Box(
                 modifier = Modifier
@@ -182,6 +215,7 @@ private fun ScoreTableRow(cells: List<String>, isHeader: Boolean) {
                     } else {
                         MaterialTheme.typography.bodyMedium
                     },
+                    color = textColor,
                     textAlign = TextAlign.Center,
                     // Prevent very long names from wrapping and making rows uneven.
                     maxLines = 1

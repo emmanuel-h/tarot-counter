@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -196,6 +197,7 @@ fun FinalScoreScreen(
                         .horizontalScroll(hScrollState)
                 ) {
                 // Header row: localized "Round" label + one header per player name.
+                // No score values for the header row — labels use the default colour.
                 FinalScoreTableRow(
                     cells = listOf(strings.roundColumn) + playerNames,
                     isHeader = true,
@@ -226,10 +228,20 @@ fun FinalScoreScreen(
                         }
                     }
 
+                    // Parallel list of raw score integers for colour coding.
+                    // Index 0 is null (round-number column); indices 1+ hold running totals.
+                    val scoreValues: List<Int?> = buildList {
+                        add(null) // round-number column — no colour
+                        for (name in playerNames) {
+                            add(runningTotals[name] ?: 0)
+                        }
+                    }
+
                     FinalScoreTableRow(
                         cells = cells,
                         isHeader = false,
-                        winnerColumnIndices = winnerColumnIndices
+                        winnerColumnIndices = winnerColumnIndices,
+                        scoreValues = scoreValues
                     )
                 }
             }   // end Column
@@ -278,8 +290,13 @@ fun FinalScoreScreen(
 /**
  * A single horizontal row in the final score table.
  *
- * Columns listed in [winnerColumnIndices] receive a `secondaryContainer` background tint,
- * and their text is rendered bold, to highlight the winner(s) throughout the table.
+ * Winner columns (listed in [winnerColumnIndices]) receive a gold/amber `secondary`
+ * background so they stand out throughout the table — changed from the softer
+ * `secondaryContainer` to the saturated amber token as requested in issue #4.
+ * Their text is rendered bold for extra emphasis.
+ *
+ * Score cells (data rows, non-round-number columns) apply semantic colour coding
+ * via [scoreColor]: green for positive/zero, red for negative.
  *
  * The first column (index 0) is the "Round" column and uses [FINAL_ROUND_COL_WIDTH];
  * all other columns use [FINAL_PLAYER_COL_WIDTH].
@@ -287,30 +304,45 @@ fun FinalScoreScreen(
  * @param cells               Text content for each cell, left-to-right.
  * @param isHeader            True for the column-header row (all cells rendered bold).
  * @param winnerColumnIndices Zero-based column indices to highlight as winner column(s).
+ * @param scoreValues         Optional parallel list of raw score integers.
+ *                            A null entry means "use default colour"; a non-null entry
+ *                            triggers [scoreColor] for green/red coding.
  */
 @Composable
 private fun FinalScoreTableRow(
     cells: List<String>,
     isHeader: Boolean,
-    winnerColumnIndices: Set<Int>
+    winnerColumnIndices: Set<Int>,
+    scoreValues: List<Int?>? = null
 ) {
     Row {
         cells.forEachIndexed { index, text ->
             val cellWidth = if (index == 0) FINAL_ROUND_COL_WIDTH else FINAL_PLAYER_COL_WIDTH
             val isWinnerColumn = index in winnerColumnIndices
 
+            // Winner columns use the saturated gold/amber `secondary` token (issue #4).
+            // Other columns have no background tint.
+            val bgModifier = if (isWinnerColumn) {
+                Modifier.background(MaterialTheme.colorScheme.secondary)
+            } else {
+                Modifier
+            }
+
+            // Semantic text colour for score cells: green (positive) or red (negative).
+            // Header row and round-number column always use the default colour.
+            // On winner columns the text is drawn on `secondary` (amber); the score
+            // colour (primary = green, error = red) still provides enough contrast.
+            val textColor = if (!isHeader && scoreValues != null) {
+                val value = scoreValues.getOrNull(index)
+                if (value != null) scoreColor(value) else Color.Unspecified
+            } else {
+                Color.Unspecified
+            }
+
             Box(
                 modifier = Modifier
                     .width(cellWidth)
-                    // Tint the winner's column cells with `secondaryContainer` so they
-                    // are visually linked to the winner card above.
-                    .then(
-                        if (isWinnerColumn) {
-                            Modifier.background(MaterialTheme.colorScheme.secondaryContainer)
-                        } else {
-                            Modifier
-                        }
-                    )
+                    .then(bgModifier)
                     .padding(vertical = 8.dp, horizontal = 4.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -322,6 +354,7 @@ private fun FinalScoreTableRow(
                     } else {
                         MaterialTheme.typography.bodyMedium
                     },
+                    color = textColor,
                     textAlign = TextAlign.Center,
                     // Prevent long names from wrapping and making rows uneven.
                     maxLines = 1

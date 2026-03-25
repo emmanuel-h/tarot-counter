@@ -191,6 +191,34 @@ class FinalScoreScreenTest {
         composeTestRule.onNodeWithText("-10").assertIsDisplayed()
     }
 
+    // ── Spec: colour coding ───────────────────────────────────────────────────
+    // Note: Compose UI tests cannot assert exact text colours without custom
+    // semantic properties or screenshot comparison. These tests are regression
+    // guards that confirm score values still render correctly after scoreColor
+    // is applied. Manual / screenshot tests are needed for colour verification.
+
+    @Test
+    fun positive_score_is_still_displayed_after_colour_coding_applied() {
+        // Alice cumulative +50 should still render as "+50" (issue #4).
+        val history = listOf(
+            RoundResult(1, "Alice", Contract.GARDE, null, true,
+                mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
+        )
+        launchFinal(roundHistory = history)
+        composeTestRule.onNodeWithText("+50").assertIsDisplayed()
+    }
+
+    @Test
+    fun negative_score_is_still_displayed_after_colour_coding_applied() {
+        // Bob cumulative -25 should still render as "-25" (issue #4).
+        val history = listOf(
+            RoundResult(1, "Alice", Contract.GARDE, null, true,
+                mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
+        )
+        launchFinal(roundHistory = history)
+        composeTestRule.onNodeWithText("-25").assertIsDisplayed()
+    }
+
     // ── Spec: back navigation (return to game) ────────────────────────────────
 
     @Test

@@ -11,7 +11,8 @@ TarotCounter guides players through a game round by round:
 3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first
 5. **Score history table** — tap the bar-chart icon (left of the header) to see a round-by-round table of cumulative scores for every player
-6. **End Game / Final Score** — tap the checkered-flag icon (right of the header) at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted), and a "New Game" button
+6. **End Game / Final Score** — tap the checkered-flag icon (right of the header) at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted in gold/amber), and a "New Game" button
+7. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (CompactScoreboard, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
 7. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
 8. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results with a trophy icon next to the winner's name
 
@@ -144,6 +145,7 @@ TarotCounter/
 │   ├── score-history.md      # Score history table
 │   ├── final-score.md        # Final score screen: winner card, End Game flow
 │   ├── game-persistence.md   # How completed games are saved and displayed
+│   ├── score-color.md        # Score colour-coding convention and scoreColor() helper
 │   └── theme.md              # Colour palette rationale and dynamic-colour policy
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
@@ -160,4 +162,5 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/score-history.md`](docs/score-history.md) — score history table: layout, navigation, scrolling
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen
+- [`docs/score-color.md`](docs/score-color.md) — score colour-coding convention: `scoreColor()` helper, where it is used, winner column
 - [`docs/theme.md`](docs/theme.md) — colour palette rationale, roles, and dynamic-colour policy
