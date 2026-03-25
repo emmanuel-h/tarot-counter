@@ -94,7 +94,6 @@ The back arrow and "Back to game" button serve the same purpose: letting the use
 - `FinalScoreScreen.kt` — Composable implementation
 - `ScreenHeader.kt` — Shared back-arrow + title header used by this screen and `ScoreHistoryScreen`
 - `GameModels.kt` — `computeFinalTotals()` and `findWinners()` pure functions
-- `GameScreen.kt` — `EndGameButton` composable, `showFinalScore` state, routing
-- `RoundDetailsForm.kt` — `EndGameButton` in the form header
+- `GameScreen.kt` — bottom-bar **End Game** button (OutlinedButton), `showFinalScore` state, routing
 - `FinalScoreScreenTest.kt` — UI tests
 - `GameModelsTest.kt` — Unit tests for `computeFinalTotals` and `findWinners`

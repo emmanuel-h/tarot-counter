@@ -177,13 +177,23 @@ A thin `HorizontalDivider` (0.5 dp) separates consecutive rows for better readab
 
 #### Header
 
-The game screen header has three zones:
+The game screen header has two zones:
 
-| Left | Center | Right |
-|------|--------|-------|
-| **History** icon button (bar-chart icon) — opens the full score history overlay. Only shown after at least one round has been recorded. | **Round N** — the current round number, always centered. | **End Game** icon button (checkered-flag icon) — always shown, opens a confirmation dialog before stopping the game. |
+| Left | Center | Right (placeholder) |
+|------|--------|---------------------|
+| **History** icon button (bar-chart icon) — opens the full score history overlay. Only shown after at least one round has been recorded. A 48 dp spacer is shown instead when no rounds exist yet. | **Round N** — the current round number, always centred. | 48 dp spacer that mirrors the History button to keep the round number perfectly centred. |
 
 The **History** icon button opens a full scrollable score table overlay (with running cumulative totals) for detailed review.
+
+#### Bottom action bar
+
+A persistent split bar at the bottom of the screen, always visible regardless of scroll position (issue #32):
+
+| Left half | Right half |
+|-----------|------------|
+| **End Game** (`OutlinedButton`) — ends the current game and navigates to the Final Score screen. | **Skip round** (`Button`) — records the current round as skipped and advances to the next one. |
+
+Both buttons use `Modifier.weight(1f)` so they share the width equally. The bar is a direct child of the outer (non-scrollable) `Column`, which also owns `imePadding()` so the bar and the scroll area shift up together when the keyboard opens.
 
 ## Data Model
 

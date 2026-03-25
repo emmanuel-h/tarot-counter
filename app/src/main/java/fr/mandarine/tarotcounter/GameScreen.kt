@@ -21,8 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.SportsScore
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
@@ -123,12 +121,6 @@ fun GameScreen(
     // Controls whether the final score screen overlay is shown.
     var showFinalScore by remember { mutableStateOf(false) }
 
-    // Controls whether the "Skip round?" confirmation dialog is visible.
-    var showSkipDialog by remember { mutableStateOf(false) }
-
-    // Controls whether the "End game?" confirmation dialog is visible.
-    var showEndGameDialog by remember { mutableStateOf(false) }
-
     // Returns the display name for a player: their typed name, or the localized
     // fallback (e.g. "Player 1" in English, "Joueur 1" in French) if blank.
     fun displayName(index: Int): String =
@@ -222,522 +214,506 @@ fun GameScreen(
     //
     // imePadding() shrinks the scrollable area when the keyboard opens (used for the
     // points text field), preventing the keyboard from covering content.
+
+    // Outer non-scrolling column: owns imePadding() so the entire layout
+    // (scrollable content + bottom bar) shifts above the keyboard as a unit.
     Column(
         modifier = modifier
             .fillMaxSize()
             .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        // ── Header: history button | centered round number | end-game button ──
-        // Box lets us layer two Rows: one for the side buttons (SpaceBetween)
-        // and one for the centered title, so the title is truly centered
-        // regardless of the buttons' widths.
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
+        // Inner scrollable column: weight(1f) takes all vertical space above
+        // the bottom action bar. Never use fillMaxSize() with weight().
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Centered round label — always in the middle of the full width.
-            Text(
-                text = strings.roundHeader(currentRound),
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center
-            )
-            // Side buttons sit in a Row that spans the full width.
-            Row(
+
+            // ── Header: history button | centred round number ────────────────────
+            // Box lets us layer two Rows: one for the side buttons (SpaceBetween)
+            // and one for the centered title, so the title is truly centered
+            // regardless of the buttons' widths.
+            Box(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                contentAlignment = Alignment.Center
             ) {
-                // History button — only shown once at least one round has been recorded.
-                if (roundHistory.isNotEmpty()) {
-                    HistoryButton(onClick = { showScoreHistory = true })
-                } else {
-                    // Invisible placeholder keeps the round number centered even
-                    // when the history button is not yet visible.
-                    Spacer(Modifier.size(48.dp))
-                }
-                // End Game button — always shown so the user can stop at any time.
-                EndGameButton(onClick = { showEndGameDialog = true })
-            }
-        }
-
-        // ── Compact scoreboard ────────────────────────────────────────────────
-        // Shown after the first round so the user always has the current standings
-        // in view without leaving the page.
-        if (roundHistory.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
-            CompactScoreboard(
-                displayNames = displayNames,
-                roundHistory = roundHistory,
-                scoresLabel  = strings.scores
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(12.dp))
-
-        // ── Contract selection ────────────────────────────────────────────────
-        // FilterChips replace the old full-width buttons. Tapping a chip selects
-        // that contract (and expands the details form below). Tapping the already-
-        // selected chip deselects it and collapses the form.
-        Text(
-            text = strings.chooseContract(currentTaker),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.align(Alignment.Start)
-        )
-        Spacer(Modifier.height(8.dp))
-
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (c in Contract.entries) {
-                FilterChip(
-                    selected = selectedContract == c,
-                    onClick  = { selectedContract = if (selectedContract == c) null else c },
-                    label    = { Text(c.localizedName(locale)) }
+                // Centered round label — always in the middle of the full width.
+                Text(
+                    text = strings.roundHeader(currentRound),
+                    style = MaterialTheme.typography.headlineMedium,
+                    textAlign = TextAlign.Center
                 )
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // Outlined (less prominent) so it is visually secondary to the contract chips.
-        // Tapping opens a confirmation dialog rather than skipping immediately,
-        // preventing accidental round skips.
-        OutlinedButton(
-            onClick  = { showSkipDialog = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(strings.skipRound)
-        }
-
-        // ── Skip round confirmation dialog ────────────────────────────────────
-        if (showSkipDialog) {
-            AlertDialog(
-                onDismissRequest = { showSkipDialog = false },
-                title   = { Text(strings.skipRoundConfirmTitle) },
-                text    = { Text(strings.skipRoundConfirmBody) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showSkipDialog = false
-                        recordSkipped()
-                    }) {
-                        Text(strings.skipRound)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showSkipDialog = false }) {
-                        Text(strings.cancel)
-                    }
-                }
-            )
-        }
-
-        // ── End game confirmation dialog ──────────────────────────────────────
-        if (showEndGameDialog) {
-            AlertDialog(
-                onDismissRequest = { showEndGameDialog = false },
-                title   = { Text(strings.endGameConfirmTitle) },
-                text    = { Text(strings.endGameConfirmBody) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showEndGameDialog = false
-                        endGame()
-                    }) {
-                        Text(strings.endGame)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showEndGameDialog = false }) {
-                        Text(strings.cancel)
-                    }
-                }
-            )
-        }
-
-        // ── Inline round details ──────────────────────────────────────────────
-        // key(selectedContract) is a Compose primitive that discards and recreates
-        // everything inside it whenever selectedContract changes. This automatically
-        // resets bouts, points, and all the bonus state to their defaults whenever
-        // the user picks a different contract — no manual reset needed.
-        key(selectedContract) {
-            val contract = selectedContract
-            if (contract != null) {
-
-                // ── Form state ────────────────────────────────────────────────
-                // Declared inside key() so they are reset when the contract changes.
-                var bouts         by remember { mutableIntStateOf(0) }
-                var pointsText    by remember { mutableStateOf("") }
-                // When true the user enters the defenders' points instead of the taker's.
-                // The taker's points are derived on submit: takerPoints = 91 − defenderPoints.
-                var defenderMode  by remember { mutableStateOf(false) }
-                var selectedPartner  by remember { mutableStateOf<String?>(null) }
-                var petitAuBout   by remember { mutableStateOf<String?>(null) }
-                var poignee       by remember { mutableStateOf<String?>(null) }
-                var doublePoignee by remember { mutableStateOf<String?>(null) }
-                var triplePoignee by remember { mutableStateOf<String?>(null) }
-                var chelem        by remember { mutableStateOf(Chelem.NONE) }
-                // The player who called/achieved the chelem. Reset to null whenever chelem
-                // changes back to NONE (no chelem in this round).
-                var chelemPlayer  by remember { mutableStateOf<String?>(null) }
-
-                // Derived error flag — recomputed on every recomposition when pointsText changes.
-                // True only when the typed value parses to an integer that exceeds 91.
-                // An empty field is not an error (it defaults to 0 on Confirm).
-                // Declared here (not inside the Column) so both the TextField and the
-                // Confirm button can read the same value.
-                val pointsError = pointsText.toIntOrNull()?.let { it > 91 } == true
-
-                // Used to hide the software keyboard when the user taps "Done" on
-                // the numeric keyboard after entering the points value.
-                val keyboardController = LocalSoftwareKeyboardController.current
-
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(12.dp))
-
-                // ── Bouts + Points side by side ───────────────────────────────
-                // Placing these in a Row cuts one section of vertical space compared
-                // to stacking them, helping everything fit on one screen.
-                // Alignment.Bottom ensures both halves share the same bottom edge,
-                // so the dropdown and the text field line up visually (issue #23).
+                // Side buttons sit in a Row that spans the full width.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.Bottom
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left half: bouts dropdown
-                    // Replaced from FilterChips to an ExposedDropdownMenuBox to save
-                    // screen space and improve UX (issue #9).
-                    Column(modifier = Modifier.weight(1f)) {
-                        FormLabel(strings.numberOfBouts)
-                        Spacer(Modifier.height(8.dp))
+                    // History button — only shown once at least one round has been recorded.
+                    if (roundHistory.isNotEmpty()) {
+                        HistoryButton(onClick = { showScoreHistory = true })
+                    } else {
+                        // Invisible placeholder keeps the round number centered even
+                        // when the history button is not yet visible.
+                        Spacer(Modifier.size(48.dp))
+                    }
+                    // Right-side placeholder mirrors the history button so the
+                    // round number stays centred; End Game is in the bottom bar.
+                    Spacer(Modifier.size(48.dp))
+                }
+            }
 
-                        // Tracks whether the dropdown menu is currently open.
-                        var boutsExpanded by remember { mutableStateOf(false) }
+            // ── Compact scoreboard ────────────────────────────────────────────────
+            // Shown after the first round so the user always has the current standings
+            // in view without leaving the page.
+            if (roundHistory.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                CompactScoreboard(
+                    displayNames = displayNames,
+                    roundHistory = roundHistory,
+                    scoresLabel  = strings.scores
+                )
+            }
 
-                        // ExposedDropdownMenuBox is a Material3 combo box:
-                        // - The text field shows the current selection and a trailing arrow.
-                        // - Tapping it opens a menu with the four options (0–3).
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(12.dp))
+
+            // ── Contract selection ────────────────────────────────────────────────
+            // FilterChips replace the old full-width buttons. Tapping a chip selects
+            // that contract (and expands the details form below). Tapping the already-
+            // selected chip deselects it and collapses the form.
+            Text(
+                text = strings.chooseContract(currentTaker),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(Modifier.height(8.dp))
+
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (c in Contract.entries) {
+                    FilterChip(
+                        selected = selectedContract == c,
+                        onClick  = { selectedContract = if (selectedContract == c) null else c },
+                        label    = { Text(c.localizedName(locale)) }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+
+            // ── Inline round details ──────────────────────────────────────────────
+            // key(selectedContract) is a Compose primitive that discards and recreates
+            // everything inside it whenever selectedContract changes. This automatically
+            // resets bouts, points, and all the bonus state to their defaults whenever
+            // the user picks a different contract — no manual reset needed.
+            key(selectedContract) {
+                val contract = selectedContract
+                if (contract != null) {
+
+                    // ── Form state ────────────────────────────────────────────────
+                    // Declared inside key() so they are reset when the contract changes.
+                    var bouts         by remember { mutableIntStateOf(0) }
+                    var pointsText    by remember { mutableStateOf("") }
+                    // When true the user enters the defenders' points instead of the taker's.
+                    // The taker's points are derived on submit: takerPoints = 91 − defenderPoints.
+                    var defenderMode  by remember { mutableStateOf(false) }
+                    var selectedPartner  by remember { mutableStateOf<String?>(null) }
+                    var petitAuBout   by remember { mutableStateOf<String?>(null) }
+                    var poignee       by remember { mutableStateOf<String?>(null) }
+                    var doublePoignee by remember { mutableStateOf<String?>(null) }
+                    var triplePoignee by remember { mutableStateOf<String?>(null) }
+                    var chelem        by remember { mutableStateOf(Chelem.NONE) }
+                    // The player who called/achieved the chelem. Reset to null whenever chelem
+                    // changes back to NONE (no chelem in this round).
+                    var chelemPlayer  by remember { mutableStateOf<String?>(null) }
+
+                    // Derived error flag — recomputed on every recomposition when pointsText changes.
+                    // True only when the typed value parses to an integer that exceeds 91.
+                    // An empty field is not an error (it defaults to 0 on Confirm).
+                    // Declared here (not inside the Column) so both the TextField and the
+                    // Confirm button can read the same value.
+                    val pointsError = pointsText.toIntOrNull()?.let { it > 91 } == true
+
+                    // Used to hide the software keyboard when the user taps "Done" on
+                    // the numeric keyboard after entering the points value.
+                    val keyboardController = LocalSoftwareKeyboardController.current
+
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(12.dp))
+
+                    // ── Bouts + Points side by side ───────────────────────────────
+                    // Placing these in a Row cuts one section of vertical space compared
+                    // to stacking them, helping everything fit on one screen.
+                    // Alignment.Bottom ensures both halves share the same bottom edge,
+                    // so the dropdown and the text field line up visually (issue #23).
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        // Left half: bouts dropdown
+                        // Replaced from FilterChips to an ExposedDropdownMenuBox to save
+                        // screen space and improve UX (issue #9).
+                        Column(modifier = Modifier.weight(1f)) {
+                            FormLabel(strings.numberOfBouts)
+                            Spacer(Modifier.height(8.dp))
+
+                            // Tracks whether the dropdown menu is currently open.
+                            var boutsExpanded by remember { mutableStateOf(false) }
+
+                            // ExposedDropdownMenuBox is a Material3 combo box:
+                            // - The text field shows the current selection and a trailing arrow.
+                            // - Tapping it opens a menu with the four options (0–3).
+                            ExposedDropdownMenuBox(
+                                expanded         = boutsExpanded,
+                                onExpandedChange = { boutsExpanded = !boutsExpanded },
+                                modifier         = Modifier.testTag("bouts_dropdown")
+                            ) {
+                                OutlinedTextField(
+                                    value          = bouts.toString(),
+                                    onValueChange  = {},
+                                    readOnly       = true,
+                                    // The trailing chevron icon flips when the menu opens.
+                                    trailingIcon   = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = boutsExpanded)
+                                    },
+                                    colors         = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                    singleLine     = true,
+                                    // menuAnchor() links the text field to its popup menu.
+                                    modifier       = Modifier
+                                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                        .fillMaxWidth()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded         = boutsExpanded,
+                                    onDismissRequest = { boutsExpanded = false }
+                                ) {
+                                    // One menu item per valid bout count (0 through 3).
+                                    for (n in 0..3) {
+                                        DropdownMenuItem(
+                                            text             = { Text(n.toString()) },
+                                            onClick          = {
+                                                bouts         = n
+                                                boutsExpanded = false
+                                            },
+                                            contentPadding   = ExposedDropdownMenuDefaults.ItemContentPadding
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        // Right half: points entry — segmented toggle stacked above text field
+                        Column(modifier = Modifier.weight(1f)) {
+                            // ── Camp toggle ────────────────────────────────────────
+                            // The two segments let the user pick which camp's points to type.
+                            // Selecting "Defenders" is a convenience — the taker's points are
+                            // derived on confirm as: takerPoints = 91 − defenderPoints.
+                            // `fillMaxWidth` makes the toggle use the same width as the field below.
+                            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                                SegmentedButton(
+                                    selected = !defenderMode,
+                                    onClick  = {
+                                        defenderMode = false
+                                        pointsText   = ""  // clear field when switching camps
+                                    },
+                                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                                ) { Text(strings.attackerMode) }
+                                SegmentedButton(
+                                    selected = defenderMode,
+                                    onClick  = {
+                                        defenderMode = true
+                                        pointsText   = ""  // clear field when switching camps
+                                    },
+                                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                                ) { Text(strings.defenderMode) }
+                            }
+                            OutlinedTextField(
+                                value = pointsText,
+                                onValueChange = { input ->
+                                    // Accept only digit characters and at most two of them
+                                    // (the highest valid value, 91, has two digits).
+                                    if (input.all { it.isDigit() } && input.length <= 2) {
+                                        pointsText = input
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction    = ImeAction.Done
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = { keyboardController?.hide() }
+                                ),
+                                // Show the valid range directly in the placeholder so the
+                                // user knows what values are accepted without wasting vertical
+                                // space on a separate supporting-text hint.
+                                placeholder     = { Text("0-91") },
+                                // When the value is out of range, mark the field red and
+                                // show a descriptive error message below it.
+                                isError         = pointsError,
+                                supportingText  = if (pointsError) ({
+                                    Text(
+                                        text  = strings.pointsOutOfRange,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }) else null,
+                                singleLine      = true,
+                                // testTag lets UI tests identify and interact with this field.
+                                modifier        = Modifier.fillMaxWidth().testTag("points_input")
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(12.dp))
+
+                    // ── Partner selection (5-player only) ─────────────────────────
+                    // In a 5-player game the taker calls a silent partner before the round.
+                    // The partner's identity affects how the round score is distributed.
+                    if (displayNames.size == 5) {
+                        val partnerOptions = displayNames.filter { it != currentTaker }
+                        PlayerChipSelector(
+                            label          = strings.partnerCalledByTaker,
+                            noneLabel      = strings.noneOption,
+                            selectedPlayer = selectedPartner,
+                            playerNames    = partnerOptions,
+                            onSelect       = { selectedPartner = it }
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        HorizontalDivider()
+                        Spacer(Modifier.height(16.dp))
+                    }
+
+                    // ── Player-assigned bonuses (compact grid) ─────────────────────
+                    // Each row has a label + ⓘ info icon that shows a tooltip explaining
+                    // the bonus and its point value.
+                    CompactBonusGrid(
+                        playerNames     = displayNames,
+                        bonusLabels     = listOf(
+                            strings.petit,
+                            strings.poignee,
+                            strings.doublePoignee,
+                            strings.triplePoignee
+                        ),
+                        bonusTooltips   = listOf(
+                            strings.petitTooltipBody,
+                            strings.poigneeTooltipBody,
+                            strings.doublePoigneeTooltipBody,
+                            strings.triplePoigneeTooltipBody
+                        ),
+                        petitAuBout     = petitAuBout,    onPetit         = { petitAuBout   = it },
+                        poignee         = poignee,         onPoignee       = { poignee       = it },
+                        doublePoignee   = doublePoignee,   onDoublePoignee = { doublePoignee = it },
+                        triplePoignee   = triplePoignee,   onTriplePoignee = { triplePoignee = it }
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(12.dp))
+
+                    // ── Chelem (grand slam) ────────────────────────────────────────
+                    // The dropdown is self-labelled: it shows "Chelem" when nothing is
+                    // selected (Chelem.NONE) and the chosen outcome's name otherwise.
+                    // This removes the need for a separate section header above the field.
+                    // The ⓘ tooltip icon is placed immediately to the right of the dropdown.
+
+                    // Tracks whether the chelem dropdown menu is open.
+                    var chelemExpanded by remember { mutableStateOf(false) }
+
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier              = Modifier.fillMaxWidth()
+                    ) {
+                        // ExposedDropdownMenuBox is the Material 3 combo-box pattern (same as bouts).
+                        // weight(1f) lets it fill the row minus the ⓘ icon space.
                         ExposedDropdownMenuBox(
-                            expanded         = boutsExpanded,
-                            onExpandedChange = { boutsExpanded = !boutsExpanded },
-                            modifier         = Modifier.testTag("bouts_dropdown")
+                            expanded         = chelemExpanded,
+                            onExpandedChange = { chelemExpanded = !chelemExpanded },
+                            modifier         = Modifier
+                                .weight(1f)
+                                .testTag("chelem_dropdown")
                         ) {
                             OutlinedTextField(
-                                value          = bouts.toString(),
-                                onValueChange  = {},
-                                readOnly       = true,
-                                // The trailing chevron icon flips when the menu opens.
-                                trailingIcon   = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = boutsExpanded)
+                                // Show the placeholder "Chelem" when no outcome is selected,
+                                // or the chosen outcome's name when one is active.
+                                value         = if (chelem == Chelem.NONE)
+                                                    strings.chelemPlaceholder
+                                                else
+                                                    chelem.localizedName(locale),
+                                onValueChange = {},
+                                readOnly      = true,
+                                trailingIcon  = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = chelemExpanded)
                                 },
-                                colors         = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                singleLine     = true,
-                                // menuAnchor() links the text field to its popup menu.
-                                modifier       = Modifier
+                                colors        = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                singleLine    = true,
+                                modifier      = Modifier
                                     .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                     .fillMaxWidth()
                             )
                             ExposedDropdownMenu(
-                                expanded         = boutsExpanded,
-                                onDismissRequest = { boutsExpanded = false }
+                                expanded         = chelemExpanded,
+                                onDismissRequest = { chelemExpanded = false }
                             ) {
-                                // One menu item per valid bout count (0 through 3).
-                                for (n in 0..3) {
+                                for (c in Chelem.entries) {
                                     DropdownMenuItem(
-                                        text             = { Text(n.toString()) },
-                                        onClick          = {
-                                            bouts         = n
-                                            boutsExpanded = false
+                                        text           = { Text(c.localizedName(locale)) },
+                                        onClick        = {
+                                            // When the user picks a new chelem option, reset the
+                                            // associated player — the previous selection is no longer valid.
+                                            if (chelem != c) chelemPlayer = null
+                                            chelem         = c
+                                            chelemExpanded = false
                                         },
-                                        contentPadding   = ExposedDropdownMenuDefaults.ItemContentPadding
+                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                                     )
                                 }
                             }
                         }
+                        // ⓘ icon explains the chelem bonus amounts.
+                        BonusInfoIcon(
+                            title = strings.chelemLabel,
+                            body  = strings.chelemTooltipBody
+                        )
                     }
-                    // Right half: points entry — segmented toggle stacked above text field
-                    Column(modifier = Modifier.weight(1f)) {
-                        // ── Camp toggle ────────────────────────────────────────
-                        // The two segments let the user pick which camp's points to type.
-                        // Selecting "Defenders" is a convenience — the taker's points are
-                        // derived on confirm as: takerPoints = 91 − defenderPoints.
-                        // `fillMaxWidth` makes the toggle use the same width as the field below.
-                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                            SegmentedButton(
-                                selected = !defenderMode,
-                                onClick  = {
-                                    defenderMode = false
-                                    pointsText   = ""  // clear field when switching camps
-                                },
-                                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                            ) { Text(strings.attackerMode) }
-                            SegmentedButton(
-                                selected = defenderMode,
-                                onClick  = {
-                                    defenderMode = true
-                                    pointsText   = ""  // clear field when switching camps
-                                },
-                                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                            ) { Text(strings.defenderMode) }
+
+                    // ── Chelem player selector ─────────────────────────────────────
+                    // Only shown when a non-NONE chelem outcome is selected. The user picks
+                    // which player called or achieved the chelem — this player leads the first
+                    // trick of the round, overriding the usual turn order.
+                    //
+                    // Available choices: taker + partner (5-player only). In 3/4-player games
+                    // only the taker can call chelem, so the selector is still shown to make the
+                    // association explicit, but the partner option is omitted.
+                    if (chelem != Chelem.NONE) {
+                        Spacer(Modifier.height(8.dp))
+                        // The eligible players are the taker and — in 5-player — the partner.
+                        val chelemCandidates = buildList {
+                            add(currentTaker)
+                            // In a 5-player game the partner (if chosen) can also call chelem.
+                            // Using ?.let avoids a force-unwrap while preserving the same logic.
+                            if (displayNames.size == 5) selectedPartner?.let { add(it) }
                         }
-                        OutlinedTextField(
-                            value = pointsText,
-                            onValueChange = { input ->
-                                // Accept only digit characters and at most two of them
-                                // (the highest valid value, 91, has two digits).
-                                if (input.all { it.isDigit() } && input.length <= 2) {
-                                    pointsText = input
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction    = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = { keyboardController?.hide() }
-                            ),
-                            // Show the valid range directly in the placeholder so the
-                            // user knows what values are accepted without wasting vertical
-                            // space on a separate supporting-text hint.
-                            placeholder     = { Text("0-91") },
-                            // When the value is out of range, mark the field red and
-                            // show a descriptive error message below it.
-                            isError         = pointsError,
-                            supportingText  = if (pointsError) ({
-                                Text(
-                                    text  = strings.pointsOutOfRange,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }) else null,
-                            singleLine      = true,
-                            // testTag lets UI tests identify and interact with this field.
-                            modifier        = Modifier.fillMaxWidth().testTag("points_input")
+                        PlayerChipSelector(
+                            label          = strings.chelemPlayerLabel,
+                            noneLabel      = strings.noneOption,
+                            selectedPlayer = chelemPlayer,
+                            playerNames    = chelemCandidates,
+                            onSelect       = { chelemPlayer = it }
                         )
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(12.dp))
-
-                // ── Partner selection (5-player only) ─────────────────────────
-                // In a 5-player game the taker calls a silent partner before the round.
-                // The partner's identity affects how the round score is distributed.
-                if (displayNames.size == 5) {
-                    val partnerOptions = displayNames.filter { it != currentTaker }
-                    PlayerChipSelector(
-                        label          = strings.partnerCalledByTaker,
-                        noneLabel      = strings.noneOption,
-                        selectedPlayer = selectedPartner,
-                        playerNames    = partnerOptions,
-                        onSelect       = { selectedPartner = it }
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    HorizontalDivider()
-                    Spacer(Modifier.height(16.dp))
-                }
-
-                // ── Player-assigned bonuses (compact grid) ─────────────────────
-                // Each row has a label + ⓘ info icon that shows a tooltip explaining
-                // the bonus and its point value.
-                CompactBonusGrid(
-                    playerNames     = displayNames,
-                    bonusLabels     = listOf(
-                        strings.petit,
-                        strings.poignee,
-                        strings.doublePoignee,
-                        strings.triplePoignee
-                    ),
-                    bonusTooltips   = listOf(
-                        strings.petitTooltipBody,
-                        strings.poigneeTooltipBody,
-                        strings.doublePoigneeTooltipBody,
-                        strings.triplePoigneeTooltipBody
-                    ),
-                    petitAuBout     = petitAuBout,    onPetit         = { petitAuBout   = it },
-                    poignee         = poignee,         onPoignee       = { poignee       = it },
-                    doublePoignee   = doublePoignee,   onDoublePoignee = { doublePoignee = it },
-                    triplePoignee   = triplePoignee,   onTriplePoignee = { triplePoignee = it }
-                )
-
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(12.dp))
-
-                // ── Chelem (grand slam) ────────────────────────────────────────
-                // The dropdown is self-labelled: it shows "Chelem" when nothing is
-                // selected (Chelem.NONE) and the chosen outcome's name otherwise.
-                // This removes the need for a separate section header above the field.
-                // The ⓘ tooltip icon is placed immediately to the right of the dropdown.
-
-                // Tracks whether the chelem dropdown menu is open.
-                var chelemExpanded by remember { mutableStateOf(false) }
-
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier              = Modifier.fillMaxWidth()
-                ) {
-                    // ExposedDropdownMenuBox is the Material 3 combo-box pattern (same as bouts).
-                    // weight(1f) lets it fill the row minus the ⓘ icon space.
-                    ExposedDropdownMenuBox(
-                        expanded         = chelemExpanded,
-                        onExpandedChange = { chelemExpanded = !chelemExpanded },
-                        modifier         = Modifier
-                            .weight(1f)
-                            .testTag("chelem_dropdown")
-                    ) {
-                        OutlinedTextField(
-                            // Show the placeholder "Chelem" when no outcome is selected,
-                            // or the chosen outcome's name when one is active.
-                            value         = if (chelem == Chelem.NONE)
-                                                strings.chelemPlaceholder
-                                            else
-                                                chelem.localizedName(locale),
-                            onValueChange = {},
-                            readOnly      = true,
-                            trailingIcon  = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = chelemExpanded)
-                            },
-                            colors        = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                            singleLine    = true,
-                            modifier      = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
-                            expanded         = chelemExpanded,
-                            onDismissRequest = { chelemExpanded = false }
-                        ) {
-                            for (c in Chelem.entries) {
-                                DropdownMenuItem(
-                                    text           = { Text(c.localizedName(locale)) },
-                                    onClick        = {
-                                        // When the user picks a new chelem option, reset the
-                                        // associated player — the previous selection is no longer valid.
-                                        if (chelem != c) chelemPlayer = null
-                                        chelem         = c
-                                        chelemExpanded = false
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                )
-                            }
-                        }
-                    }
-                    // ⓘ icon explains the chelem bonus amounts.
-                    BonusInfoIcon(
-                        title = strings.chelemLabel,
-                        body  = strings.chelemTooltipBody
-                    )
-                }
-
-                // ── Chelem player selector ─────────────────────────────────────
-                // Only shown when a non-NONE chelem outcome is selected. The user picks
-                // which player called or achieved the chelem — this player leads the first
-                // trick of the round, overriding the usual turn order.
-                //
-                // Available choices: taker + partner (5-player only). In 3/4-player games
-                // only the taker can call chelem, so the selector is still shown to make the
-                // association explicit, but the partner option is omitted.
-                if (chelem != Chelem.NONE) {
-                    Spacer(Modifier.height(8.dp))
-                    // The eligible players are the taker and — in 5-player — the partner.
-                    val chelemCandidates = buildList {
-                        add(currentTaker)
-                        // In a 5-player game the partner (if chosen) can also call chelem.
-                        // Using ?.let avoids a force-unwrap while preserving the same logic.
-                        if (displayNames.size == 5) selectedPartner?.let { add(it) }
-                    }
-                    PlayerChipSelector(
-                        label          = strings.chelemPlayerLabel,
-                        noneLabel      = strings.noneOption,
-                        selectedPlayer = chelemPlayer,
-                        playerNames    = chelemCandidates,
-                        onSelect       = { chelemPlayer = it }
-                    )
-                    // Informational note: the chelem caller plays first this round.
-                    // This reminder is shown only when a specific player has been selected.
-                    if (chelemPlayer != null &&
-                        (chelem == Chelem.ANNOUNCED_REALIZED || chelem == Chelem.ANNOUNCED_NOT_REALIZED)) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text  = strings.chelemPlaysFirst(chelemPlayer!!),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // ── Confirm / back ─────────────────────────────────────────────
-                Button(
-                    // Disabled while the points field shows an error so the user cannot
-                    // submit an out-of-range value.
-                    enabled = !pointsError,
-                    onClick = {
-                        // Parse the typed points; default to 0 if empty, clamp to 0–91.
-                        val enteredPoints = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0
-                        // When the user counted the defenders' points, convert to taker's points.
-                        // The total points in a round always sum to 91:
-                        //   takerPoints = 91 − defenderPoints
-                        val points = if (defenderMode) 91 - enteredPoints else enteredPoints
-                        recordPlayed(
-                            contract,
-                            RoundDetails(
-                                bouts         = bouts,
-                                points        = points,
-                                // partnerName is only meaningful in 5-player games.
-                                partnerName   = if (displayNames.size == 5) selectedPartner else null,
-                                petitAuBout   = petitAuBout,
-                                poignee       = poignee,
-                                doublePoignee = doublePoignee,
-                                triplePoignee = triplePoignee,
-                                chelem        = chelem,
-                                // chelemPlayer is null when chelem == NONE.
-                                chelemPlayer  = if (chelem == Chelem.NONE) null else chelemPlayer
+                        // Informational note: the chelem caller plays first this round.
+                        // This reminder is shown only when a specific player has been selected.
+                        if (chelemPlayer != null &&
+                            (chelem == Chelem.ANNOUNCED_REALIZED || chelem == Chelem.ANNOUNCED_NOT_REALIZED)) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text  = strings.chelemPlaysFirst(chelemPlayer!!),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
                             )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // ── Confirm / back ─────────────────────────────────────────────
+                    Button(
+                        // Disabled while the points field shows an error so the user cannot
+                        // submit an out-of-range value.
+                        enabled = !pointsError,
+                        onClick = {
+                            // Parse the typed points; default to 0 if empty, clamp to 0–91.
+                            val enteredPoints = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0
+                            // When the user counted the defenders' points, convert to taker's points.
+                            // The total points in a round always sum to 91:
+                            //   takerPoints = 91 − defenderPoints
+                            val points = if (defenderMode) 91 - enteredPoints else enteredPoints
+                            recordPlayed(
+                                contract,
+                                RoundDetails(
+                                    bouts         = bouts,
+                                    points        = points,
+                                    // partnerName is only meaningful in 5-player games.
+                                    partnerName   = if (displayNames.size == 5) selectedPartner else null,
+                                    petitAuBout   = petitAuBout,
+                                    poignee       = poignee,
+                                    doublePoignee = doublePoignee,
+                                    triplePoignee = triplePoignee,
+                                    chelem        = chelem,
+                                    // chelemPlayer is null when chelem == NONE.
+                                    chelemPlayer  = if (chelem == Chelem.NONE) null else chelemPlayer
+                                )
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(0.8f)
+                    ) {
+                        Text(strings.confirmRound)
+                    }
+
+                    // Secondary action: deselect the contract and collapse the form.
+                    TextButton(onClick = { selectedContract = null }) {
+                        Text(strings.changeContract)
+                    }
+                }
+            }
+
+            // ── Round history ─────────────────────────────────────────────────────
+            // Displayed below the form so the full game log is always a single scroll away.
+            // Shown newest-first so the most recent result is at the top of this section.
+            if (roundHistory.isNotEmpty()) {
+                Spacer(Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(12.dp))
+
+                // reversed() so the latest round appears first (newest-first order).
+                val reversedHistory = roundHistory.reversed()
+                reversedHistory.forEachIndexed { index, round ->
+                    RoundHistoryRow(round = round, locale = locale, strings = strings)
+                    // Draw a thin divider between rows (but not after the last one).
+                    if (index < reversedHistory.lastIndex) {
+                        HorizontalDivider(
+                            modifier  = Modifier.padding(vertical = 4.dp),
+                            thickness = 0.5.dp,
+                            color     = MaterialTheme.colorScheme.outlineVariant
                         )
-                    },
-                    modifier = Modifier.fillMaxWidth(0.8f)
-                ) {
-                    Text(strings.confirmRound)
-                }
-
-                // Secondary action: deselect the contract and collapse the form.
-                TextButton(onClick = { selectedContract = null }) {
-                    Text(strings.changeContract)
+                    }
                 }
             }
-        }
+        }  // end inner scrollable Column
 
-        // ── Round history ─────────────────────────────────────────────────────
-        // Displayed below the form so the full game log is always a single scroll away.
-        // Shown newest-first so the most recent result is at the top of this section.
-        if (roundHistory.isNotEmpty()) {
-            Spacer(Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(12.dp))
-
-            // reversed() so the latest round appears first (newest-first order).
-            val reversedHistory = roundHistory.reversed()
-            reversedHistory.forEachIndexed { index, round ->
-                RoundHistoryRow(round = round, locale = locale, strings = strings)
-                // Draw a thin divider between rows (but not after the last one).
-                if (index < reversedHistory.lastIndex) {
-                    HorizontalDivider(
-                        modifier  = Modifier.padding(vertical = 4.dp),
-                        thickness = 0.5.dp,
-                        color     = MaterialTheme.colorScheme.outlineVariant
-                    )
-                }
+        // ── Bottom action bar ─────────────────────────────────────────────────────
+        // Persistent split row pinned below the scroll area. weight(1f) on each
+        // button gives them exactly equal widths.
+        HorizontalDivider()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Left half: end the game and navigate to the Final Score screen.
+            OutlinedButton(
+                onClick  = { endGame() },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(strings.endGame)
+            }
+            // Right half: record a skipped round and advance to the next.
+            Button(
+                onClick  = { recordSkipped() },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(strings.skipRound)
             }
         }
-    }
+    }  // end outer Column
 }
 
 // ── Compact scoreboard ────────────────────────────────────────────────────────
@@ -807,21 +783,6 @@ fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             imageVector        = Icons.Default.BarChart,
             // Accessible label read by TalkBack — same text that was previously the button label.
             contentDescription = strings.history
-        )
-    }
-}
-
-// An icon-only button with a checkered-flag icon for ending the game.
-// SportsScore (a finish/checkered flag) is clearer than the generic Flag icon
-// and matches the "stop / finish line" semantic requested in issue #21.
-@Composable
-fun EndGameButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val strings = appStrings(LocalAppLocale.current)
-    IconButton(onClick = onClick, modifier = modifier) {
-        Icon(
-            imageVector        = Icons.Default.SportsScore,
-            // Accessible label read by TalkBack.
-            contentDescription = strings.endGame
         )
     }
 }
