@@ -119,8 +119,8 @@
 
     <!-- ═══════════════════════════════════════════════════════════════════════
          CENTRE CARD — L'Excuse  (drawn last = topmost / always in front)
-         No rotation. Shows a jester head — face, pointed cap, gold hat band,
-         and gold bell — surrounded by four 4-pointed gold stars in the corners.
+         No rotation. Shows a lute — the instrument historically depicted on
+         L'Excuse — surrounded by four 4-pointed gold stars in the corners.
          ═══════════════════════════════════════════════════════════════════════ -->
 
     <!-- Parchment body -->
@@ -141,66 +141,60 @@
         android:pathData="M44,34 Q42,34 42,36 V74 Q42,76 44,76 H64 Q66,76 66,74 V36 Q66,34 64,34 Z" />
 
     <!--
-        ── JESTER HEAD ──────────────────────────────────────────────────────────
+        ── LUTE ─────────────────────────────────────────────────────────────────
 
-        Layers drawn bottom-to-top:
-          1. Parchment face circle (with purple stroke so it shows on parchment bg)
-          2. Deep-purple pointed hat triangle — covers the top of the face
-          3. Gold hat band — crisp separation between hat and face
-          4. Gold bell diamond — tip of the hat
-          5. Eyes and smile — deep purple on the parchment face
+        A Renaissance lute — the instrument historically depicted on L'Excuse.
+        Drawn in five layers, bottom-to-top:
 
-        Face circle: centre (54, 60), radius 11 dp → spans y=49–71.
-        Hat triangle: base at y=49 (top of face), tip at y=33.
-        The hat therefore sits on the head without any gap.
+          1. Body silhouette  — deep-purple pear/teardrop shape
+          2. Soundboard       — parchment fill inset from the silhouette
+          3. Sound hole       — small deep-purple circle at the soundboard centre
+          4. Neck             — narrow vertical bar above the body
+          5. Pegbox           — short horizontal bar bending LEFT at the neck top;
+                                the backward-angled pegbox is the most distinctive
+                                feature of a Renaissance lute
+          6. Tuning pegs      — three small pins rising from the pegbox
+
+        Layout (all in the card's local coordinate space, x=42–66, y=31–75):
+          Body:         centre (54, 63), approx 20 dp wide × 23 dp tall
+          Neck:         x=52–58, y=37–54
+          Pegbox:       x=43–53, y=34–39   (bends left at the neck top)
+          Tuning pegs:  x=44–52, y=31–34
     -->
 
-    <!-- 1. Face — parchment circle with dark outline so it reads on the card -->
+    <!-- 1. Lute body — deep-purple pear silhouette -->
+    <path
+        android:fillColor="#2A0F5E"
+        android:pathData="M54,52 C59,52 64,57 64,65 C64,72 59,75 54,75 C49,75 44,72 44,65 C44,57 49,52 54,52 Z" />
+
+    <!-- 2. Soundboard — parchment interior, slightly inset from the body -->
     <path
         android:fillColor="#F2E0A0"
-        android:strokeColor="#2A0F5E"
-        android:strokeWidth="1.5"
-        android:pathData="M43,60 A11,11,0,0,1,65,60 A11,11,0,0,1,43,60 Z" />
+        android:pathData="M54,54 C58,54 62,58 62,65 C62,71 58,73 54,73 C50,73 46,71 46,65 C46,58 50,54 54,54 Z" />
 
-    <!-- 2. Pointed jester hat — an upward triangle covering the top of the face -->
+    <!-- 3. Sound hole — small circle at the centre of the soundboard -->
     <path
         android:fillColor="#2A0F5E"
-        android:pathData="M44,49 L64,49 L54,33 Z" />
+        android:pathData="M51,63 A3,3,0,0,1,57,63 A3,3,0,0,1,51,63 Z" />
 
-    <!-- 3. Gold hat band — separates hat brim from face (5 dp tall) -->
+    <!-- 4. Neck — a narrow 6 dp wide bar connecting body to pegbox -->
     <path
-        android:fillColor="#C4972A"
-        android:pathData="M44,49 H64 V53 H44 Z" />
+        android:fillColor="#2A0F5E"
+        android:pathData="M52,37 H58 V54 H52 Z" />
 
     <!--
-        4. Gold bell diamond at the tip of the hat.
-           Centre (54, 33), half-width 4 dp.
-           M54,29 → top tip
-           L58,33 → right tip
-           L54,37 → bottom tip (meets hat tip)
-           L50,33 → left tip
-           Z
+        5. Pegbox — bends 90° to the LEFT at the top of the neck.
+           The backward angle is the single most recognisable silhouette
+           feature of a lute; without it the instrument reads as a guitar.
     -->
     <path
-        android:fillColor="#C4972A"
-        android:pathData="M54,29 L58,33 L54,37 L50,33 Z" />
-
-    <!-- 5a. Left eye — small filled square, deep purple -->
-    <path
         android:fillColor="#2A0F5E"
-        android:pathData="M49,57 H51.5 V59.5 H49 Z" />
+        android:pathData="M43,34 H53 V39 H43 Z" />
 
-    <!-- 5b. Right eye — small filled square, deep purple -->
-    <path
-        android:fillColor="#2A0F5E"
-        android:pathData="M56.5,57 H59 V59.5 H56.5 Z" />
-
-    <!-- 5c. Smile — a gentle upward curve (quadratic Bézier), stroke only -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#2A0F5E"
-        android:strokeWidth="1.5"
-        android:pathData="M50,63 Q54,67.5 58,63" />
+    <!-- 6. Tuning pegs — three small pins rising from the top of the pegbox -->
+    <path android:fillColor="#2A0F5E" android:pathData="M44,31 H46 V34 H44 Z" />
+    <path android:fillColor="#2A0F5E" android:pathData="M47,31 H49 V34 H47 Z" />
+    <path android:fillColor="#2A0F5E" android:pathData="M50,31 H52 V34 H50 Z" />
 
     <!--
         ── CORNER STARS ─────────────────────────────────────────────────────────
