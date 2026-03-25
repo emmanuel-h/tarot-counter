@@ -1,5 +1,6 @@
 package fr.mandarine.tarotcounter
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -82,6 +85,41 @@ fun FinalScoreScreen(
 ) {
     // Read the active locale and resolve all strings once at the top of the composable.
     val strings = appStrings(LocalAppLocale.current)
+
+    // ── System back-button handling ───────────────────────────────────────────
+    // Controls whether the leave-confirmation dialog is visible.
+    // The dialog is triggered by the system back button (or gesture), not by the
+    // in-screen back arrow — the arrow stays wired to onBack (return to game).
+    var showLeaveConfirm by remember { mutableStateOf(false) }
+
+    // BackHandler intercepts the Android system back button while this composable
+    // is in the composition. Because FinalScoreScreen is placed *after* the
+    // GameScreen-level BackHandler in the composition tree, this one takes priority
+    // and GameScreen's handler is effectively shadowed.
+    BackHandler { showLeaveConfirm = true }
+
+    // Confirmation dialog — only rendered when showLeaveConfirm is true.
+    // AlertDialog is a Material 3 modal that blocks interaction with the rest of
+    // the screen until the user picks "Leave" or "Cancel".
+    if (showLeaveConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLeaveConfirm = false },
+            title = { Text(strings.backConfirmTitle) },
+            text  = { Text(strings.backConfirmBody) },
+            confirmButton = {
+                // "Leave" navigates to the landing page (same as "New Game" button).
+                TextButton(onClick = onNewGame) {
+                    Text(strings.backConfirmLeave)
+                }
+            },
+            dismissButton = {
+                // "Cancel" closes the dialog and returns to the Final Score screen.
+                TextButton(onClick = { showLeaveConfirm = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
 
     // `computeFinalTotals` sums each player's per-round scores across all rounds.
     // It lives in GameModels so it can be unit-tested without Compose.
