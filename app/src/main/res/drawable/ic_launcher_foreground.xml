@@ -53,20 +53,21 @@
 
         <!--
             Bold "1" in the top-left corner — the outermost visible area after
-            the −22° rotation. The numeral uses a vertical bar with a diagonal
-            serif/flag at the top-left, exactly like on a real playing card.
+            the −22° rotation. Bar width is 4 dp to match the stroke thickness
+            used in the "21" on the right card. A diagonal serif/flag at the
+            top-left distinguishes it from a plain rectangle.
 
-            M42,46  → flag base (bottom-left of serif)
-            L46,35  → flag tip  (joins bar at its top-left corner)
-            H56     → top-right corner of bar
+            M44,46  → flag base (bottom-left of serif)
+            L48,35  → flag tip  (joins bar at its top-left corner)
+            H52     → top-right corner of bar  (4 dp wide: x=48–52)
             V57     → bottom-right corner of bar
-            H46     → bottom-left corner of bar
+            H48     → bottom-left corner of bar
             V46     → back up to flag base
             Z       → close
         -->
         <path
             android:fillColor="#2A0F5E"
-            android:pathData="M42,46 L46,35 H56 V57 H46 V46 Z" />
+            android:pathData="M44,46 L48,35 H52 V57 H48 V46 Z" />
 
     </group>
 
