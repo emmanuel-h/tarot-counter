@@ -8,9 +8,9 @@ The launcher icon shows the three **bouts** (oudlers) of French Tarot fanned lik
 
 | Position | Card | Symbol |
 |----------|------|--------|
-| Left (−22°) | Le Petit — Trump I | Bold **"1"** numeral |
-| Centre (0°) | L'Excuse | **Jester hat** with three gold bells |
-| Right (+22°) | Le Monde — Trump XXI | Bold **"21"** numeral |
+| Left (−22°) | Le Petit — Trump I | Bold **"1"** in top-left corner |
+| Centre (0°) | L'Excuse | **Jester head** with pointed hat and four gold corner stars |
+| Right (+22°) | Le Monde — Trump XXI | Bold **"21"** in top-right corner |
 
 ## Composition
 
@@ -29,14 +29,16 @@ The rotation angle of **±22°** was chosen to:
 | Deep purple | `#2A0F5E` | Numerals, jester hat body |
 | Felt green | `#1E6B1E` | Background layer |
 
-## Jester Hat (L'Excuse)
+## Jester Head (L'Excuse)
 
-The jester hat is drawn as:
-- A **W-shaped polygon** forming three upward prongs (the classic fool's cap silhouette).
-- A **horizontal brim bar** anchoring the hat to the lower half of the card.
-- Three **gold diamond shapes** at each prong tip — representing the jingling bells that identify a jester's cap.
+The jester head is drawn in layers (bottom to top):
+1. **Parchment face circle** (centre 54, 60, radius 11 dp) with a deep-purple stroke outline so it reads against the parchment card background.
+2. **Deep-purple pointed hat** — an upward triangle sitting on top of the face (base at y=49, tip at y=33).
+3. **Gold hat band** — a 4 dp bar at the hat/face boundary for a crisp visual separation.
+4. **Gold bell diamond** — centred at the hat tip, matching the antique-gold colour of the card borders.
+5. **Eyes and smile** — two small deep-purple squares for eyes and a quadratic-Bézier smile stroke.
 
-The gold bells use `#C4972A` (the same antique gold as the card frames) to contrast against the deep-purple hat body, making them immediately recognisable at all icon sizes.
+Four **4-pointed gold stars** (outer radius 4 dp, inner radius 1.5 dp) are placed near the four corners of the inner frame as decorative markers identifying the card as the special Excuse.
 
 ## Files
 
