@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Button
@@ -23,7 +22,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -91,37 +89,24 @@ fun FinalScoreScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // ── Back arrow ────────────────────────────────────────────────────────
-        // Lets the user return to the game if they tapped "End Game" by mistake.
-        // Placed at the leading edge of a full-width row, mirroring ScoreHistoryScreen.
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = strings.backToGame
-                )
-            }
-        }
+        // ── Screen header: back arrow + title ─────────────────────────────────
+        // ScreenHeader is a shared composable (ScreenHeader.kt) that renders the
+        // back arrow and screen title in a Row — the same pattern as ScoreHistoryScreen,
+        // now unified into one place so both screens look identical at the top.
+        ScreenHeader(title = strings.gameOver, onBack = onBack)
 
-        // ── Title ─────────────────────────────────────────────────────────────
-        // The icon is decorative — the heading already conveys "game over".
+        // ── Decorative trophy icon ─────────────────────────────────────────────
+        // The icon is purely decorative; the title above already conveys "game over".
+        Spacer(modifier = Modifier.height(8.dp))
         Icon(
             imageVector = Icons.Default.EmojiEvents,
             contentDescription = null,
             modifier = Modifier.size(48.dp),
             tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = strings.gameOver,
-            style = MaterialTheme.typography.headlineMedium
         )
 
         Spacer(modifier = Modifier.height(20.dp))

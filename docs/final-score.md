@@ -14,10 +14,9 @@ The game can be ended at any time — even before the first round is played.
 ## Layout
 
 ```
-← (back arrow)
+← Game Over          ← shared ScreenHeader (back arrow + title in one row)
 
 [ Trophy icon ]
-   Game Over
 
 ╔══════════════════════════╗
 ║         Winner           ║  ← "Winner" label (or "It's a tie!")
@@ -58,7 +57,7 @@ The **winner's column** is highlighted with a `secondaryContainer` tint and bold
 
 | Action | Where | What it does |
 |---|---|---|
-| Back arrow (top-left) | `IconButton` | Returns to the active game round. No state is lost. |
+| Back arrow (top-left) | `ScreenHeader` | Returns to the active game round. No state is lost. |
 | **Back to game** | `OutlinedButton` (bottom) | Same as the back arrow — resumes the current game. |
 | **New Game** | `Button` (bottom, primary) | Navigates to the setup screen. All game state is discarded. |
 
@@ -67,6 +66,7 @@ The back arrow and "Back to game" button serve the same purpose: letting the use
 ## Related Files
 
 - `FinalScoreScreen.kt` — Composable implementation
+- `ScreenHeader.kt` — Shared back-arrow + title header used by this screen and `ScoreHistoryScreen`
 - `GameModels.kt` — `computeFinalTotals()` and `findWinners()` pure functions
 - `GameScreen.kt` — `EndGameButton` composable, `showFinalScore` state, routing
 - `RoundDetailsForm.kt` — `EndGameButton` in the form header
