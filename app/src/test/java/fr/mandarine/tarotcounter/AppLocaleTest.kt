@@ -23,7 +23,7 @@ class AppLocaleTest {
 
     @Test
     fun appStrings_FR_returns_french_title() {
-        assertEquals("Compteur de points", appStrings(AppLocale.FR).appTitle)
+        assertEquals("Tarot", appStrings(AppLocale.FR).appTitle)
     }
 
     @Test

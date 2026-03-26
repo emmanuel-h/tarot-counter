@@ -225,7 +225,7 @@ val EnStrings = AppStrings(
 // ── French strings ────────────────────────────────────────────────────────────
 
 val FrStrings = AppStrings(
-    appTitle              = "Compteur de points",
+    appTitle              = "Tarot",
     numberOfPlayers       = "Nombre de joueurs",
     playerNamesLabel      = "Noms des joueurs",
     playerFallback        = { i -> "Joueur $i" },
