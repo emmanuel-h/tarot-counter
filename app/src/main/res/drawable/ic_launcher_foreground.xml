@@ -120,8 +120,8 @@
 
     <!-- ═══════════════════════════════════════════════════════════════════════
          CENTRE CARD — L'Excuse  (drawn last = topmost / always in front)
-         No rotation. Shows a lute — the instrument historically depicted on
-         L'Excuse — surrounded by four 4-pointed gold stars in the corners.
+         No rotation. Shows the four suit symbols (♥ ♠ ♦ ♣) in a 2×2 grid,
+         surrounded by four 4-pointed gold stars in the corners.
          ═══════════════════════════════════════════════════════════════════════ -->
 
     <!-- Parchment body -->
@@ -142,60 +142,55 @@
         android:pathData="M44,34 Q42,34 42,36 V74 Q42,76 44,76 H64 Q66,76 66,74 V36 Q66,34 64,34 Z" />
 
     <!--
-        ── LUTE ─────────────────────────────────────────────────────────────────
+        ── SUIT SYMBOLS ─────────────────────────────────────────────────────────
 
-        A Renaissance lute — the instrument historically depicted on L'Excuse.
-        Drawn in five layers, bottom-to-top:
+        The four French playing-card suits in a 2×2 grid inside the inner frame.
+        All filled deep purple on the white card body.
 
-          1. Body silhouette  — deep-purple pear/teardrop shape
-          2. Soundboard       — parchment fill inset from the silhouette
-          3. Sound hole       — small deep-purple circle at the soundboard centre
-          4. Neck             — narrow vertical bar above the body
-          5. Pegbox           — short horizontal bar bending LEFT at the neck top;
-                                the backward-angled pegbox is the most distinctive
-                                feature of a Renaissance lute
-          6. Tuning pegs      — three small pins rising from the pegbox
-
-        Layout (all in the card's local coordinate space, x=42–66, y=31–75):
-          Body:         centre (54, 63), approx 20 dp wide × 23 dp tall
-          Neck:         x=52–58, y=37–54
-          Pegbox:       x=43–53, y=34–39   (bends left at the neck top)
-          Tuning pegs:  x=44–52, y=31–34
+          Top-left     ♥ Heart    centre (48, 47)   x=42–54, y=41–53
+          Top-right    ♠ Spade    centre (60, 47)   x=54–66, y=41–54
+          Bottom-left  ♦ Diamond  centre (48, 62)   x=42–54, y=56–68
+          Bottom-right ♣ Club     centre (60, 62)   x=54–66, y=56–70
     -->
-
-    <!-- 1. Lute body — deep-purple pear silhouette -->
-    <path
-        android:fillColor="#2A0F5E"
-        android:pathData="M54,52 C59,52 64,57 64,65 C64,72 59,75 54,75 C49,75 44,72 44,65 C44,57 49,52 54,52 Z" />
-
-    <!-- 2. Soundboard — parchment interior, slightly inset from the body -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,54 C58,54 62,58 62,65 C62,71 58,73 54,73 C50,73 46,71 46,65 C46,58 50,54 54,54 Z" />
-
-    <!-- 3. Sound hole — small circle at the centre of the soundboard -->
-    <path
-        android:fillColor="#2A0F5E"
-        android:pathData="M51,63 A3,3,0,0,1,57,63 A3,3,0,0,1,51,63 Z" />
-
-    <!-- 4. Neck — a narrow 6 dp wide bar connecting body to pegbox -->
-    <path
-        android:fillColor="#2A0F5E"
-        android:pathData="M52,37 H58 V54 H52 Z" />
 
     <!--
-        5. Pegbox — bends 90° to the LEFT at the top of the neck.
-           The backward angle is the single most recognisable silhouette
-           feature of a lute; without it the instrument reads as a guitar.
+        ♥ Heart — two upper bumps meeting at a centre notch, tapering to a
+        bottom point. Drawn as a single closed cubic-Bézier path.
     -->
     <path
         android:fillColor="#2A0F5E"
-        android:pathData="M43,34 H53 V39 H43 Z" />
+        android:pathData="M48,53 C45,50 42,48 42,46 C42,43 44,41 47,41 C47.5,41 48,42 48,43 C48,42 48.5,41 49,41 C52,41 54,43 54,46 C54,48 51,50 48,53 Z" />
 
-    <!-- 6. Tuning pegs — three small pins rising from the top of the pegbox -->
-    <path android:fillColor="#2A0F5E" android:pathData="M44,31 H46 V34 H44 Z" />
-    <path android:fillColor="#2A0F5E" android:pathData="M47,31 H49 V34 H47 Z" />
-    <path android:fillColor="#2A0F5E" android:pathData="M50,31 H52 V34 H50 Z" />
+    <!--
+        ♠ Spade — an inverted heart body (top tip pointing up) with a small
+        trapezoidal foot/collar at the bottom, just like on a real playing card.
+    -->
+    <path
+        android:fillColor="#2A0F5E"
+        android:pathData="M60,41 C64,44 66,46 66,48 C66,51 63,52 60,51 C63,52 64,53 64,54 H56 C56,53 57,52 60,51 C57,52 54,51 54,48 C54,46 56,44 60,41 Z" />
+
+    <!-- ♦ Diamond — a simple axis-aligned rhombus -->
+    <path
+        android:fillColor="#2A0F5E"
+        android:pathData="M48,56 L54,62 L48,68 L42,62 Z" />
+
+    <!--
+        ♣ Club — three overlapping circles (trefoil) with a narrow stem and
+        a wider base bar, mirroring the standard club glyph.
+    -->
+    <!-- Top circle, centre (60, 59), r=3 -->
+    <path android:fillColor="#2A0F5E"
+        android:pathData="M57,59 A3,3,0,0,1,63,59 A3,3,0,0,1,57,59 Z" />
+    <!-- Left circle, centre (57, 63), r=3 -->
+    <path android:fillColor="#2A0F5E"
+        android:pathData="M54,63 A3,3,0,0,1,60,63 A3,3,0,0,1,54,63 Z" />
+    <!-- Right circle, centre (63, 63), r=3 -->
+    <path android:fillColor="#2A0F5E"
+        android:pathData="M60,63 A3,3,0,0,1,66,63 A3,3,0,0,1,60,63 Z" />
+    <!-- Stem -->
+    <path android:fillColor="#2A0F5E" android:pathData="M59,66 H61 V69 H59 Z" />
+    <!-- Base bar -->
+    <path android:fillColor="#2A0F5E" android:pathData="M57,69 H63 V70.5 H57 Z" />
 
     <!--
         ── CORNER STARS ─────────────────────────────────────────────────────────
