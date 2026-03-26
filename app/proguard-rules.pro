@@ -1,21 +1,28 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ── Stack traces ─────────────────────────────────────────────────────────────
+# Preserve file names and line numbers so crash reports remain readable.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ── kotlinx.serialization ────────────────────────────────────────────────────
+# The library ships its own consumer rules (via its AAR), but the rules below
+# are the recommended explicit additions for app code.
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep all annotations (required for @Serializable, @SerialName, etc. to work).
+-keepattributes *Annotation*, InnerClasses
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep the generated $$serializer classes that R8 would otherwise strip.
+# These classes are created at compile time for every @Serializable class.
+-keep,includedescriptorclasses class fr.mandarine.tarotcounter.**$$serializer { *; }
+
+# Keep companion objects that expose a serializer() method (used by Json.encode/decode).
+-keepclassmembers class fr.mandarine.tarotcounter.** {
+    *** Companion;
+}
+-keepclasseswithmembers class fr.mandarine.tarotcounter.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# ── Jetpack Compose ───────────────────────────────────────────────────────────
+# Compose libraries bundle their own consumer ProGuard rules inside their AARs,
+# so no extra rules are required here.  The proguard-android-optimize.txt
+# baseline (referenced in build.gradle.kts) covers the Android framework side.

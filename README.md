@@ -123,6 +123,13 @@ are supplied via `~/.gradle/gradle.properties` (local) or environment variables 
 
 See [`docs/release-signing.md`](docs/release-signing.md) for full setup instructions.
 
+### R8 Minification
+
+Release builds automatically minify and shrink resources (`isMinifyEnabled = true`,
+`isShrinkResources = true`). Project-specific ProGuard rules live in
+`app/proguard-rules.pro` — see [`docs/release-signing.md`](docs/release-signing.md)
+for details.
+
 ## Testing
 
 ```bash
