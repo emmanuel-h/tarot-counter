@@ -88,6 +88,27 @@ base64 secret and write it to disk before invoking Gradle:
     RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
 ```
 
+## R8 Minification & Resource Shrinking
+
+Release builds have `isMinifyEnabled = true` and `isShrinkResources = true` in
+`app/build.gradle.kts`. This means:
+
+- **R8** (Google's replacement for ProGuard) rewrites and shrinks bytecode,
+  removing unused classes, methods and fields, and renaming remaining symbols.
+- **Resource shrinking** strips unused drawables, layouts, strings, etc. from
+  the APK/AAB, reducing binary size further.
+
+Rules that tell R8 what *not* to remove are in `app/proguard-rules.pro`:
+
+| Rule category | Why it is needed |
+|---|---|
+| `SourceFile,LineNumberTable` attributes | Keeps crash stack traces readable |
+| `fr.mandarine.tarotcounter.**$$serializer` | Generated serializer classes for every `@Serializable` data class / enum; R8 would otherwise strip them |
+| Companion objects with `serializer()` | `Json.encodeToString` / `decodeFromString` look these up reflectively at runtime |
+
+The Compose libraries and `kotlinx.serialization` AAR each ship their own
+consumer ProGuard rules, so no extra Compose-specific rules are needed here.
+
 ## Security Notes
 
 - **Never commit** passwords, keystore files, or any file containing real

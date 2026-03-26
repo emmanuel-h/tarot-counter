@@ -71,9 +71,15 @@ android {
             // Wire the signing config when credentials were provided; otherwise
             // the artifact is left unsigned (you must sign it manually before upload).
             signingConfig = signingConfigs.findByName("release")
-            isMinifyEnabled = false
+            // R8 minification: shrinks bytecode by removing unused code and renaming symbols.
+            isMinifyEnabled = true
+            // Resource shrinking: strips unused drawables, layouts, strings, etc. from the APK.
+            // Must be used together with isMinifyEnabled = true.
+            isShrinkResources = true
             proguardFiles(
+                // Google's optimised baseline rules bundled with AGP (handles most Android cases).
                 getDefaultProguardFile("proguard-android-optimize.txt"),
+                // Project-specific rules (see app/proguard-rules.pro).
                 "proguard-rules.pro"
             )
         }
