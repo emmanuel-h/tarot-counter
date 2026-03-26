@@ -145,7 +145,7 @@
         ── SUIT SYMBOLS ─────────────────────────────────────────────────────────
 
         The four French playing-card suits in a 2×2 grid inside the inner frame.
-        All filled deep purple on the white card body.
+        Hearts and diamonds: red (#CC0000). Spades and clubs: black (#000000).
 
           Top-left     ♥ Heart    centre (48, 47)   x=42–54, y=41–53
           Top-right    ♠ Spade    centre (60, 47)   x=54–66, y=41–54
@@ -158,7 +158,7 @@
         bottom point. Drawn as a single closed cubic-Bézier path.
     -->
     <path
-        android:fillColor="#2A0F5E"
+        android:fillColor="#CC0000"
         android:pathData="M48,53 C45,50 42,48 42,46 C42,43 44,41 47,41 C47.5,41 48,42 48,43 C48,42 48.5,41 49,41 C52,41 54,43 54,46 C54,48 51,50 48,53 Z" />
 
     <!--
@@ -166,12 +166,12 @@
         trapezoidal foot/collar at the bottom, just like on a real playing card.
     -->
     <path
-        android:fillColor="#2A0F5E"
+        android:fillColor="#000000"
         android:pathData="M60,41 C64,44 66,46 66,48 C66,51 63,52 60,51 C63,52 64,53 64,54 H56 C56,53 57,52 60,51 C57,52 54,51 54,48 C54,46 56,44 60,41 Z" />
 
     <!-- ♦ Diamond — a simple axis-aligned rhombus -->
     <path
-        android:fillColor="#2A0F5E"
+        android:fillColor="#CC0000"
         android:pathData="M48,56 L54,62 L48,68 L42,62 Z" />
 
     <!--
@@ -179,18 +179,18 @@
         a wider base bar, mirroring the standard club glyph.
     -->
     <!-- Top circle, centre (60, 59), r=3 -->
-    <path android:fillColor="#2A0F5E"
+    <path android:fillColor="#000000"
         android:pathData="M57,59 A3,3,0,0,1,63,59 A3,3,0,0,1,57,59 Z" />
     <!-- Left circle, centre (57, 63), r=3 -->
-    <path android:fillColor="#2A0F5E"
+    <path android:fillColor="#000000"
         android:pathData="M54,63 A3,3,0,0,1,60,63 A3,3,0,0,1,54,63 Z" />
     <!-- Right circle, centre (63, 63), r=3 -->
-    <path android:fillColor="#2A0F5E"
+    <path android:fillColor="#000000"
         android:pathData="M60,63 A3,3,0,0,1,66,63 A3,3,0,0,1,60,63 Z" />
     <!-- Stem -->
-    <path android:fillColor="#2A0F5E" android:pathData="M59,66 H61 V69 H59 Z" />
+    <path android:fillColor="#000000" android:pathData="M59,66 H61 V69 H59 Z" />
     <!-- Base bar -->
-    <path android:fillColor="#2A0F5E" android:pathData="M57,69 H63 V70.5 H57 Z" />
+    <path android:fillColor="#000000" android:pathData="M57,69 H63 V70.5 H57 Z" />
 
     <!--
         ── CORNER STARS ─────────────────────────────────────────────────────────
