@@ -8,3 +8,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Keystore files — never commit signing keys to source control
+*.jks
+*.keystore

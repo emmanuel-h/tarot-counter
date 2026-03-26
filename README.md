@@ -99,12 +99,29 @@ app/src/main/java/fr/mandarine/tarotcounter/
 # Build debug APK
 ./gradlew assembleDebug
 
-# Build release APK
+# Build release APK (unsigned — no credentials configured)
 ./gradlew assembleRelease
+
+# Build signed release bundle for Google Play (requires signing credentials)
+./gradlew bundleRelease
 
 # Install on connected device
 ./gradlew installDebug
 ```
+
+### Release Signing
+
+`./gradlew bundleRelease` produces a signed `.aab` when the following credentials
+are supplied via `~/.gradle/gradle.properties` (local) or environment variables (CI):
+
+| Variable | Description |
+|---|---|
+| `RELEASE_KEYSTORE_FILE` | Path to the `.jks` keystore |
+| `RELEASE_KEYSTORE_PASSWORD` | Keystore password |
+| `RELEASE_KEY_ALIAS` | Key alias |
+| `RELEASE_KEY_PASSWORD` | Key password |
+
+See [`docs/release-signing.md`](docs/release-signing.md) for full setup instructions.
 
 ## Testing
 
@@ -150,7 +167,8 @@ TarotCounter/
 │   ├── game-persistence.md   # How completed games are saved and displayed
 │   ├── score-color.md        # Score colour-coding convention and scoreColor() helper
 │   ├── theme.md              # Colour palette rationale and dynamic-colour policy
-│   └── app-name.md           # App name branding and locale-specific launcher labels
+│   ├── app-name.md           # App name branding and locale-specific launcher labels
+│   └── release-signing.md    # Release signing setup for local dev and CI
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
 ├── CLAUDE.md               # AI assistant instructions
@@ -170,3 +188,4 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/theme.md`](docs/theme.md) — colour palette rationale, roles, and dynamic-colour policy
 - [`docs/back-navigation.md`](docs/back-navigation.md) — system back button behaviour per screen, BackHandler implementation, confirmation dialog
 - [`docs/app-name.md`](docs/app-name.md) — app name branding, locale-specific launcher labels, and how the system name and in-app title relate
+- [`docs/release-signing.md`](docs/release-signing.md) — how to configure release signing for local builds and CI/CD pipelines
