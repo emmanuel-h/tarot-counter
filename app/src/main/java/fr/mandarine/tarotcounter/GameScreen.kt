@@ -98,6 +98,23 @@ fun GameScreen(
     val locale = LocalAppLocale.current
     val strings = appStrings(locale)
 
+    // Stable UUID for this game session, used as SavedGame.id when the game is ended.
+    //
+    // Generating the ID here (once, via `remember`) rather than inside `endGame()` ensures
+    // that calling `endGame()` multiple times — e.g. pressing "End Game" again after
+    // navigating back from the Final Score screen — always produces the same ID.
+    // GameStorage then treats a repeated save as an upsert (update) rather than an insert,
+    // preventing duplicate entries in the history list.
+    //
+    // When resuming a saved game the stored `gameId` is reused so that the resumed game
+    // updates the same history entry it would have created if ended the first time.
+    // Old InProgressGame entries that predate this field will have gameId == ""; in that
+    // case we generate a fresh UUID to ensure the ID is always a valid, non-empty string.
+    val gameId = remember {
+        inProgressGame?.gameId?.ifBlank { UUID.randomUUID().toString() }
+            ?: UUID.randomUUID().toString()
+    }
+
     // Current round number — restored from the saved state when resuming, otherwise 1.
     var currentRound by remember { mutableIntStateOf(inProgressGame?.currentRound ?: 1) }
 
@@ -136,7 +153,10 @@ fun GameScreen(
     val displayNames = playerNames.indices.map { displayName(it) }
 
     // Builds an InProgressGame snapshot from the current game state.
+    // `gameId` is included so that if the game is resumed later, the same ID is
+    // carried through to the final SavedGame (preventing duplicate history entries).
     fun progressSnapshot() = InProgressGame(
+        gameId        = gameId,
         playerNames   = displayNames,
         currentRound  = currentRound,
         startingIndex = startingIndex,
@@ -171,10 +191,16 @@ fun GameScreen(
     }
 
     // Saves the completed game and shows the Final Score screen.
+    //
+    // Uses the stable `gameId` (generated once in `remember` above) rather than a
+    // freshly generated UUID so that repeated calls — e.g. the user presses "End Game"
+    // again after navigating back — always produce the same SavedGame.id.
+    // GameStorage's upsert logic will then replace the existing history entry instead
+    // of inserting a duplicate.
     fun endGame() {
         if (roundHistory.isNotEmpty()) {
             val savedGame = SavedGame(
-                id          = UUID.randomUUID().toString(),
+                id          = gameId,
                 datestamp   = System.currentTimeMillis(),
                 playerNames = displayNames,
                 rounds      = roundHistory.toList(),

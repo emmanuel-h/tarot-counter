@@ -26,6 +26,14 @@ data class SavedGame(
 // It is written to DataStore after every round so that if the app is closed,
 // the game can be resumed exactly where it left off.
 //
+//   gameId        : a stable UUID generated when the game starts. It is carried all
+//                   the way through to SavedGame.id when the game is ended. This
+//                   guarantees that ending the same game multiple times (e.g. after
+//                   navigating back from the Final Score screen) always produces the
+//                   same ID, so GameStorage can upsert instead of duplicating.
+//                   Default "" means the field is optional in stored JSON — old
+//                   DataStore entries without this field deserialise safely, and
+//                   GameScreen generates a fresh UUID whenever it encounters a blank.
 //   playerNames   : display names used during the game (already resolved from raw input).
 //   currentRound  : the round number that would be played next (always ≥ 2 after the
 //                   first round, because saving happens after incrementing).
@@ -34,6 +42,7 @@ data class SavedGame(
 //   rounds        : all rounds completed so far, in chronological order.
 @Serializable
 data class InProgressGame(
+    val gameId: String = "",
     val playerNames: List<String>,
     val currentRound: Int,
     val startingIndex: Int,

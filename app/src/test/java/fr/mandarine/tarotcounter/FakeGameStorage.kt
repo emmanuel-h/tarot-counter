@@ -73,8 +73,15 @@ class FakeGameStorage : GameStorageInterface {
     override suspend fun addGame(game: SavedGame) {
         addGameCallCount++
         lastAddedGame = game
-        // Mirror the production rule: newest game at the front of the list.
-        _games.value = listOf(game) + _games.value
+        // Mirror the production upsert rule:
+        //   - If a game with the same id already exists, replace it in-place.
+        //   - Otherwise prepend (newest-first).
+        val existing = _games.value
+        _games.value = if (existing.any { it.id == game.id }) {
+            existing.map { if (it.id == game.id) game else it }
+        } else {
+            listOf(game) + existing
+        }
     }
 
     override suspend fun saveInProgressGame(game: InProgressGame) {

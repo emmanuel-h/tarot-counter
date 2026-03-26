@@ -156,7 +156,15 @@ class GameStorage(private val context: Context) : GameStorageInterface {
         }
     }
 
-    // Prepends `game` to the saved games list and persists it to disk.
+    // Upserts `game` into the saved games list and persists the result to disk.
+    //
+    // "Upsert" means:
+    //   - If a game with the same `id` already exists (e.g. the user ended the same
+    //     game twice by pressing "End Game" after navigating back from the Final Score
+    //     screen), the existing entry is replaced in-place. No duplicate is created.
+    //   - If no game with that `id` exists, the new game is prepended (newest-first).
+    //
+    // In both cases the list is trimmed to MAX_SAVED_GAMES afterwards.
     //
     // `suspend` means this function must be called from a coroutine (it does I/O).
     // `DataStore.edit` is a suspend function that atomically reads, modifies, and
@@ -166,8 +174,19 @@ class GameStorage(private val context: Context) : GameStorageInterface {
             val raw = prefs[GAMES_KEY] ?: "[]"
             val existing = runCatching { json.decodeFromString<List<SavedGame>>(raw) }
                 .getOrDefault(emptyList())
-            // Prepend the new game (newest-first) and trim to the allowed limit in one step.
-            val updated = (listOf(game) + existing).take(MAX_SAVED_GAMES)
+
+            // Check whether a game with this ID is already stored.
+            val alreadyExists = existing.any { it.id == game.id }
+
+            val updated = if (alreadyExists) {
+                // Replace the existing entry and keep its current position in the list.
+                // `map` returns a new list with the matching element swapped out.
+                existing.map { if (it.id == game.id) game else it }
+            } else {
+                // New game: prepend so the list stays newest-first.
+                listOf(game) + existing
+            }.take(MAX_SAVED_GAMES)   // always enforce the storage cap
+
             prefs[GAMES_KEY] = json.encodeToString(updated)
         }
     }

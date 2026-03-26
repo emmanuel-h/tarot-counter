@@ -106,6 +106,29 @@ class GameViewModelTest {
         assertEquals("clearInProgressGame should have been called", 1, storage.clearInProgressCallCount)
     }
 
+    @Test
+    fun `saveGame twice with the same id does not create a duplicate in pastGames`() = runTest {
+        // Regression test for: game saved twice when user ends game, navigates back,
+        // and ends it again. The second save must replace the first, not append.
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        val game = savedGame("same-id")
+
+        val collected = mutableListOf<List<SavedGame>>()
+        val job = launch(testDispatcher) { vm.pastGames.collect { collected.add(it) } }
+
+        vm.saveGame(game)
+        // Save the same game again (same id, possibly different datestamp).
+        vm.saveGame(game.copy(datestamp = 99L))
+
+        // The list must contain exactly one entry, not two.
+        assertEquals("History should have exactly one entry after saving the same game twice",
+            1, collected.last().size)
+        // The stored entry should be the second (most-recent) version.
+        assertEquals(99L, collected.last().first().datestamp)
+        job.cancel()
+    }
+
     // ── saveInProgressGame ────────────────────────────────────────────────────
 
     @Test
