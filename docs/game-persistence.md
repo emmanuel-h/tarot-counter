@@ -20,7 +20,7 @@ A completed `SavedGame` entry is written the moment the user presses **End Game*
 
 - Closing the app while the Final Score screen is open still records the game in Past Games.
 - Pressing **New Game** afterwards just navigates to the setup screen; no second save occurs.
-- Pressing **Back to game** after End Game keeps the saved entry in Past Games and lets the player continue; if they press **End Game** again later, a new entry is created with the updated round history.
+- Pressing **Back to game** after End Game keeps the saved entry in Past Games and lets the player continue; if they press **End Game** again later, the existing entry is **updated** (not duplicated) because the game ID is stable for the whole session.
 - If no rounds were played when End Game is pressed, nothing is saved (nothing to record).
 
 ## What Is Stored
@@ -29,6 +29,7 @@ A completed `SavedGame` entry is written the moment the user presses **End Game*
 
 | Field | Type | Description |
 |---|---|---|
+| `gameId` | `String` | UUID generated when the game starts. Carried through to `SavedGame.id` so that ending the same game twice produces the same ID (upsert, not duplicate). Defaults to `""` for backwards-compatible deserialization of old saved data. |
 | `playerNames` | `List<String>` | Display names used during the game |
 | `currentRound` | `Int` | The round number to play next |
 | `startingIndex` | `Int` | Index of the first taker — needed to restore the rotation formula |
@@ -38,7 +39,7 @@ A completed `SavedGame` entry is written the moment the user presses **End Game*
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `String` | UUID generated at save time — uniquely identifies the game |
+| `id` | `String` | UUID sourced from `InProgressGame.gameId` — stable for the entire game session, preventing duplicate history entries |
 | `datestamp` | `Long` | Unix timestamp in milliseconds (`System.currentTimeMillis()`) |
 | `playerNames` | `List<String>` | Display names at the time the game was played |
 | `rounds` | `List<RoundResult>` | Full round history in chronological order |
