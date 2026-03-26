@@ -121,7 +121,7 @@ are supplied via `~/.gradle/gradle.properties` (local) or environment variables 
 | `RELEASE_KEY_ALIAS` | Key alias |
 | `RELEASE_KEY_PASSWORD` | Key password |
 
-See [`docs/release-signing.md`](docs/release-signing.md) for full setup instructions.
+See [`docs/release-signing.md`](docs/release-signing.md) for full setup instructions and [`docs/app-bundle.md`](docs/app-bundle.md) for App Bundle / Play Store submission details.
 
 ### R8 Minification
 
