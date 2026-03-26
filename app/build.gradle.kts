@@ -5,6 +5,33 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// ── Release signing credentials ───────────────────────────────────────────────
+// Read from gradle.properties (local or ~/.gradle/gradle.properties) first,
+// then fall back to environment variables so CI pipelines can inject secrets
+// without touching any file on disk.
+// All four values must be present for the signing config to be registered;
+// if any is missing the release build is produced unsigned (safe for local dev).
+val releaseKeystoreFile: String? =
+    findProperty("RELEASE_KEYSTORE_FILE")?.toString()
+        ?: System.getenv("RELEASE_KEYSTORE_FILE")
+val releaseKeystorePassword: String? =
+    findProperty("RELEASE_KEYSTORE_PASSWORD")?.toString()
+        ?: System.getenv("RELEASE_KEYSTORE_PASSWORD")
+val releaseKeyAlias: String? =
+    findProperty("RELEASE_KEY_ALIAS")?.toString()
+        ?: System.getenv("RELEASE_KEY_ALIAS")
+val releaseKeyPassword: String? =
+    findProperty("RELEASE_KEY_PASSWORD")?.toString()
+        ?: System.getenv("RELEASE_KEY_PASSWORD")
+
+// True only when every credential is available.
+val hasSigningConfig = listOf(
+    releaseKeystoreFile,
+    releaseKeystorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).none { it.isNullOrBlank() }
+
 android {
     namespace = "fr.mandarine.tarotcounter"
     compileSdk {
@@ -23,8 +50,27 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // ── Signing configs ───────────────────────────────────────────────────────
+    // Only registered when all four credentials are present (see top of file).
+    // The "release" config is named so that buildTypes.release can reference it
+    // by name via signingConfigs.getByName("release").
+    if (hasSigningConfig) {
+        signingConfigs {
+            create("release") {
+                // file() resolves the path relative to the module directory (app/).
+                storeFile = file(releaseKeystoreFile!!)
+                storePassword = releaseKeystorePassword!!
+                keyAlias = releaseKeyAlias!!
+                keyPassword = releaseKeyPassword!!
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Wire the signing config when credentials were provided; otherwise
+            // the artifact is left unsigned (you must sign it manually before upload).
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
