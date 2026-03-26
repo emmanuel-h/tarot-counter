@@ -6,7 +6,7 @@ An Android app for tracking scores in **French Tarot**, a classic French trick-t
 
 TarotCounter guides players through a game round by round:
 
-1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap ☀️ or 🌙 in the top-left to toggle between light and dark mode (persisted across restarts, defaults to light)
+1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap ☀️ or 🌙 in the top-left to toggle between light and dark mode (persisted across restarts, defaults to light); tap 🇬🇧 or 🇫🇷 in the top-right to switch the app language (persisted across restarts, defaults to device language)
 2. **Contract selection** — the current taker picks their contract; a persistent **bottom action bar** always shows **End Game** (left) and **Skip round** (right) for quick access
 3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first; each history row shows a colored **●** indicator (green = won, red = lost, grey = skipped) for at-a-glance scanning
@@ -149,7 +149,8 @@ TarotCounter/
 │   ├── final-score.md        # Final score screen: winner card, End Game flow
 │   ├── game-persistence.md   # How completed games are saved and displayed
 │   ├── score-color.md        # Score colour-coding convention and scoreColor() helper
-│   └── theme.md              # Colour palette rationale and dynamic-colour policy
+│   ├── theme.md              # Colour palette rationale and dynamic-colour policy
+│   └── app-name.md           # App name branding and locale-specific launcher labels
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
 ├── CLAUDE.md               # AI assistant instructions
@@ -168,3 +169,4 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/score-color.md`](docs/score-color.md) — score colour-coding convention: `scoreColor()` helper, where it is used, winner column
 - [`docs/theme.md`](docs/theme.md) — colour palette rationale, roles, and dynamic-colour policy
 - [`docs/back-navigation.md`](docs/back-navigation.md) — system back button behaviour per screen, BackHandler implementation, confirmation dialog
+- [`docs/app-name.md`](docs/app-name.md) — app name branding, locale-specific launcher labels, and how the system name and in-app title relate
