@@ -14,7 +14,7 @@
     All three cards rotate around pivot (54, 95) — below the canvas.
 
     Colour palette
-        #F2E0A0  warm parchment  (card bodies, jester face)
+        #FFFFFF  white           (card bodies, lute soundboard)
         #C4972A  antique gold    (borders, hat band, bell, stars)
         #2A0F5E  deep purple     (numerals, jester hat and features)
 -->
@@ -36,7 +36,7 @@
 
         <!-- Parchment body -->
         <path
-            android:fillColor="#F2E0A0"
+            android:fillColor="#FFFFFF"
             android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
         <!-- Gold outer border -->
         <path
@@ -83,7 +83,7 @@
 
         <!-- Parchment body -->
         <path
-            android:fillColor="#F2E0A0"
+            android:fillColor="#FFFFFF"
             android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
         <!-- Gold outer border -->
         <path
@@ -126,7 +126,7 @@
 
     <!-- Parchment body -->
     <path
-        android:fillColor="#F2E0A0"
+        android:fillColor="#FFFFFF"
         android:pathData="M41,30 Q38,30 38,33 V77 Q38,80 41,80 H67 Q70,80 70,77 V33 Q70,30 67,30 Z" />
     <!-- Gold outer border -->
     <path
@@ -170,7 +170,7 @@
 
     <!-- 2. Soundboard — parchment interior, slightly inset from the body -->
     <path
-        android:fillColor="#F2E0A0"
+        android:fillColor="#FFFFFF"
         android:pathData="M54,54 C58,54 62,58 62,65 C62,71 58,73 54,73 C50,73 46,71 46,65 C46,58 50,54 54,54 Z" />
 
     <!-- 3. Sound hole — small circle at the centre of the soundboard -->
