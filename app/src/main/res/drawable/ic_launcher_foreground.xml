@@ -147,27 +147,28 @@
         The four French playing-card suits in a 2×2 grid inside the inner frame.
         Hearts and diamonds: red (#CC0000). Spades and clubs: black (#000000).
 
-          Top-left     ♥ Heart    centre (48, 47)   x=42–54, y=41–53
-          Top-right    ♠ Spade    centre (60, 47)   x=54–66, y=41–54
+          Top-left     ♠ Spade    centre (48, 47)   x=42–54, y=41–54
+          Top-right    ♥ Heart    centre (60, 47)   x=54–66, y=40–53
           Bottom-left  ♦ Diamond  centre (48, 62)   x=42–54, y=56–68
           Bottom-right ♣ Club     centre (60, 62)   x=54–66, y=56–70
     -->
 
     <!--
-        ♥ Heart — two upper bumps meeting at a centre notch, tapering to a
-        bottom point. Drawn as a single closed cubic-Bézier path.
-    -->
-    <path
-        android:fillColor="#CC0000"
-        android:pathData="M48,53 C45,50 42,48 42,46 C42,43 44,41 47,41 C47.5,41 48,42 48,43 C48,42 48.5,41 49,41 C52,41 54,43 54,46 C54,48 51,50 48,53 Z" />
-
-    <!--
-        ♠ Spade — an inverted heart body (top tip pointing up) with a small
-        trapezoidal foot/collar at the bottom, just like on a real playing card.
+        ♠ Spade — inverted heart body (top tip pointing up) with a small
+        trapezoidal foot/collar at the bottom. Translated to x centre=48.
     -->
     <path
         android:fillColor="#000000"
-        android:pathData="M60,41 C64,44 66,46 66,48 C66,51 63,52 60,51 C63,52 64,53 64,54 H56 C56,53 57,52 60,51 C57,52 54,51 54,48 C54,46 56,44 60,41 Z" />
+        android:pathData="M48,41 C52,44 54,46 54,48 C54,51 51,52 48,51 C51,52 52,53 52,54 H44 C44,53 45,52 48,51 C45,52 42,51 42,48 C42,46 44,44 48,41 Z" />
+
+    <!--
+        ♥ Heart — redesigned for clarity: two well-rounded bumps (each ~r=3)
+        separated by a pronounced V-notch at y=43, bottom tip at y=53.
+        Centre (60, 47), spans x=54–66, y=40–53.
+    -->
+    <path
+        android:fillColor="#CC0000"
+        android:pathData="M60,53 C57,50 54,48 54,45 C54,41 56,40 58,40 C59,40 60,41 60,43 C60,41 61,40 62,40 C64,40 66,41 66,45 C66,48 63,50 60,53 Z" />
 
     <!-- ♦ Diamond — a simple axis-aligned rhombus -->
     <path
