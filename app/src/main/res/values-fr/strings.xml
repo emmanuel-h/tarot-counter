@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        App name shown by the Android system (launcher icon, recent apps, Settings → Apps)
+        when the device language is French.
+        Matches the in-app French title defined in AppLocale.kt (FrStrings.appTitle = "Tarot").
+    -->
+    <string name="app_name">Tarot</string>
+</resources>
