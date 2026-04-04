@@ -2,6 +2,7 @@
 name: issue
 description: Create a GitHub issue based on a description
 argument-hint: <description>
+model: haiku
 ---
 
 Create a GitHub issue based on the following description: $ARGUMENTS

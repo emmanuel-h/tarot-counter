@@ -1,6 +1,7 @@
 ---
 name: ship
 description: Commit all changes and push to the remote repository in one step
+model: haiku
 ---
 
 Commit all changes and push to the remote repository in one step.
