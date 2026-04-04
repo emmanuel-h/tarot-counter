@@ -8,7 +8,7 @@ Tarot Counter is a simple scoring application for the tarot card game. We are co
 
 ## 2. What Data We Collect
 
-**We collect no personal data.** Period.
+**We collect no personal data.**
 
 Specifically, Tarot Counter:
 - Does not require an account or login
@@ -41,7 +41,7 @@ We may update this privacy policy from time to time. Any changes will be effecti
 
 ## 7. Contact
 
-If you have questions about this privacy policy, you may contact us through the GitHub repository:
+If you have questions about this privacy policy, you may contact us via an email to mandarinetech.dev@gmail.com or through the GitHub repository:
 https://github.com/emmanuel-h/tarot-counter
 
 ---
