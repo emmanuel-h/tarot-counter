@@ -41,8 +41,12 @@ Convergence typically takes 1–3 extra frames, invisible to the user.
 
 **`style` parameter:** pass a `TextStyle` to override the ambient font size, e.g. `MaterialTheme.typography.titleMedium` for a larger call-to-action. All other style properties (color, font family…) are still inherited from the ambient.
 
-**Inside `SegmentedButton`:** always add a horizontal padding modifier so the text stays away from the button's rounded corners, and pass `icon = {}` to suppress the default checkmark — selection state is communicated via the filled background color alone:
+**Inside `SegmentedButton`:** always add a horizontal padding modifier so the text stays away from the button's rounded corners, and pass `icon = {}` to suppress the default checkmark — selection state is communicated via the filled background color alone.
+
+For a row of segments where all labels should display at the **same font size**, use `rememberSharedAutoSizeState` (see [SingleChoiceSegmentedButtonRow](#singlechoicesegmentedbuttonrow)) instead of a standalone `AutoSizeText` — this ensures every segment shrinks together to the smallest size needed by the longest label.
+
 ```kotlin
+// Two-segment row (no shared size needed for just 2 labels)
 SegmentedButton(
     selected = !defenderMode,
     onClick  = { … },
@@ -51,8 +55,58 @@ SegmentedButton(
 ) {
     AutoSizeText(
         text     = strings.attackerMode,
-        modifier = Modifier.padding(horizontal = 4.dp)
+        modifier = Modifier.padding(horizontal = 1.dp)
     )
+}
+```
+
+---
+
+## rememberSharedAutoSizeState
+
+```kotlin
+@Composable
+fun rememberSharedAutoSizeState(vararg keys: Any?): MutableFloatState
+```
+
+Returns a shared font-size state for use with `AutoSizeText.sharedSizeState`. When several `AutoSizeText` instances in the same row share this state, they all reduce together — the first label that overflows drags the others down, so every segment always displays at the same size.
+
+Pass the current locale (and any other value whose change should trigger a full re-measure) as `keys`:
+
+```kotlin
+val labelSize = rememberSharedAutoSizeState(locale)
+```
+
+---
+
+## SingleChoiceSegmentedButtonRow
+
+Use `SingleChoiceSegmentedButtonRow` + `SegmentedButton` for **mutually exclusive single-choice** options (e.g. contract selection, mode toggle). Never use `FilterChip` for this — chips are for multi-select filtering.
+
+**Required conventions:**
+- `icon = {}` on every `SegmentedButton` — the filled segment already signals selection.
+- `AutoSizeText` (not `Text`) for every label.
+- `modifier = Modifier.padding(horizontal = 2.dp)` inside each label.
+- `sharedSizeState = rememberSharedAutoSizeState(locale)` so all labels display at the same font size.
+
+```kotlin
+val labelSize = rememberSharedAutoSizeState(locale)
+
+SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+    items.forEachIndexed { index, item ->
+        SegmentedButton(
+            shape    = SegmentedButtonDefaults.itemShape(index, items.size),
+            selected = selection == item,
+            onClick  = { selection = if (selection == item) null else item },
+            icon     = {}
+        ) {
+            AutoSizeText(
+                text            = item.label,
+                modifier        = Modifier.padding(horizontal = 2.dp),
+                sharedSizeState = labelSize
+            )
+        }
+    }
 }
 ```
 

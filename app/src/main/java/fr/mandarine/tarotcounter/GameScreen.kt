@@ -320,9 +320,10 @@ fun GameScreen(
             Spacer(Modifier.height(12.dp))
 
             // ── Contract selection ────────────────────────────────────────────────
-            // FilterChips replace the old full-width buttons. Tapping a chip selects
-            // that contract (and expands the details form below). Tapping the already-
-            // selected chip deselects it and collapses the form.
+            // SingleChoiceSegmentedButtonRow is the Material 3 standard for picking
+            // one option from a fixed set. Each segment gets equal width automatically,
+            // and the connected pill shape makes the active selection obvious.
+            // Tapping the already-selected segment deselects it (collapses the form).
             Text(
                 text = strings.chooseContract(currentTaker),
                 style = MaterialTheme.typography.titleMedium,
@@ -330,13 +331,34 @@ fun GameScreen(
             )
             Spacer(Modifier.height(8.dp))
 
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (c in Contract.entries) {
-                    FilterChip(
+            // Shared font size — all 4 segments shrink together so they always display
+            // at the same size (the smallest needed across the longest label).
+            // Keyed on locale so labels re-measure whenever the language changes.
+            val contractLabelSize = rememberSharedAutoSizeState(locale)
+
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                Contract.entries.forEachIndexed { index, c ->
+                    SegmentedButton(
+                        // shape draws the correct rounded corners: round on the outer ends,
+                        // straight on the inner edges between segments.
+                        shape    = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = Contract.entries.size
+                        ),
                         selected = selectedContract == c,
                         onClick  = { selectedContract = if (selectedContract == c) null else c },
-                        label    = { Text(c.localizedName(locale)) }
-                    )
+                        // Hide the checkmark icon so only the label is shown — the
+                        // filled/outlined segment already communicates selection clearly.
+                        icon     = {}
+                    ) {
+                        AutoSizeText(
+                            text            = c.localizedName(locale),
+                            // 2 dp keeps the label away from rounded corners without
+                            // eating into the already-tight segment width.
+                            modifier        = Modifier.padding(horizontal = 1.dp),
+                            sharedSizeState = contractLabelSize
+                        )
+                    }
                 }
             }
 

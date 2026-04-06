@@ -6,6 +6,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +24,45 @@ import androidx.compose.ui.unit.sp
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Returns a [MutableFloatState] to be shared across several [AutoSizeText] instances that sit
+ * inside the same fixed-width row (e.g. [SingleChoiceSegmentedButtonRow]).
+ *
+ * When the shared state is passed to each [AutoSizeText] via [AutoSizeText.sharedSizeState],
+ * all labels shrink together: the first label that overflows reduces the shared size, and every
+ * other label immediately recomposes at the same smaller size. The result is a uniform font size
+ * across the whole row — always the smallest size that fits the longest label.
+ *
+ * Pass any values that should trigger a reset as [keys] (typically the current locale), so labels
+ * re-measure from the maximum size whenever the text content changes.
+ *
+ * Usage:
+ * ```kotlin
+ * val labelSize = rememberSharedAutoSizeState(locale)
+ * SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+ *     items.forEachIndexed { index, item ->
+ *         SegmentedButton(
+ *             shape    = SegmentedButtonDefaults.itemShape(index, items.size),
+ *             selected = selection == item,
+ *             onClick  = { selection = item },
+ *             icon     = {}
+ *         ) {
+ *             AutoSizeText(
+ *                 text            = item.label,
+ *                 modifier        = Modifier.padding(horizontal = 2.dp),
+ *                 sharedSizeState = labelSize
+ *             )
+ *         }
+ *     }
+ * }
+ * ```
+ */
+@Composable
+fun rememberSharedAutoSizeState(vararg keys: Any?): MutableFloatState =
+    // Float.MAX_VALUE means "no override yet — use the ambient max font size".
+    // Each AutoSizeText will coerce this down to its own max before using it.
+    remember(*keys) { mutableFloatStateOf(Float.MAX_VALUE) }
+
+/**
  * A single-line [Text] that automatically shrinks its font size to fit the available width.
  *
  * How it works:
@@ -38,18 +78,22 @@ import androidx.compose.ui.unit.sp
  * The font size is remembered per ([text], [maxFontSize]), so switching language or
  * receiving a new style resets it.
  *
- * @param style   Extra [TextStyle] merged on top of the ambient style. Use this to set
- *                a larger starting size (e.g. `MaterialTheme.typography.titleMedium`).
- *                Leave unset to inherit from the surrounding composable.
- * @param minFontSize  Smallest allowed size (sp). Below this we stop shrinking; the text
- *                     may still be partially clipped but remains legible.
+ * @param style          Extra [TextStyle] merged on top of the ambient style. Use this to set
+ *                       a larger starting size (e.g. `MaterialTheme.typography.titleMedium`).
+ *                       Leave unset to inherit from the surrounding composable.
+ * @param minFontSize    Smallest allowed size (sp). Below this we stop shrinking; the text
+ *                       may still be partially clipped but remains legible.
+ * @param sharedSizeState  Optional shared state from [rememberSharedAutoSizeState]. When set,
+ *                       all [AutoSizeText] instances using the same state shrink together,
+ *                       producing a uniform font size across a row of buttons.
  */
 @Composable
 fun AutoSizeText(
     text: String,
     modifier: Modifier = Modifier,
     style: TextStyle = TextStyle.Default,
-    minFontSize: Float = 8f
+    minFontSize: Float = 8f,
+    sharedSizeState: MutableFloatState? = null
 ) {
     // Merge caller-provided style on top of the ambient style from LocalTextStyle.
     // If `style` is TextStyle.Default (nothing set) this is a no-op.
@@ -60,9 +104,18 @@ fun AutoSizeText(
     val rawFontSize = mergedStyle.fontSize.value
     val maxFontSizeSp = if (rawFontSize.isNaN()) 14f else rawFontSize
 
-    // fontSize is state so that changing it triggers a recomposition + re-measure.
+    // Own per-instance size state — used when no shared state is provided.
     // Keyed on (text, maxFontSizeSp) so a language change or style change resets to max.
-    var fontSizeSp by remember(text, maxFontSizeSp) { mutableFloatStateOf(maxFontSizeSp) }
+    var ownFontSizeSp by remember(text, maxFontSizeSp) { mutableFloatStateOf(maxFontSizeSp) }
+
+    // Effective font size: shared state takes priority.
+    // We coerce the shared value down to our own max so that a freshly initialised
+    // shared state (Float.MAX_VALUE) never exceeds the ambient style's font size.
+    val fontSizeSp = if (sharedSizeState != null) {
+        sharedSizeState.floatValue.coerceAtMost(maxFontSizeSp)
+    } else {
+        ownFontSizeSp
+    }
 
     Text(
         text = text,
@@ -73,7 +126,16 @@ fun AutoSizeText(
         onTextLayout = { result ->
             // hasVisualOverflow is true when glyphs are drawn outside the measured bounds.
             if (result.hasVisualOverflow && fontSizeSp > minFontSize) {
-                fontSizeSp = (fontSizeSp * 0.9f).coerceAtLeast(minFontSize)
+                val reduced = (fontSizeSp * 0.9f).coerceAtLeast(minFontSize)
+                if (sharedSizeState != null) {
+                    // Only push the shared state downward — never let one label increase
+                    // the size that another label already needed to reduce.
+                    if (reduced < sharedSizeState.floatValue) {
+                        sharedSizeState.floatValue = reduced
+                    }
+                } else {
+                    ownFontSizeSp = reduced
+                }
             }
         }
     )
