@@ -16,6 +16,7 @@ TarotCounter guides players through a game round by round:
 8. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
 9. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results with a trophy icon next to the winner's name
 10. **Back navigation** — the Android system back button always returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
+11. **Feedback button** — a "Send Feedback" / "Contacter le développeur" button at the bottom of the setup screen opens the device's email client pre-addressed to the developer
 
 The app automatically rotates the taker each round, determines win/loss, and computes each player's score for the round.
 
@@ -166,7 +167,7 @@ for details.
 | `TakerRotationTest.kt` | Taker rotation formula for 3–5 players |
 | `AppLocaleTest.kt` | i18n string bundles: locale-specific strings, lambda formatters, enum localized names |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
-| `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, duplicate validation, theme toggle chips |
+| `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, duplicate validation, theme toggle chips, feedback button |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history table: column headers, cumulative totals, back navigation |
 | `FinalScoreScreenTest.kt` | Final score screen: winner card, tie detection, score table, New Game navigation |

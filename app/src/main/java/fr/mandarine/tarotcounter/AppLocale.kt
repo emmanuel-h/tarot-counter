@@ -139,6 +139,10 @@ data class AppStrings(
     // Confirm action label — distinct from `cancel` which already exists.
     val backConfirmLeave: String,
 
+    // ── Feedback button (Landing Screen) ─────────────────────────────────────
+    // Label for the button that opens the user's email client to contact the developer.
+    val feedbackButton: String,
+
     // ── Chelem enum labels ────────────────────────────────────────────────────
     val chelemNone: String,
     val chelemAnnouncedRealized: String,
@@ -220,6 +224,8 @@ val EnStrings = AppStrings(
     chelemAnnouncedRealized  = "Announced & realized",
     chelemAnnouncedNotRealized = "Announced, not realized",
     chelemNotAnnouncedRealized = "Not announced, realized",
+
+    feedbackButton           = "Send Feedback",
 )
 
 // ── French strings ────────────────────────────────────────────────────────────
@@ -296,6 +302,8 @@ val FrStrings = AppStrings(
     chelemAnnouncedRealized  = "Annoncé et réalisé",
     chelemAnnouncedNotRealized = "Annoncé, non réalisé",
     chelemNotAnnouncedRealized = "Non annoncé, réalisé",
+
+    feedbackButton           = "Contacter le développeur",
 )
 
 // Returns the AppStrings for the given locale.
