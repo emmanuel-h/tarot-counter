@@ -164,10 +164,11 @@ gh release upload "$TAG" \
 
 ## Step 9 — Generate Play Store release notes and copy to clipboard
 
-Get today's commits (feat/fix only, excluding chores/refactors/docs):
+Get all commits since the last release tag (feat/fix only, excluding chores/refactors/docs):
 
 ```bash
-git log --after="$(date +%Y-%m-%d)T00:00:00" --oneline --no-merges \
+PREV_TAG=$(gh release list --limit 2 --json tagName --jq '.[1].tagName')
+git log "${PREV_TAG}..HEAD" --oneline --no-merges \
   | grep -E '^[a-f0-9]+ (feat|fix)' \
   | sed 's/^[a-f0-9]* //'
 ```
