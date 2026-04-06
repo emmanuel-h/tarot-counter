@@ -17,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -245,13 +244,12 @@ fun LandingScreen(
         // "Start Game" button placed BELOW the name fields so the visual flow naturally
         // guides the user: enter names first, then press Start.
         // `enabled = !hasDuplicates` prevents starting a game when names clash.
-        Button(
-            onClick = { onStartGame(playerNames.toList()) },
-            enabled = !hasDuplicates,
+        AppButton(
+            text     = strings.startGame,
+            onClick  = { onStartGame(playerNames.toList()) },
+            enabled  = !hasDuplicates,
             modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            Text(strings.startGame)
-        }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -352,12 +350,11 @@ private fun ResumeGameCard(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = onResume,
+                AppButton(
+                    text     = strings.resume,
+                    onClick  = onResume,
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(strings.resume)
-                }
+                )
             }
         }   // end Row (accent strip + content)
     }

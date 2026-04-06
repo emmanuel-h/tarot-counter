@@ -23,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,7 +34,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.SegmentedButton
@@ -463,10 +461,14 @@ fun GameScreen(
                                     },
                                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
                                 ) {
-                                    // maxLines = 1 and softWrap = false together prevent the label from
-                                    // ever breaking onto a second line, regardless of screen width.
-                                    // This fixes the French "Défenseurs" wrapping bug on narrow screens.
-                                    Text(strings.attackerMode, maxLines = 1, softWrap = false)
+                                    // AutoSizeText shrinks the font automatically so long labels
+                                    // (e.g. French "Attaquant") always fit inside the button.
+                                    // padding(horizontal = 4.dp) adds an inner margin so the text
+                                    // never touches the button's rounded corners.
+                                    AutoSizeText(
+                                        strings.attackerMode,
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    )
                                 }
                                 SegmentedButton(
                                     selected = defenderMode,
@@ -476,7 +478,10 @@ fun GameScreen(
                                     },
                                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                                 ) {
-                                    Text(strings.defenderMode, maxLines = 1, softWrap = false)
+                                    AutoSizeText(
+                                        strings.defenderMode,
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    )
                                 }
                             }
                             OutlinedTextField(
@@ -670,10 +675,12 @@ fun GameScreen(
                     Spacer(Modifier.height(16.dp))
 
                     // ── Confirm / back ─────────────────────────────────────────────
-                    Button(
+                    AppButton(
+                        text    = strings.confirmRound,
                         // Disabled while the points field shows an error so the user cannot
                         // submit an out-of-range value.
                         enabled = !pointsError,
+                        modifier = Modifier.fillMaxWidth(0.8f),
                         onClick = {
                             // Parse the typed points; default to 0 if empty, clamp to 0–91.
                             val enteredPoints = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0
@@ -697,11 +704,8 @@ fun GameScreen(
                                     chelemPlayer  = if (chelem == Chelem.NONE) null else chelemPlayer
                                 )
                             )
-                        },
-                        modifier = Modifier.fillMaxWidth(0.8f)
-                    ) {
-                        Text(strings.confirmRound)
-                    }
+                        }
+                    )
 
                 }
             }
@@ -741,19 +745,17 @@ fun GameScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Left half: end the game and navigate to the Final Score screen.
-            OutlinedButton(
+            AppOutlinedButton(
+                text     = strings.endGame,
                 onClick  = { endGame() },
                 modifier = Modifier.weight(1f)
-            ) {
-                Text(strings.endGame)
-            }
+            )
             // Right half: record a skipped round and advance to the next.
-            Button(
+            AppButton(
+                text     = strings.skipRound,
                 onClick  = { recordSkipped() },
                 modifier = Modifier.weight(1f)
-            ) {
-                Text(strings.skipRound)
-            }
+            )
         }
     }  // end outer Column
 }
@@ -1158,3 +1160,4 @@ private fun BonusInfoIcon(title: String, body: String) {
         }
     }
 }
+

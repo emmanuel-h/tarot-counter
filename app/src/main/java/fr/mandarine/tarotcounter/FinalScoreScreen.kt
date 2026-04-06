@@ -24,15 +24,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -108,15 +105,11 @@ fun FinalScoreScreen(
             text  = { Text(strings.backConfirmBody) },
             confirmButton = {
                 // "Leave" navigates to the landing page (same as "New Game" button).
-                TextButton(onClick = onNewGame) {
-                    Text(strings.backConfirmLeave)
-                }
+                AppTextButton(text = strings.backConfirmLeave, onClick = onNewGame)
             },
             dismissButton = {
                 // "Cancel" closes the dialog and returns to the Final Score screen.
-                TextButton(onClick = { showLeaveConfirm = false }) {
-                    Text(strings.cancel)
-                }
+                AppTextButton(text = strings.cancel, onClick = { showLeaveConfirm = false })
             }
         )
     }
@@ -343,28 +336,27 @@ fun FinalScoreScreen(
         // Full-width with titleMedium text so it reads as the dominant call-to-action
         // after the winner is announced. `fillMaxWidth` is already set; the larger
         // text size (`titleMedium` vs the default `labelLarge`) adds visual weight.
-        Button(
-            onClick = onNewGame,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = strings.newGame,
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
+        // titleMedium makes the label larger than the default labelLarge so this
+        // primary call-to-action stands out. AutoSizeText inside AppButton will
+        // shrink it further only if the translation is too long to fit.
+        AppButton(
+            text      = strings.newGame,
+            onClick   = onNewGame,
+            modifier  = Modifier.fillMaxWidth(),
+            textStyle = MaterialTheme.typography.titleMedium
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // ── Back to game button ───────────────────────────────────────────────
         // Lets the user resume the current game if they ended it by mistake.
-        // OutlinedButton has a lower visual weight than the filled "New Game" button,
+        // AppOutlinedButton has a lower visual weight than the filled "New Game" button,
         // signalling that resuming is the secondary action.
-        OutlinedButton(
-            onClick = onBack,
+        AppOutlinedButton(
+            text     = strings.backToGame,
+            onClick  = onBack,
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(strings.backToGame)
-        }
+        )
     }
 }
 

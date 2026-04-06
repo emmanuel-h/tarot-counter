@@ -74,10 +74,13 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── RoundDetailsForm.kt    # Scoring details form
 ├── ScoreHistoryScreen.kt  # Round-by-round cumulative score table
 ├── FinalScoreScreen.kt    # End-of-game results: winner card + full score table
+├── UiComponents.kt        # Shared UI: AppButton, AppOutlinedButton, AppTextButton, AutoSizeText
 └── ui/theme/              # Material 3 theme, colors, typography
 ```
 
 **Key design choice**: `GameModels.kt` contains only pure Kotlin with no Android or Compose imports, making it fully unit-testable on the JVM.
+
+**Button convention**: never use raw `Button` / `OutlinedButton` / `TextButton` — always use `AppButton` / `AppOutlinedButton` / `AppTextButton` from `UiComponents.kt`. These wrappers automatically shrink labels to fit any screen width or translation length. See [`docs/ui-components.md`](docs/ui-components.md) for details.
 
 **Persistence**: completed games are saved to **DataStore** as JSON (via `kotlinx.serialization`). A `GameViewModel` holds the `StateFlow<List<SavedGame>>` that the setup screen observes.
 
@@ -167,6 +170,7 @@ TarotCounter/
 │   │   └── androidTest/    # Instrumented tests (device/emulator)
 │   └── build.gradle.kts
 ├── docs/
+│   ├── ui-components.md      # Shared UI components: AppButton, AutoSizeText guideline
 │   ├── game-flow.md          # Game mechanics specification
 │   ├── player-setup.md       # Setup screen behaviour
 │   ├── score-history.md      # Score history table
@@ -186,6 +190,7 @@ TarotCounter/
 
 More detailed documentation lives in [`docs/`](docs/):
 
+- [`docs/ui-components.md`](docs/ui-components.md) — shared UI building blocks: `AppButton`, `AutoSizeText`, and the button convention
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
 - [`docs/score-history.md`](docs/score-history.md) — score history table: layout, navigation, scrolling

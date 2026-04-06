@@ -39,6 +39,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Composable behaviour: Compose UI tests in `src/androidTest/`
   - Never leave a feature untested without an explicit note explaining why it cannot be tested.
 
+## UI Components (`UiComponents.kt`)
+
+All shared UI building blocks live in `UiComponents.kt`. **Never use raw Material3 button components directly** — always use the wrappers below so every button label automatically shrinks to fit its container, regardless of screen width or translation length.
+
+| Use this | Instead of |
+|---|---|
+| `AppButton` | `Button` |
+| `AppOutlinedButton` | `OutlinedButton` |
+| `AppTextButton` | `TextButton` |
+| `AutoSizeText` | `Text` inside `SegmentedButton` / `FilterChip` / any fixed-width slot |
+
+- `AutoSizeText` reads the ambient `LocalTextStyle` (set by the enclosing composable) as its maximum font size and shrinks by 10 % per frame until the text fits or reaches `minFontSize` (default 8 sp).
+- When placing `AutoSizeText` inside a `SegmentedButton`, always pass `modifier = Modifier.padding(horizontal = 4.dp)` to keep the label away from the button's rounded corners.
+- `AppButton` accepts an optional `textStyle` parameter (e.g. `MaterialTheme.typography.titleMedium`) to use a larger starting size for prominent call-to-action buttons.
+
 ## Documentation
 - Always add inline comments to generated code and explain key concepts. The user is new to Kotlin and Android development.
 - When the user asks for a new feature, add or update relevant Markdown files in a docs/ folder.
