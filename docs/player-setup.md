@@ -19,6 +19,7 @@ The screen uses a scrollable `Column`. The layout order follows the natural user
 6. **Start Game button** ← below the name fields
 7. Resume Game card (if an unfinished game is saved)
 8. Past Games list (if any completed games exist)
+9. **Feedback button** ← right-aligned, below Past Games
 
 ## Visual design
 
@@ -87,3 +88,12 @@ val hasDuplicates = duplicateFlags.any { it }
 ```
 
 Because `resolvedNames`, `lowerNames`, `duplicateFlags`, and `hasDuplicates` are plain `val`s computed inside the composable, Compose recalculates them automatically on every recomposition (i.e. every keystroke). No `remember` or `LaunchedEffect` is needed.
+
+## Feedback button
+
+A low-prominence `AppTextButton` sits at the very bottom of the scrollable column. Tapping it fires an `Intent(ACTION_SENDTO, Uri.parse("mailto:mandarinetech.dev@gmail.com"))`, which opens the user's default email client pre-addressed to the developer. The `ACTION_SENDTO` + `mailto:` combination ensures only email apps (not messaging apps) respond to the intent.
+
+| Locale | Label |
+|---|---|
+| EN | Send Feedback |
+| FR | Contacter le développeur |

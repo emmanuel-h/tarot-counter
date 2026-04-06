@@ -350,4 +350,36 @@ class LandingScreenTest {
         // We use a substring check via containsText to stay locale-agnostic.
         composeTestRule.onNodeWithText("Alice", substring = true).assertIsDisplayed()
     }
+
+    // ── Spec: feedback button (issue #72) ─────────────────────────────────────
+
+    @Test
+    fun feedback_button_is_displayed() {
+        launch()
+        composeTestRule.onNodeWithText("Send Feedback").assertIsDisplayed()
+    }
+
+    @Test
+    fun feedback_button_is_below_start_game_button() {
+        launch()
+        val startBounds    = composeTestRule.onNodeWithText("Start Game").getBoundsInRoot()
+        val feedbackBounds = composeTestRule.onNodeWithText("Send Feedback").getBoundsInRoot()
+
+        assert(feedbackBounds.top >= startBounds.bottom) {
+            "Expected Send Feedback button (top=${feedbackBounds.top}) to be below " +
+                "Start Game button (bottom=${startBounds.bottom})"
+        }
+    }
+
+    @Test
+    fun feedback_button_is_below_past_games_section() {
+        launchWithPastGames()
+        val feedbackBounds  = composeTestRule.onNodeWithText("Send Feedback").getBoundsInRoot()
+        val pastGamesBounds = composeTestRule.onNodeWithText("Past Games").getBoundsInRoot()
+
+        assert(feedbackBounds.top >= pastGamesBounds.bottom) {
+            "Expected Send Feedback button (top=${feedbackBounds.top}) to be below " +
+                "Past Games heading (bottom=${pastGamesBounds.bottom})"
+        }
+    }
 }
