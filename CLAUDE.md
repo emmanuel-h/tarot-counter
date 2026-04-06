@@ -51,8 +51,38 @@ All shared UI building blocks live in `UiComponents.kt`. **Never use raw Materia
 | `AutoSizeText` | `Text` inside `SegmentedButton` / `FilterChip` / any fixed-width slot |
 
 - `AutoSizeText` reads the ambient `LocalTextStyle` (set by the enclosing composable) as its maximum font size and shrinks by 10 % per frame until the text fits or reaches `minFontSize` (default 8 sp).
-- When placing `AutoSizeText` inside a `SegmentedButton`, always pass `modifier = Modifier.padding(horizontal = 4.dp)` to keep the label away from the button's rounded corners.
 - `AppButton` accepts an optional `textStyle` parameter (e.g. `MaterialTheme.typography.titleMedium`) to use a larger starting size for prominent call-to-action buttons.
+
+### `SingleChoiceSegmentedButtonRow` — mutually exclusive options
+
+Use `SingleChoiceSegmentedButtonRow` + `SegmentedButton` whenever the user picks **one option from a fixed set** (e.g. contract selection). Never use `FilterChip` for this purpose — chips are designed for multi-select filtering.
+
+Mandatory conventions:
+1. Pass `icon = {}` to every `SegmentedButton` — suppress the checkmark; the filled segment already communicates selection.
+2. Use `AutoSizeText` (not `Text`) for every label.
+3. Use `modifier = Modifier.padding(horizontal = 1.dp)` inside each label to keep text away from rounded corners.
+4. **Share the font size** across all segments via `rememberSharedAutoSizeState(locale)` so every label displays at the same — smallest needed — size:
+
+```kotlin
+val labelSize = rememberSharedAutoSizeState(locale)   // resets on locale change
+
+SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+    items.forEachIndexed { index, item ->
+        SegmentedButton(
+            shape    = SegmentedButtonDefaults.itemShape(index, items.size),
+            selected = selection == item,
+            onClick  = { selection = if (selection == item) null else item },
+            icon     = {}
+        ) {
+            AutoSizeText(
+                text            = item.label,
+                modifier        = Modifier.padding(horizontal = 1.dp),
+                sharedSizeState = labelSize
+            )
+        }
+    }
+}
+```
 
 ## Documentation
 - Always add inline comments to generated code and explain key concepts. The user is new to Kotlin and Android development.
