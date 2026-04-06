@@ -41,12 +41,19 @@ Convergence typically takes 1–3 extra frames, invisible to the user.
 
 **`style` parameter:** pass a `TextStyle` to override the ambient font size, e.g. `MaterialTheme.typography.titleMedium` for a larger call-to-action. All other style properties (color, font family…) are still inherited from the ambient.
 
-**Inside `SegmentedButton`:** always add a horizontal padding modifier so the text stays away from the button's rounded corners:
+**Inside `SegmentedButton`:** always add a horizontal padding modifier so the text stays away from the button's rounded corners, and pass `icon = {}` to suppress the default checkmark — selection state is communicated via the filled background color alone:
 ```kotlin
-AutoSizeText(
-    text     = strings.attackerMode,
-    modifier = Modifier.padding(horizontal = 4.dp)
-)
+SegmentedButton(
+    selected = !defenderMode,
+    onClick  = { … },
+    shape    = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+    icon     = {}   // no checkmark — more space for the label
+) {
+    AutoSizeText(
+        text     = strings.attackerMode,
+        modifier = Modifier.padding(horizontal = 4.dp)
+    )
+}
 ```
 
 ---

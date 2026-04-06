@@ -459,7 +459,10 @@ fun GameScreen(
                                         defenderMode = false
                                         pointsText   = ""  // clear field when switching camps
                                     },
-                                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                                    // Remove the default checkmark icon so the label has more space.
+                                    // Selection is still indicated by the filled background color.
+                                    icon  = {}
                                 ) {
                                     // AutoSizeText shrinks the font automatically so long labels
                                     // (e.g. French "Attaquant") always fit inside the button.
@@ -476,7 +479,10 @@ fun GameScreen(
                                         defenderMode = true
                                         pointsText   = ""  // clear field when switching camps
                                     },
-                                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                                    // Remove the default checkmark icon for consistency with the
+                                    // attacker button — color alone conveys the selected state.
+                                    icon  = {}
                                 ) {
                                     AutoSizeText(
                                         strings.defenderMode,
