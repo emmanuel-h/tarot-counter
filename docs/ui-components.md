@@ -112,6 +112,87 @@ SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
 
 ---
 
+## FormLabel
+
+```kotlin
+@Composable
+fun FormLabel(text: String)
+```
+
+A small bold label placed above a form section (e.g. above the bouts dropdown or the bonus grid). Uses `MaterialTheme.typography.titleSmall` and fills the available width.
+
+```kotlin
+FormLabel(strings.numberOfBouts)
+```
+
+---
+
+## BonusInfoIcon
+
+```kotlin
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BonusInfoIcon(title: String, body: String)
+```
+
+A small ⓘ `IconButton` (20 dp) that opens a `RichTooltip` when tapped. Use it next to standalone dropdowns where a full label row would not fit (e.g. next to the Chelem dropdown in the round form). The tooltip is persistent — it stays open until the user dismisses it.
+
+```kotlin
+BonusInfoIcon(title = strings.chelemLabel, body = strings.chelemTooltipBody)
+```
+
+---
+
+## BonusLabelCell
+
+```kotlin
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BonusLabelCell(label: String, body: String)
+```
+
+A tappable cell showing a bonus name followed by a small ⓘ icon. Tapping anywhere on the cell opens a `RichTooltip` explaining the bonus. Used as the label column in `CompactBonusGrid`. Content-sized — the enclosing `Row` carries the weight modifier.
+
+---
+
+## CompactBonusGrid
+
+```kotlin
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CompactBonusGrid(
+    playerNames: List<String>,
+    bonusLabels: List<String>,
+    bonusTooltips: List<String>,
+    petitAuBout: String?,     onPetit: (String?) -> Unit,
+    poignee: String?,         onPoignee: (String?) -> Unit,
+    doublePoignee: String?,   onDoublePoignee: (String?) -> Unit,
+    triplePoignee: String?,   onTriplePoignee: (String?) -> Unit
+)
+```
+
+A compact grid showing four player-assigned bonuses (petit au bout, poignée, double poignée, triple poignée). The header row shows player names; each data row shows a bonus label + ⓘ on the left and one `Checkbox` per player on the right. Ticking a checked box clears the assignment (sets it back to `null`).
+
+---
+
+## PlayerChipSelector
+
+```kotlin
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun PlayerChipSelector(
+    label: String,
+    noneLabel: String,
+    selectedPlayer: String?,
+    playerNames: List<String>,
+    onSelect: (String?) -> Unit
+)
+```
+
+A `FlowRow` of `FilterChip`s — one "None" chip followed by one chip per player. Used for the partner selector (5-player games) and the chelem player selector. Tapping the already-selected player deselects them.
+
+---
+
 ## AppButton
 
 ```kotlin

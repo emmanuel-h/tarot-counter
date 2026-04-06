@@ -13,6 +13,17 @@ After setting up players on the setup screen, the user taps **Start Game** to be
 
 ### Game Screen (`GameScreen`)
 
+`GameScreen` is a thin UI layer: it observes state from `GameViewModel` and calls ViewModel methods for all game actions. All scoring logic lives in the ViewModel, making it unit-testable without Compose.
+
+**Responsibilities split:**
+
+| Concern | Where it lives |
+|---|---|
+| Game session state (`currentRound`, `roundHistory`) | `GameViewModel` |
+| `recordPlayed`, `recordSkipped`, `endGame` | `GameViewModel` |
+| Contract selection, overlay visibility | `GameScreen` (local `remember` state) |
+| Sub-composables (`CompactBonusGrid`, `PlayerChipSelector`, etc.) | `UiComponents.kt` |
+
 The game is divided into **rounds**. The taker for each round is determined automatically:
 
 - **Round 1** — a random player is chosen as the first taker.

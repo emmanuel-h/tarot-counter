@@ -79,15 +79,6 @@ class MainActivity : ComponentActivity() {
                     // `currentScreen` directly instead of `currentScreen.value`.
                     var currentScreen by remember { mutableStateOf(Screen.SETUP) }
 
-                    // The finalized player names passed to the game once "Start Game" is pressed
-                    // (or derived from the saved in-progress state when resuming).
-                    var confirmedPlayers by remember { mutableStateOf(listOf<String>()) }
-
-                    // The in-progress game to restore from, set when the user taps "Resume".
-                    // Null for a fresh game. Stored in `remember` so it survives recompositions
-                    // but is not persisted (the ViewModel's StateFlow is the authoritative source).
-                    var gameToResume by remember { mutableStateOf<InProgressGame?>(null) }
-
                     // Scaffold provides the basic Material Design page structure.
                     // It handles padding so our content doesn't go under system bars.
                     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -97,19 +88,21 @@ class MainActivity : ComponentActivity() {
                                 modifier       = Modifier.padding(innerPadding),
                                 pastGames      = pastGames,
                                 inProgressGame = inProgressGame,
-                                // Start a fresh game: clear any leftover in-progress state so
-                                // the resume card does not appear after the new game starts.
-                                onStartGame = { names ->
-                                    confirmedPlayers = names
-                                    gameToResume = null
+                                // Start a fresh game: resolve display names (blank entries become
+                                // "Player N" / "Joueur N"), then initialize the ViewModel session.
+                                onStartGame = { rawNames ->
+                                    val appStrings = appStrings(currentLocale)
+                                    val resolvedNames = rawNames.mapIndexed { i, name ->
+                                        name.ifBlank { appStrings.playerFallback(i + 1) }
+                                    }
+                                    gameViewModel.initGame(resolvedNames, inProgressGame = null)
                                     gameViewModel.clearInProgressGame()
                                     currentScreen = Screen.GAME
                                 },
-                                // Resume the interrupted game: restore state and navigate directly
-                                // to GameScreen without going through the setup form.
+                                // Resume the interrupted game: the stored playerNames are already
+                                // resolved (they were saved by initGame on the previous session).
                                 onResumeGame = { game ->
-                                    confirmedPlayers = game.playerNames
-                                    gameToResume = game
+                                    gameViewModel.initGame(game.playerNames, game)
                                     currentScreen = Screen.GAME
                                 },
                                 // Persist the user's language choice and trigger a recomposition
@@ -119,20 +112,11 @@ class MainActivity : ComponentActivity() {
                                 onThemeChange  = { gameViewModel.setTheme(it) }
                             )
                             Screen.GAME -> GameScreen(
-                                playerNames     = confirmedPlayers,
-                                inProgressGame  = gameToResume,
-                                // Called after every round to keep DataStore in sync.
-                                onSaveProgress  = { game -> gameViewModel.saveInProgressGame(game) },
-                                // Called when the user presses "End Game" (before FinalScoreScreen).
-                                // saveGame() persists the completed entry and clears in-progress.
-                                onSaveGame      = { game -> gameViewModel.saveGame(game) },
+                                viewModel = gameViewModel,
                                 // Called when the user presses "New Game" on FinalScoreScreen.
                                 // The game is already saved at this point — just navigate away.
-                                onEndGame = {
-                                    gameToResume = null
-                                    currentScreen = Screen.SETUP
-                                },
-                                modifier = Modifier.padding(innerPadding)
+                                onEndGame = { currentScreen = Screen.SETUP },
+                                modifier  = Modifier.padding(innerPadding)
                             )
                         }
                     }

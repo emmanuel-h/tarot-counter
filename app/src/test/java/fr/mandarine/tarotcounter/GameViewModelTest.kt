@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -357,5 +358,243 @@ class GameViewModelTest {
 
         assertEquals(AppTheme.DARK, collected.last())
         job.cancel()
+    }
+
+    // ── initGame ──────────────────────────────────────────────────────────────
+
+    @Test
+    fun `initGame fresh game starts at round 1`() {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        assertEquals(1, vm.currentRound)
+    }
+
+    @Test
+    fun `initGame stores display names`() {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        val names = listOf("Alice", "Bob", "Charlie")
+
+        vm.initGame(names, inProgressGame = null)
+
+        assertEquals(names, vm.displayNames)
+    }
+
+    @Test
+    fun `initGame restores currentRound from inProgressGame`() {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        val saved = InProgressGame(
+            gameId        = "g1",
+            playerNames   = listOf("Alice", "Bob"),
+            currentRound  = 5,
+            startingIndex = 0,
+            rounds        = emptyList()
+        )
+
+        vm.initGame(saved.playerNames, saved)
+
+        assertEquals(5, vm.currentRound)
+    }
+
+    @Test
+    fun `initGame restores rounds from inProgressGame`() {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        val round = RoundResult(1, "Alice", contract = null, details = null, won = null)
+        val saved = InProgressGame(
+            gameId        = "g1",
+            playerNames   = listOf("Alice", "Bob"),
+            currentRound  = 2,
+            startingIndex = 0,
+            rounds        = listOf(round)
+        )
+
+        vm.initGame(saved.playerNames, saved)
+
+        assertEquals(1, vm.roundHistory.size)
+        assertEquals(round, vm.roundHistory[0])
+    }
+
+    @Test
+    fun `initGame clears previous session rounds`() {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        // First game: one skipped round.
+        vm.initGame(listOf("Alice", "Bob"), inProgressGame = null)
+        vm.recordSkipped()
+        assertEquals(1, vm.roundHistory.size)
+
+        // Second game: fresh start — history must be empty.
+        vm.initGame(listOf("Alice", "Bob"), inProgressGame = null)
+
+        assertEquals(0, vm.roundHistory.size)
+    }
+
+    // ── recordSkipped ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `recordSkipped advances currentRound`() = runTest {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.recordSkipped()
+
+        assertEquals(2, vm.currentRound)
+    }
+
+    @Test
+    fun `recordSkipped adds a skipped RoundResult to history`() = runTest {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.recordSkipped()
+
+        assertEquals(1, vm.roundHistory.size)
+        assertNull(vm.roundHistory[0].contract)
+        assertNull(vm.roundHistory[0].won)
+    }
+
+    @Test
+    fun `recordSkipped calls saveInProgressGame`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.recordSkipped()
+
+        assertEquals(1, storage.saveInProgressCallCount)
+    }
+
+    // ── recordPlayed ──────────────────────────────────────────────────────────
+
+    /** Minimal [RoundDetails] suitable for use in recordPlayed tests. */
+    private fun basicDetails(bouts: Int = 0, points: Int = 0) = RoundDetails(
+        bouts         = bouts,
+        points        = points,
+        partnerName   = null,
+        petitAuBout   = null,
+        poignee       = null,
+        doublePoignee = null,
+        chelem        = Chelem.NONE
+    )
+
+    @Test
+    fun `recordPlayed advances currentRound`() = runTest {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.recordPlayed(Contract.GARDE, basicDetails())
+
+        assertEquals(2, vm.currentRound)
+    }
+
+    @Test
+    fun `recordPlayed adds a RoundResult with the correct contract`() = runTest {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.recordPlayed(Contract.GARDE, basicDetails())
+
+        assertEquals(Contract.GARDE, vm.roundHistory[0].contract)
+    }
+
+    @Test
+    fun `recordPlayed marks result as Lost when points below threshold`() = runTest {
+        // 0 bouts → requires 56 pts; 0 < 56 → Lost.
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.recordPlayed(Contract.GARDE, basicDetails(bouts = 0, points = 0))
+
+        assertEquals(false, vm.roundHistory[0].won)
+    }
+
+    @Test
+    fun `recordPlayed marks result as Won when points meet threshold`() = runTest {
+        // 3 bouts → requires 36 pts; 91 >= 36 → Won.
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.recordPlayed(Contract.GARDE, basicDetails(bouts = 3, points = 91))
+
+        assertEquals(true, vm.roundHistory[0].won)
+    }
+
+    @Test
+    fun `recordPlayed calls saveInProgressGame`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.recordPlayed(Contract.GARDE, basicDetails())
+
+        assertEquals(1, storage.saveInProgressCallCount)
+    }
+
+    @Test
+    fun `recordPlayed populates playerScores for all players`() = runTest {
+        val players = listOf("Alice", "Bob", "Charlie")
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(players, inProgressGame = null)
+
+        vm.recordPlayed(Contract.GARDE, basicDetails(bouts = 0, points = 0))
+
+        // Every player should have a score entry (zero-sum game, so all 3 must be present).
+        val scores = vm.roundHistory[0].playerScores
+        players.forEach { name ->
+            assertTrue("$name should have a score entry", scores.containsKey(name))
+        }
+        // Tarot is zero-sum: the sum of all player scores for a round is always 0.
+        assertEquals(0, scores.values.sum())
+    }
+
+    // ── endGame ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `endGame saves a SavedGame when rounds exist`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+        vm.recordSkipped()  // at least one round needed
+
+        vm.endGame()
+
+        assertEquals(1, storage.addGameCallCount)
+    }
+
+    @Test
+    fun `endGame does not save when no rounds have been played`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.endGame()
+
+        assertEquals(0, storage.addGameCallCount)
+    }
+
+    @Test
+    fun `endGame saved game contains correct playerNames`() = runTest {
+        val players = listOf("Alice", "Bob", "Charlie")
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(players, inProgressGame = null)
+        vm.recordSkipped()
+
+        vm.endGame()
+
+        assertEquals(players, storage.lastAddedGame?.playerNames)
+    }
+
+    @Test
+    fun `endGame clears the in-progress game`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+        vm.recordSkipped()
+
+        vm.endGame()
+
+        // saveGame() (called by endGame()) also clears in-progress via the ViewModel.
+        assertEquals(1, storage.clearInProgressCallCount)
     }
 }

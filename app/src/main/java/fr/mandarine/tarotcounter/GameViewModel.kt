@@ -1,8 +1,13 @@
 package fr.mandarine.tarotcounter
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import java.util.UUID
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -73,6 +78,133 @@ class GameViewModel internal constructor(
             started      = SharingStarted.WhileSubscribed(5_000),
             initialValue = null
         )
+
+    // ── Game session state ────────────────────────────────────────────────────
+    //
+    // These fields are set by initGame() and mutated by recordPlayed(), recordSkipped(),
+    // and endGame(). Living here (rather than inside the GameScreen composable) lets the
+    // three action methods be tested on the JVM without a running Compose tree.
+
+    // Stable identifier for the current game session — reused if the game is ended
+    // multiple times (e.g. after navigating back from Final Score) so GameStorage
+    // treats repeated saves as upserts instead of duplicates.
+    private var _gameId: String = ""
+
+    // Index into _displayNames of the player who took first in round 1.
+    // Used to restore the taker-rotation formula correctly after a resume.
+    private var _startingIndex: Int = 0
+
+    // Resolved display names for this session (typed name or locale fallback).
+    // Set once by initGame(); does not change during the session.
+    private var _displayNames: List<String> = emptyList()
+
+    // Observable round counter. `mutableIntStateOf` is a Compose snapshot primitive:
+    // any composable that reads `currentRound` automatically recomposes when it changes.
+    // `private set` prevents callers from mutating it directly.
+    var currentRound by mutableIntStateOf(1)
+        private set
+
+    // Observable round history. `mutableStateListOf` notifies Compose when items are
+    // added, so the history list and scoreboard recompose automatically after each round.
+    val roundHistory = mutableStateListOf<RoundResult>()
+
+    // Read-only accessors — GameScreen reads these but must not write them directly.
+    val displayNames: List<String> get() = _displayNames
+    val startingIndex: Int get() = _startingIndex
+    val gameId: String get() = _gameId
+
+    // The display name of the player who takes in the current round.
+    // Derived from _startingIndex and currentRound so it updates automatically
+    // when currentRound (a snapshot state) changes during composition.
+    val currentTaker: String
+        get() {
+            if (_displayNames.isEmpty()) return ""
+            val index = (_startingIndex + currentRound - 1) % _displayNames.size
+            return _displayNames[index]
+        }
+
+    // Initializes (or restores) a game session.
+    //
+    // displayNames : resolved player names — blank entries must have been replaced
+    //               by the caller (e.g. "Player 1") before passing them in.
+    // inProgressGame : non-null when resuming a saved game; null for a fresh start.
+    fun initGame(displayNames: List<String>, inProgressGame: InProgressGame?) {
+        _displayNames  = displayNames
+        _gameId        = inProgressGame?.gameId?.ifBlank { UUID.randomUUID().toString() }
+                            ?: UUID.randomUUID().toString()
+        _startingIndex = inProgressGame?.startingIndex ?: displayNames.indices.random()
+        currentRound   = inProgressGame?.currentRound ?: 1
+        roundHistory.clear()
+        inProgressGame?.rounds?.let { roundHistory.addAll(it) }
+    }
+
+    // Records a completed round (contract + details), advances the round counter,
+    // and persists the updated in-progress snapshot to DataStore.
+    //
+    // All scoring logic runs here — previously these calculations lived inside the
+    // GameScreen composable as a local `fun recordPlayed()`, which meant they were
+    // recreated on every recomposition and could not be unit-tested.
+    fun recordPlayed(contract: Contract, details: RoundDetails) {
+        val taker    = currentTaker
+        val won      = takerWon(details.bouts, details.points)
+        val score    = calculateRoundScore(contract, details.bouts, details.points)
+        val base     = computePlayerScores(
+            allPlayers  = _displayNames,
+            takerName   = taker,
+            partnerName = details.partnerName,
+            won         = won,
+            roundScore  = score
+        )
+        // 3/4-player: every non-taker is a defender; 5-player: exactly 3 defenders.
+        val numDef   = if (details.partnerName != null) 3 else _displayNames.size - 1
+        val scores   = applyBonuses(base, contract, details, taker, won, numDef)
+        roundHistory.add(RoundResult(currentRound, taker, contract, details, won, scores))
+        currentRound++
+        saveInProgressGame(buildProgressSnapshot())
+    }
+
+    // Records a skipped round (no contract selected), advances the round counter,
+    // and persists the updated in-progress snapshot.
+    fun recordSkipped() {
+        roundHistory.add(
+            RoundResult(
+                roundNumber = currentRound,
+                takerName   = currentTaker,
+                contract    = null,
+                details     = null,
+                won         = null
+            )
+        )
+        currentRound++
+        saveInProgressGame(buildProgressSnapshot())
+    }
+
+    // Saves the completed game to the history list (when at least one round was played).
+    // Calling saveGame() also clears the in-progress entry via saveGame()'s implementation.
+    // The caller (GameScreen) is responsible for navigating to the Final Score screen.
+    fun endGame() {
+        if (roundHistory.isNotEmpty()) {
+            saveGame(
+                SavedGame(
+                    id          = _gameId,
+                    datestamp   = System.currentTimeMillis(),
+                    playerNames = _displayNames,
+                    rounds      = roundHistory.toList(),
+                    finalScores = computeFinalTotals(_displayNames, roundHistory)
+                )
+            )
+        }
+    }
+
+    // Builds an InProgressGame snapshot from the current session state.
+    // Called after every recordPlayed/recordSkipped to keep DataStore in sync.
+    private fun buildProgressSnapshot() = InProgressGame(
+        gameId        = _gameId,
+        playerNames   = _displayNames,
+        currentRound  = currentRound,
+        startingIndex = _startingIndex,
+        rounds        = roundHistory.toList()
+    )
 
     // Saves the completed game to the past-games list and clears the in-progress state.
     //
