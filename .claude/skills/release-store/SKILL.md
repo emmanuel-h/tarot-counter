@@ -162,7 +162,50 @@ gh release upload "$TAG" \
 
 ---
 
-## Step 9 — Display the artifact download URL
+## Step 9 — Generate Play Store release notes and copy to clipboard
+
+Get today's commits (feat/fix only, excluding chores/refactors/docs):
+
+```bash
+git log --after="$(date +%Y-%m-%d)T00:00:00" --oneline --no-merges \
+  | grep -E '^[a-f0-9]+ (feat|fix)' \
+  | sed 's/^[a-f0-9]* //'
+```
+
+From those commit subjects, write concise release notes:
+- In **French** (`<fr-FR>` tags) — bullet points, user-facing language, imperative style
+- In **English** (`<en-US>` tags) — same bullets translated
+
+Format:
+```
+<fr-FR>
+- …
+</fr-FR>
+
+<en-US>
+- …
+</en-US>
+```
+
+Copy the full block to clipboard:
+
+```bash
+NOTES="<fr-FR>
+- …
+</fr-FR>
+
+<en-US>
+- …
+</en-US>"
+
+WAYLAND_DISPLAY=wayland-0 wl-copy "$NOTES"
+```
+
+Display the notes to the user and confirm they are in the clipboard.
+
+---
+
+## Step 10 — Display the artifact download URL
 
 ```bash
 gh release view "$TAG" --json assets \
@@ -186,5 +229,6 @@ End with a short summary block:
 ✓ Version bumped  : $CURRENT_NAME (code $CURRENT_CODE) → $NEW_NAME (code $NEW_CODE)
 ✓ AAB built       : app/build/outputs/bundle/release/app-release.aab
 ✓ GitHub release  : https://github.com/emmanuel-h/tarot-counter/releases/tag/$TAG
-✓ Download URL    : <url from step 9>
+✓ Download URL    : <url from step 10>
+✓ Release notes   : copied to clipboard
 ```
