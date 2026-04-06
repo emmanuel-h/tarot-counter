@@ -126,6 +126,18 @@ are supplied via `~/.gradle/gradle.properties` (local) or environment variables 
 
 See [`docs/release-signing.md`](docs/release-signing.md) for full setup instructions and [`docs/app-bundle.md`](docs/app-bundle.md) for App Bundle / Play Store submission details.
 
+### Publishing a Release
+
+Use the `/release-store` skill to automate the full release workflow in one step:
+
+```
+/release-store minor    # bump minor version (default)
+/release-store major    # bump major version
+/release-store hotfix   # bump patch version
+```
+
+The skill bumps `versionCode` / `versionName` in `app/build.gradle.kts`, builds the signed `.aab`, creates a GitHub release with auto-generated notes, and uploads the artifact. See [`docs/release-workflow.md`](docs/release-workflow.md) for details.
+
 ### R8 Minification
 
 Release builds automatically minify and shrink resources (`isMinifyEnabled = true`,
@@ -179,7 +191,8 @@ TarotCounter/
 │   ├── score-color.md        # Score colour-coding convention and scoreColor() helper
 │   ├── theme.md              # Colour palette rationale and dynamic-colour policy
 │   ├── app-name.md           # App name branding and locale-specific launcher labels
-│   └── release-signing.md    # Release signing setup for local dev and CI
+│   ├── release-signing.md    # Release signing setup for local dev and CI
+│   └── release-workflow.md   # /release-store skill: full publish workflow
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
 ├── CLAUDE.md               # AI assistant instructions
@@ -201,3 +214,4 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/back-navigation.md`](docs/back-navigation.md) — system back button behaviour per screen, BackHandler implementation, confirmation dialog
 - [`docs/app-name.md`](docs/app-name.md) — app name branding, locale-specific launcher labels, and how the system name and in-app title relate
 - [`docs/release-signing.md`](docs/release-signing.md) — how to configure release signing for local builds and CI/CD pipelines
+- [`docs/release-workflow.md`](docs/release-workflow.md) — automated release workflow via `/release-store` skill (version bump, AAB build, GitHub release)
