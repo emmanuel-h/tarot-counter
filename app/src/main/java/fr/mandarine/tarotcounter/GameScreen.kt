@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -593,26 +594,33 @@ fun GameScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // End Game: navigate to the Final Score screen.
-            AppOutlinedButton(
+            // End Game: filled button with error container color (red) so the user
+            // immediately understands that clicking this terminates the game.
+            AppButton(
                 text     = strings.endGame,
                 onClick  = {
                     viewModel.endGame()
                     showFinalScore = true
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                colors   = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor   = MaterialTheme.colorScheme.onErrorContainer
+                )
             )
-            // Skip Round: record a skipped round and advance to the next.
-            AppButton(
+            // Skip Round: outlined button — secondary/neutral action visually distinct
+            // from the filled primary (Confirm) and filled error (End Game) buttons.
+            AppOutlinedButton(
                 text     = strings.skipRound,
                 onClick  = { viewModel.recordSkipped() },
                 modifier = Modifier.weight(1f)
             )
-            // Confirm: submit the current round details.
-            // Disabled when no contract is selected, or when the points value is invalid.
+            // Confirm: primary filled button — the main action.
+            // Disabled until a contract is selected, a score has been entered,
+            // and the points value is valid (≤ 91).
             AppButton(
                 text     = strings.confirmRound,
-                enabled  = selectedContract != null && !pointsError,
+                enabled  = selectedContract != null && pointsText.isNotBlank() && !pointsError,
                 modifier = Modifier.weight(1f),
                 onClick  = {
                     // Guard: selectedContract is already checked by `enabled`, but Kotlin
