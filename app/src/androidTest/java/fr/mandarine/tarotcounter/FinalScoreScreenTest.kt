@@ -2,7 +2,7 @@ package fr.mandarine.tarotcounter
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodes
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -161,7 +161,7 @@ class FinalScoreScreenTest {
             assertTrue(
                 "$name should appear in the screen",
                 composeTestRule.onAllNodes(
-                    androidx.compose.ui.test.hasText(name)
+                    hasText(name)
                 ).fetchSemanticsNodes().isNotEmpty()
             )
         }
