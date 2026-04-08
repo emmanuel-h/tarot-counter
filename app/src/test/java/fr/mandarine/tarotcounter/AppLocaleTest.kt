@@ -98,13 +98,14 @@ class AppLocaleTest {
 
     @Test
     fun en_winnerResult_formats_correctly() {
-        val result = appStrings(AppLocale.EN).winnerResult("Alice", "+", 150)
+        // formattedScore is pre-formatted via Int.withSign() at the call site.
+        val result = appStrings(AppLocale.EN).winnerResult("Alice", "+150")
         assertEquals("Winner: Alice (+150)", result)
     }
 
     @Test
     fun fr_winnerResult_formats_correctly() {
-        val result = appStrings(AppLocale.FR).winnerResult("Alice", "+", 150)
+        val result = appStrings(AppLocale.FR).winnerResult("Alice", "+150")
         assertEquals("Gagnant : Alice (+150)", result)
     }
 
@@ -275,16 +276,16 @@ class AppLocaleTest {
 
     @Test
     fun scoreDisplay_formats_positive_score() {
-        // The sign is passed in by the caller so the lambda only concatenates.
-        val en = appStrings(AppLocale.EN).scoreDisplay("+", 120)
-        val fr = appStrings(AppLocale.FR).scoreDisplay("+", 120)
+        // formattedScore is pre-formatted via Int.withSign() at the call site.
+        val en = appStrings(AppLocale.EN).scoreDisplay("+120")
+        val fr = appStrings(AppLocale.FR).scoreDisplay("+120")
         assertEquals("+120 pts", en)
         assertEquals("Both locales must produce the same scoreDisplay string", en, fr)
     }
 
     @Test
     fun scoreDisplay_formats_negative_score() {
-        assertEquals("-45 pts", appStrings(AppLocale.EN).scoreDisplay("-", 45))
+        assertEquals("-45 pts", appStrings(AppLocale.EN).scoreDisplay("-45"))
     }
 
     // ── chelemPlaysFirst lambda ───────────────────────────────────────────────

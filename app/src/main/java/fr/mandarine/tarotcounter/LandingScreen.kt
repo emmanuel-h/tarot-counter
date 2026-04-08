@@ -433,9 +433,7 @@ private fun PastGameCard(game: SavedGame, strings: AppStrings) {
         winners.isEmpty() -> strings.noRoundsPlayed
         winners.size == 1 -> {
             val score = game.finalScores[winners.first()] ?: 0
-            // Prepend "+" for positive scores so the sign is always explicit.
-            val sign = if (score >= 0) "+" else ""
-            strings.winnerResult(winners.first(), sign, score)
+            strings.winnerResult(winners.first(), score.withSign())
         }
         else -> strings.tieResult(winners.joinToString(" & "))
     }

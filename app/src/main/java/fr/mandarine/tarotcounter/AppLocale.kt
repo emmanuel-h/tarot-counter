@@ -51,7 +51,8 @@ data class AppStrings(
     val resume: String,
     val noRoundsPlayed: String,
     // Single-winner summary in the past-game card, e.g. "Winner: Alice (+120)".
-    val winnerResult: (name: String, sign: String, score: Int) -> String,
+    // `formattedScore` is already sign-prefixed (e.g. "+120") via Int.withSign().
+    val winnerResult: (name: String, formattedScore: String) -> String,
     // Tie summary in the past-game card, e.g. "Tie: Alice & Bob".
     val tieResult: (names: String) -> String,
     // "1 round" vs "N rounds" shown in the past-game card footer.
@@ -122,7 +123,8 @@ data class AppStrings(
     val gameOver: String,
     val winner: String,
     // "+N pts" score label shown below the winner name.
-    val scoreDisplay: (sign: String, score: Int) -> String,
+    // `formattedScore` is already sign-prefixed (e.g. "+42") via Int.withSign().
+    val scoreDisplay: (formattedScore: String) -> String,
     val itsATie: String,
     val newGame: String,
 
@@ -165,7 +167,7 @@ val EnStrings = AppStrings(
     resumeRoundDetail     = { round, label -> "Round $round · $label" },
     resume                = "Resume",
     noRoundsPlayed        = "No rounds played",
-    winnerResult          = { name, sign, score -> "Winner: $name ($sign$score)" },
+    winnerResult          = { name, formattedScore -> "Winner: $name ($formattedScore)" },
     tieResult             = { names -> "Tie: $names" },
     roundCount            = { n -> if (n == 1) "1 round" else "$n rounds" },
 
@@ -209,7 +211,7 @@ val EnStrings = AppStrings(
     backToGame            = "Back to game",
     gameOver              = "Game Over",
     winner                = "Winner",
-    scoreDisplay          = { sign, score -> "$sign$score pts" },
+    scoreDisplay          = { formattedScore -> "$formattedScore pts" },
     itsATie               = "It's a tie!",
     newGame               = "New Game",
 
@@ -243,7 +245,7 @@ val FrStrings = AppStrings(
     resumeRoundDetail     = { round, label -> "Manche $round · $label" },
     resume                = "Reprendre",
     noRoundsPlayed        = "Aucune manche jouée",
-    winnerResult          = { name, sign, score -> "Gagnant : $name ($sign$score)" },
+    winnerResult          = { name, formattedScore -> "Gagnant : $name ($formattedScore)" },
     tieResult             = { names -> "Égalité : $names" },
     roundCount            = { n -> if (n == 1) "1 manche" else "$n manches" },
 
@@ -287,7 +289,7 @@ val FrStrings = AppStrings(
     backToGame            = "Retour à la partie",
     gameOver              = "Fin de partie",
     winner                = "Gagnant·e",
-    scoreDisplay          = { sign, score -> "$sign$score pts" },
+    scoreDisplay          = { formattedScore -> "$formattedScore pts" },
     itsATie               = "Égalité !",
     newGame               = "Nouvelle partie",
 

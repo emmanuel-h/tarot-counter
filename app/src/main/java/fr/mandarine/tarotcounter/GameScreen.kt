@@ -648,7 +648,6 @@ private fun CompactScoreboard(
             for (name in displayNames) {
                 // Sum every round's score for this player (0 for skipped rounds).
                 val total = roundHistory.sumOf { it.playerScores[name] ?: 0 }
-                val sign  = if (total >= 0) "+" else ""
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -658,7 +657,7 @@ private fun CompactScoreboard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text  = "$sign$total",
+                        text  = total.withSign(),
                         style = MaterialTheme.typography.titleMedium,
                         // Green for positive/zero scores, red for negative.
                         color = scoreColor(total)
