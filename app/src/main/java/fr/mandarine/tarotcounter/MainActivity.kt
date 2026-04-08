@@ -18,6 +18,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import java.util.Locale
 
+// Represents which screen is currently shown in the app.
+// SETUP = the player name entry screen.
+// GAME  = the active game session.
+enum class Screen { SETUP, GAME }
+
 // MainActivity is the entry point of every Android app.
 // It extends ComponentActivity, which is the base class for activities
 // that use Jetpack Compose for their UI.
