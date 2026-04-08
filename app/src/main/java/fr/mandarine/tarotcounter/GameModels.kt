@@ -288,6 +288,70 @@ fun computeFinalTotals(
         roundHistory.sumOf { it.playerScores.getOrDefault(name, 0) }
     }
 
+// Holds the data for one row in the score table — used by buildScoreTableData()
+// and consumed by the ScoreTableRow composable in UiComponents.kt.
+//
+// `cells`       : formatted text for every column (round number first, then player totals).
+// `scoreValues` : raw integers for colour coding — null at index 0 (round-number column
+//                 has no semantic colour), non-null elsewhere.
+data class ScoreRowData(
+    val cells: List<String>,
+    val scoreValues: List<Int?>
+)
+
+// Builds the list of per-round data rows for the score table.
+//
+// This pure function (no Compose/UI dependencies) was extracted to eliminate the
+// identical running-totals accumulation loop that was copy-pasted between
+// ScoreHistoryScreen and FinalScoreScreen (issue #75). Keeping it here means any
+// bug fix or formatting change automatically applies to both screens, and it can
+// be unit-tested on the JVM without an emulator.
+//
+// Algorithm: iterate rounds in order, maintaining a mutable running-total map.
+// For each round:
+//   1. Add the round's per-player delta to the running totals.
+//   2. Format each total as "+N" (≥0) or "-N" (<0).
+//   3. Emit a ScoreRowData with the formatted strings and the raw integer totals.
+//
+// Skipped rounds (playerScores == emptyMap) contribute 0 to every player's total.
+fun buildScoreTableData(
+    playerNames: List<String>,
+    roundHistory: List<RoundResult>
+): List<ScoreRowData> {
+    // Start every player at 0 and accumulate as we iterate.
+    val runningTotals = playerNames.associateWith { 0 }.toMutableMap()
+
+    return roundHistory.map { round ->
+        // Add this round's contribution to each player's running total.
+        for (name in playerNames) {
+            runningTotals[name] =
+                (runningTotals[name] ?: 0) + round.playerScores.getOrDefault(name, 0)
+        }
+
+        // Formatted cell strings: round number first, then cumulative totals with sign.
+        val cells = buildList {
+            add(round.roundNumber.toString())
+            for (name in playerNames) {
+                val total = runningTotals[name] ?: 0
+                // Always show the sign so positive/negative is immediately visible.
+                val sign = if (total >= 0) "+" else ""
+                add("$sign$total")
+            }
+        }
+
+        // Parallel raw integers for colour coding.
+        // Index 0 is null — the round-number column has no semantic colour.
+        val scoreValues: List<Int?> = buildList {
+            add(null)
+            for (name in playerNames) {
+                add(runningTotals[name] ?: 0)
+            }
+        }
+
+        ScoreRowData(cells = cells, scoreValues = scoreValues)
+    }
+}
+
 // Returns the name(s) of the player(s) with the highest cumulative total.
 //
 // Returns an empty list when `totals` is empty (no players).

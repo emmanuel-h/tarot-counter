@@ -4,8 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
-import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,17 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import fr.mandarine.tarotcounter.ui.theme.GoldWinnerDark
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-
-// Width of the "Round" column — round numbers rarely exceed two digits.
-private val FINAL_ROUND_COL_WIDTH: Dp = 64.dp
-
-// Width of each player column — must fit score strings like "+1000" and names
-// up to about 8 characters.
-private val FINAL_PLAYER_COL_WIDTH: Dp = 80.dp
 
 /**
  * FinalScoreScreen shows the game results when the player ends the game early
@@ -274,50 +262,21 @@ fun FinalScoreScreen(
                 ) {
                 // Header row: localized "Round" label + one header per player name.
                 // No score values for the header row — labels use the default colour.
-                FinalScoreTableRow(
-                    cells = listOf(strings.roundColumn) + playerNames,
-                    isHeader = true,
+                ScoreTableRow(
+                    cells               = listOf(strings.roundColumn) + playerNames,
+                    isHeader            = true,
                     winnerColumnIndices = winnerColumnIndices
                 )
                 HorizontalDivider()
 
-                // Accumulate running totals the same way ScoreHistoryScreen does.
-                // We start every player at 0 and add their per-round delta on each iteration.
-                val runningTotals = playerNames.associateWith { 0 }.toMutableMap()
-
-                for (round in roundHistory) {
-                    // Add this round's contribution to each player's running total.
-                    // Skipped rounds have an empty `playerScores` map, so they add 0.
-                    for (name in playerNames) {
-                        runningTotals[name] =
-                            (runningTotals[name] ?: 0) + round.playerScores.getOrDefault(name, 0)
-                    }
-
-                    // Build the cell list: round number first, then cumulative score per player.
-                    val cells = buildList {
-                        add(round.roundNumber.toString())
-                        for (name in playerNames) {
-                            val total = runningTotals[name] ?: 0
-                            // Always show the sign so positive/negative is immediately clear.
-                            val sign = if (total >= 0) "+" else ""
-                            add("$sign$total")
-                        }
-                    }
-
-                    // Parallel list of raw score integers for colour coding.
-                    // Index 0 is null (round-number column); indices 1+ hold running totals.
-                    val scoreValues: List<Int?> = buildList {
-                        add(null) // round-number column — no colour
-                        for (name in playerNames) {
-                            add(runningTotals[name] ?: 0)
-                        }
-                    }
-
-                    FinalScoreTableRow(
-                        cells = cells,
-                        isHeader = false,
-                        winnerColumnIndices = winnerColumnIndices,
-                        scoreValues = scoreValues
+                // buildScoreTableData() (GameModels.kt) handles the running-totals
+                // accumulation loop — shared with ScoreHistoryScreen (issue #75).
+                for (row in buildScoreTableData(playerNames, roundHistory)) {
+                    ScoreTableRow(
+                        cells               = row.cells,
+                        isHeader            = false,
+                        scoreValues         = row.scoreValues,
+                        winnerColumnIndices = winnerColumnIndices
                     )
                 }
             }   // end Column
@@ -368,79 +327,3 @@ fun FinalScoreScreen(
     }   // end Box
 }
 
-/**
- * A single horizontal row in the final score table.
- *
- * Winner columns (listed in [winnerColumnIndices]) receive a gold/amber `secondary`
- * background so they stand out throughout the table — changed from the softer
- * `secondaryContainer` to the saturated amber token as requested in issue #4.
- * Their text is rendered bold for extra emphasis.
- *
- * Score cells (data rows, non-round-number columns) apply semantic colour coding
- * via [scoreColor]: green for positive/zero, red for negative.
- *
- * The first column (index 0) is the "Round" column and uses [FINAL_ROUND_COL_WIDTH];
- * all other columns use [FINAL_PLAYER_COL_WIDTH].
- *
- * @param cells               Text content for each cell, left-to-right.
- * @param isHeader            True for the column-header row (all cells rendered bold).
- * @param winnerColumnIndices Zero-based column indices to highlight as winner column(s).
- * @param scoreValues         Optional parallel list of raw score integers.
- *                            A null entry means "use default colour"; a non-null entry
- *                            triggers [scoreColor] for green/red coding.
- */
-@Composable
-private fun FinalScoreTableRow(
-    cells: List<String>,
-    isHeader: Boolean,
-    winnerColumnIndices: Set<Int>,
-    scoreValues: List<Int?>? = null
-) {
-    Row {
-        cells.forEachIndexed { index, text ->
-            val cellWidth = if (index == 0) FINAL_ROUND_COL_WIDTH else FINAL_PLAYER_COL_WIDTH
-            val isWinnerColumn = index in winnerColumnIndices
-
-            // Winner columns get a gold/amber background.
-            // Light mode: saturated `secondary` (rich amber) — vivid enough on parchment.
-            // Dark mode: `GoldWinnerDark` (muted dark gold) — `secondary` (GoldLight) is
-            //            too flashy on the dark felt surface, so we use a deeper tone.
-            val winnerBg = if (isSystemInDarkTheme()) GoldWinnerDark
-                           else MaterialTheme.colorScheme.secondary
-            val bgModifier = if (isWinnerColumn) Modifier.background(winnerBg) else Modifier
-
-            // Semantic text colour for score cells: green (positive) or red (negative).
-            // Header row and round-number column always use the default colour.
-            // On winner columns the text is drawn on `secondary` (amber); the score
-            // colour (primary = green, error = red) still provides enough contrast.
-            val textColor = if (!isHeader && scoreValues != null) {
-                val value = scoreValues.getOrNull(index)
-                if (value != null) scoreColor(value) else Color.Unspecified
-            } else {
-                Color.Unspecified
-            }
-
-            Box(
-                modifier = Modifier
-                    .width(cellWidth)
-                    .then(bgModifier)
-                    .padding(vertical = 8.dp, horizontal = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = text,
-                    // Bold for the header row and for every cell in the winner's column.
-                    style = if (isHeader || isWinnerColumn) {
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                    } else {
-                        MaterialTheme.typography.bodyMedium
-                    },
-                    color = textColor,
-                    textAlign = TextAlign.Center,
-                    // Prevent long names from wrapping and making rows uneven.
-                    maxLines = 1
-                )
-            }
-        }
-    }
-}

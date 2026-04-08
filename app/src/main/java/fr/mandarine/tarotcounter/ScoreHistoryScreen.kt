@@ -3,7 +3,6 @@ package fr.mandarine.tarotcounter
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,22 +17,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-
-// Width for the "Round" / "Manche" column — short because round numbers only go up to ~99.
-private val ROUND_COL_WIDTH: Dp = 64.dp
-
-// Width for each player column — wide enough for score strings like "+1000"
-// and player names up to about 8 characters.
-private val PLAYER_COL_WIDTH: Dp = 80.dp
 
 /**
  * ScoreHistoryScreen displays the score evolution as a table.
@@ -116,46 +102,16 @@ fun ScoreHistoryScreen(
                 )
                 HorizontalDivider()
 
-            // `runningTotals` accumulates each player's score as we iterate rounds.
-            // We start everyone at 0 and add their per-round delta on each iteration.
-            val runningTotals = playerNames.associateWith { 0 }.toMutableMap()
-
-            for (round in roundHistory) {
-                // Add this round's scores to each player's running total.
-                // `getOrDefault(name, 0)` returns 0 for skipped rounds, which have an
-                // empty `playerScores` map — so skipped rounds don't change totals.
-                for (name in playerNames) {
-                    runningTotals[name] =
-                        (runningTotals[name] ?: 0) + round.playerScores.getOrDefault(name, 0)
+                // buildScoreTableData() (GameModels.kt) accumulates the running totals and
+                // formats each cell — the loop that was previously duplicated here is now
+                // shared with FinalScoreScreen (issue #75).
+                for (row in buildScoreTableData(playerNames, roundHistory)) {
+                    ScoreTableRow(
+                        cells       = row.cells,
+                        isHeader    = false,
+                        scoreValues = row.scoreValues
+                    )
                 }
-
-                // Build the cell list: round number first, then cumulative score per player.
-                val cells = buildList {
-                    add(round.roundNumber.toString())
-                    for (name in playerNames) {
-                        val total = runningTotals[name] ?: 0
-                        // Prefix "+" for non-negative values so the sign is always visible.
-                        val sign = if (total >= 0) "+" else ""
-                        add("$sign$total")
-                    }
-                }
-
-                // Build a parallel list of integer score values for colour coding.
-                // Index 0 is null (round-number column has no semantic colour);
-                // indices 1+ hold the running total so ScoreTableRow can call scoreColor().
-                val scoreValues: List<Int?> = buildList {
-                    add(null) // round-number column — no colour
-                    for (name in playerNames) {
-                        add(runningTotals[name] ?: 0)
-                    }
-                }
-
-                ScoreTableRow(
-                    cells = cells,
-                    isHeader = false,
-                    scoreValues = scoreValues
-                )
-            }
         }
 
             // Arrow hint: floats at the top-right corner of the Box.
@@ -177,59 +133,3 @@ fun ScoreHistoryScreen(
     }   // end (centering) Box
 }
 
-/**
- * A single horizontal row in the score table.
- *
- * The first cell (index 0) uses [ROUND_COL_WIDTH]; all other cells use [PLAYER_COL_WIDTH].
- * This keeps the "Round" column compact while giving player names room to breathe.
- *
- * @param cells       Text content for each cell in left-to-right order.
- * @param isHeader    If true, renders the text in bold (used for the header row).
- * @param scoreValues Optional parallel list of raw score integers used for colour coding.
- *                    A null entry (or a null list) means "use the default text colour".
- *                    Non-null entries are passed to [scoreColor] so positive values appear
- *                    green and negative values appear red.
- */
-@Composable
-private fun ScoreTableRow(
-    cells: List<String>,
-    isHeader: Boolean,
-    scoreValues: List<Int?>? = null
-) {
-    Row {
-        cells.forEachIndexed { index, text ->
-            // First column ("Round") is narrower; player columns are wider.
-            val cellWidth = if (index == 0) ROUND_COL_WIDTH else PLAYER_COL_WIDTH
-
-            // Determine the text colour: semantic colour for score cells, default otherwise.
-            // `Color.Unspecified` tells Compose to inherit from the parent (i.e. default colour).
-            val textColor = if (!isHeader && scoreValues != null) {
-                val value = scoreValues.getOrNull(index)
-                if (value != null) scoreColor(value) else Color.Unspecified
-            } else {
-                Color.Unspecified
-            }
-
-            Box(
-                modifier = Modifier
-                    .width(cellWidth)
-                    .padding(vertical = 8.dp, horizontal = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = text,
-                    style = if (isHeader) {
-                        // Bold weight for the header row so column labels stand out.
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                    } else {
-                        MaterialTheme.typography.bodyMedium
-                    },
-                    color = textColor,
-                    textAlign = TextAlign.Center,
-                    // Prevent very long names from wrapping and making rows uneven.
-                    maxLines = 1
-                )
-            }
-        }
-    }
-}

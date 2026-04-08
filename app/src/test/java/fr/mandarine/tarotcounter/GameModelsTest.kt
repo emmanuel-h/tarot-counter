@@ -1078,4 +1078,139 @@ class GameModelsTest {
         assertEquals(0, 91 - 91)
         assertFalse(takerWon(bouts = 3, points = 0))  // loses even with 3 bouts (needs ≥36)
     }
+
+    // ── buildScoreTableData ───────────────────────────────────────────────────
+    //
+    // Spec: the function accumulates per-round deltas into running totals, formats
+    // each total with an explicit sign (+N / -N), and returns one ScoreRowData per
+    // round with (a) the formatted cell strings and (b) raw integer values for
+    // colour coding. It was extracted from ScoreHistoryScreen / FinalScoreScreen
+    // in issue #75 to eliminate the duplicated running-totals loop.
+
+    @Test
+    fun `buildScoreTableData returns empty list when roundHistory is empty`() {
+        val result = buildScoreTableData(listOf("Alice", "Bob"), emptyList())
+        assertTrue("Expected empty list for empty history", result.isEmpty())
+    }
+
+    @Test
+    fun `buildScoreTableData returns one row per round`() {
+        val rounds = listOf(
+            RoundResult(1, "Alice", null, null, null,
+                mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)),
+            RoundResult(2, "Bob",   null, null, null,
+                mapOf("Alice" to -30, "Bob" to 15, "Charlie" to 15))
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob", "Charlie"), rounds)
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `buildScoreTableData first cell is the round number`() {
+        val rounds = listOf(
+            RoundResult(3, "Alice", null, null, null,
+                mapOf("Alice" to 10, "Bob" to -10))
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob"), rounds)
+        assertEquals("3", result[0].cells[0])
+    }
+
+    @Test
+    fun `buildScoreTableData formats positive total with plus sign`() {
+        val rounds = listOf(
+            RoundResult(1, "Alice", null, null, null,
+                mapOf("Alice" to 50, "Bob" to -25))
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob"), rounds)
+        // cells[1] is Alice's cumulative total after round 1 → +50
+        assertEquals("+50", result[0].cells[1])
+    }
+
+    @Test
+    fun `buildScoreTableData formats negative total without plus sign`() {
+        val rounds = listOf(
+            RoundResult(1, "Alice", null, null, null,
+                mapOf("Alice" to 50, "Bob" to -25))
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob"), rounds)
+        // cells[2] is Bob's cumulative total after round 1 → -25
+        assertEquals("-25", result[0].cells[2])
+    }
+
+    @Test
+    fun `buildScoreTableData formats zero total with plus sign`() {
+        val rounds = listOf(
+            RoundResult(1, "Alice", null, null, null,
+                mapOf("Alice" to 0, "Bob" to 0))
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob"), rounds)
+        assertEquals("+0", result[0].cells[1])
+        assertEquals("+0", result[0].cells[2])
+    }
+
+    @Test
+    fun `buildScoreTableData accumulates running totals across rounds`() {
+        // Round 1: Alice +50, Bob -25  →  Alice 50, Bob -25
+        // Round 2: Alice -30, Bob +15  →  Alice 20, Bob -10
+        val rounds = listOf(
+            RoundResult(1, "Alice", null, null, null,
+                mapOf("Alice" to 50, "Bob" to -25)),
+            RoundResult(2, "Bob",   null, null, null,
+                mapOf("Alice" to -30, "Bob" to 15))
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob"), rounds)
+        // After round 1
+        assertEquals("+50", result[0].cells[1])
+        assertEquals("-25", result[0].cells[2])
+        // After round 2 — cumulative, not just the round delta
+        assertEquals("+20", result[1].cells[1])
+        assertEquals("-10", result[1].cells[2])
+    }
+
+    @Test
+    fun `buildScoreTableData scoreValues index 0 is null (round-number column)`() {
+        val rounds = listOf(
+            RoundResult(1, "Alice", null, null, null,
+                mapOf("Alice" to 50, "Bob" to -25))
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob"), rounds)
+        // Index 0 is the round-number column — no semantic colour.
+        assertNull(result[0].scoreValues[0])
+    }
+
+    @Test
+    fun `buildScoreTableData scoreValues for player columns hold raw integer totals`() {
+        val rounds = listOf(
+            RoundResult(1, "Alice", null, null, null,
+                mapOf("Alice" to 50, "Bob" to -25))
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob"), rounds)
+        assertEquals(50,  result[0].scoreValues[1])
+        assertEquals(-25, result[0].scoreValues[2])
+    }
+
+    @Test
+    fun `buildScoreTableData skipped rounds (empty playerScores) do not change totals`() {
+        // Round 1: normal round — Alice +50, Bob -25.
+        // Round 2: skipped (no playerScores) — totals unchanged.
+        val rounds = listOf(
+            RoundResult(1, "Alice", null, null, null,
+                mapOf("Alice" to 50, "Bob" to -25)),
+            RoundResult(2, "Bob",   null, null, null)  // skipped: playerScores = emptyMap()
+        )
+        val result = buildScoreTableData(listOf("Alice", "Bob"), rounds)
+        // Round 2 row: totals must still be +50 / -25 (unchanged from round 1).
+        assertEquals("+50", result[1].cells[1])
+        assertEquals("-25", result[1].cells[2])
+    }
+
+    @Test
+    fun `buildScoreTableData cells list length equals playerCount plus 1`() {
+        // 1 extra cell for the round-number column.
+        val players = listOf("Alice", "Bob", "Charlie")
+        val rounds  = listOf(RoundResult(1, "Alice", null, null, null))
+        val result  = buildScoreTableData(players, rounds)
+        assertEquals(players.size + 1, result[0].cells.size)
+        assertEquals(players.size + 1, result[0].scoreValues.size)
+    }
 }

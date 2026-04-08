@@ -142,6 +142,47 @@ SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
 
 ---
 
+## ScoreTableRow
+
+```kotlin
+@Composable
+fun ScoreTableRow(
+    cells: List<String>,
+    isHeader: Boolean,
+    scoreValues: List<Int?>? = null,
+    winnerColumnIndices: Set<Int> = emptySet()
+)
+```
+
+A single horizontal row in a score table. Used by both `ScoreHistoryScreen` and `FinalScoreScreen`.
+
+- **Column widths:** index 0 ("Round") → `SCORE_TABLE_ROUND_COL_WIDTH` (64 dp); all other columns → `SCORE_TABLE_PLAYER_COL_WIDTH` (80 dp).
+- **`isHeader`:** renders all text bold (for the header row).
+- **`scoreValues`:** parallel list of raw integers for semantic colour coding via `scoreColor()`. Pass `null` or include `null` entries to skip colouring for that cell. Index 0 should always be `null` (round-number column has no colour).
+- **`winnerColumnIndices`:** zero-based column indices highlighted with a gold/amber background and bold text. Defaults to `emptySet()` (no highlighting), so `ScoreHistoryScreen` can use this composable without any extra arguments. `FinalScoreScreen` passes the winner column indices.
+
+**Usage (ScoreHistoryScreen — no winner highlighting):**
+```kotlin
+ScoreTableRow(
+    cells    = listOf(strings.roundColumn) + playerNames,
+    isHeader = true
+)
+```
+
+**Usage (FinalScoreScreen — with winner highlighting):**
+```kotlin
+ScoreTableRow(
+    cells               = row.cells,
+    isHeader            = false,
+    scoreValues         = row.scoreValues,
+    winnerColumnIndices = winnerColumnIndices
+)
+```
+
+The data for each row is produced by `buildScoreTableData()` in `GameModels.kt`.
+
+---
+
 ## FormLabel
 
 ```kotlin
