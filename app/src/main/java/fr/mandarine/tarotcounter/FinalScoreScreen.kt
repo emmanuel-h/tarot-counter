@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -128,9 +129,15 @@ fun FinalScoreScreen(
         .mapIndexedNotNull { i, name -> if (name in winners) i + 1 else null }
         .toSet()
 
+    // Box centers the content Column horizontally on wide screens (tablets in landscape).
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
+    ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = Modifier
+            .widthIn(max = MAX_CONTENT_WIDTH)
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -357,7 +364,8 @@ fun FinalScoreScreen(
             onClick  = onBack,
             modifier = Modifier.fillMaxWidth()
         )
-    }
+    }   // end Column
+    }   // end Box
 }
 
 /**

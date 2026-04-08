@@ -52,6 +52,12 @@ import kotlinx.coroutines.launch
 //       button label automatically shrinks to fit its container.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Maximum content width for all screens.
+// On large screens (e.g. 10-inch tablets in landscape) the content is constrained
+// to this width and centered horizontally so it never stretches uncomfortably wide.
+// 600 dp matches the Material Design "compact/medium" breakpoint guideline.
+internal val MAX_CONTENT_WIDTH = 600.dp
+
 /**
  * Returns a [MutableFloatState] to be shared across several [AutoSizeText] instances that sit
  * inside the same fixed-width row (e.g. [SingleChoiceSegmentedButtonRow]).
