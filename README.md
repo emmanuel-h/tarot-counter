@@ -64,15 +64,16 @@ Single-module Jetpack Compose app — all source lives in `:app` under `fr.manda
 
 ```
 app/src/main/java/fr/mandarine/tarotcounter/
-├── MainActivity.kt        # Entry point, top-level navigation state, ViewModel wiring
-├── Navigation.kt          # Screen enum (SETUP / GAME)
-├── GameModels.kt          # Data models & pure game logic (no Android deps)
-├── SavedGame.kt           # Serializable snapshot of a completed game
+├── MainActivity.kt        # Entry point, Screen enum (SETUP / GAME), top-level navigation, ViewModel wiring
+├── AppLocale.kt           # Locale enum (EN / FR) + CompositionLocal provider
+├── AppTheme.kt            # Theme enum (LIGHT / DARK) + CompositionLocal provider
+├── AppStrings.kt          # All user-visible strings, parameterised by locale
+├── GameModels.kt          # Data models, serializable SavedGame/InProgressGame, pure game logic (no Android deps)
 ├── GameStorage.kt         # DataStore read/write + JSON serialization
-├── GameViewModel.kt       # Exposes past games as StateFlow, fires save coroutines
+├── GameViewModel.kt       # StateFlows for games, locale, theme; save/load coroutines
 ├── LandingScreen.kt       # Player setup UI + Past Games list
-├── GameScreen.kt          # Round management, taker rotation, history, End Game button
-├── RoundDetailsForm.kt    # Scoring details form
+├── GameScreen.kt          # Round management, taker rotation, details form, history, End Game button
+├── ScreenHeader.kt        # Shared back-arrow header composable
 ├── ScoreHistoryScreen.kt  # Round-by-round cumulative score table
 ├── FinalScoreScreen.kt    # End-of-game results: winner card + full score table
 ├── UiComponents.kt        # Shared UI: AppButton, AppOutlinedButton, AppTextButton, AutoSizeText
