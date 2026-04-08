@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -375,7 +376,7 @@ private fun ResumeGameCard(
             Box(
                 modifier = Modifier
                     .width(4.dp)
-                    .height(120.dp)           // tall enough to cover typical card content
+                    .fillMaxHeight()          // always spans the full card height, no matter how tall the content grows
                     .background(accentColor)
             )
             Column(
