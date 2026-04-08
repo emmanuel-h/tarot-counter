@@ -48,8 +48,10 @@ Make the changes. Follow project conventions:
 - Run `./gradlew testDebugUnitTest` and fix any failures
 
 ## 7. Update documentation
+**This step is mandatory — never skip it.**
 - Add or update files in `docs/` describing the feature
 - Keep `README.md` in sync (game rules, screens, bonuses, architecture changes)
+- Include the documentation changes in the same commit as the code (or a follow-up commit on the same branch before opening the PR)
 
 ## 8. Commit and open a PR
 - Stage only the relevant files (never `.env` or secrets)
