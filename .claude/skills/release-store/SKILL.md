@@ -71,13 +71,8 @@ esac
 
 NEW_CODE=$((CURRENT_CODE + 1))
 
-# For major/minor releases, omit the ".0" patch segment to keep names tidy.
-# For hotfix, always include the patch segment.
-if [[ "$RELEASE_TYPE" == "hotfix" ]]; then
-  NEW_NAME="${VER_MAJOR}.${VER_MINOR}.${VER_PATCH}"
-else
-  NEW_NAME="${VER_MAJOR}.${VER_MINOR}"
-fi
+# Always use full semver (X.Y.Z) for all release types.
+NEW_NAME="${VER_MAJOR}.${VER_MINOR}.${VER_PATCH}"
 
 echo "Next:    versionCode=$NEW_CODE  versionName=$NEW_NAME"
 ```
@@ -151,7 +146,7 @@ TAG="v${NEW_NAME}"
 # Create an annotated release on GitHub.
 # --generate-notes asks GitHub to auto-generate a changelog from merged PRs/commits.
 gh release create "$TAG" \
-  --title "TarotCounter $NEW_NAME" \
+  --title "$TAG" \
   --generate-notes
 
 # Attach the signed App Bundle to the release.
