@@ -2,6 +2,36 @@
 
 All reusable UI building blocks live in `UiComponents.kt`.
 
+## MAX_CONTENT_WIDTH
+
+```kotlin
+internal val MAX_CONTENT_WIDTH = 600.dp
+```
+
+The maximum width used by every screen's content column. On large screens (10-inch tablets in landscape, ~960–1280 dp wide) the content is constrained to 600 dp and centered inside a `Box` so it never stretches uncomfortably wide.
+
+**Pattern used in each screen:**
+
+```kotlin
+Box(
+    modifier = modifier.fillMaxSize(),
+    contentAlignment = Alignment.TopCenter
+) {
+    Column(
+        modifier = Modifier
+            .widthIn(max = MAX_CONTENT_WIDTH)
+            .fillMaxWidth()
+            // … screen-specific scroll + padding modifiers
+    ) {
+        // screen content
+    }
+}
+```
+
+For `GameScreen` (which has a bottom action bar that must pin to the bottom), add `.fillMaxHeight()` after `.fillMaxWidth()`.
+
+---
+
 ## Rule: always use the App* button wrappers
 
 **Never use raw Material3 button composables directly.** Use the wrappers below instead so that every button label automatically shrinks to fit its container — no clipping, no wrapping, regardless of screen size or translation length.

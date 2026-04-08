@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -67,9 +69,15 @@ fun ScoreHistoryScreen(
     // Read the active locale and resolve all strings once at the top of the composable.
     val strings = appStrings(LocalAppLocale.current)
 
+    // Box centers the content Column horizontally on wide screens (tablets in landscape).
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
+    ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = Modifier
+            .widthIn(max = MAX_CONTENT_WIDTH)
+            .fillMaxWidth()
             // verticalScroll on the outer Column scrolls the entire page (header + table)
             // vertically, so long game histories never clip off-screen.
             .verticalScroll(rememberScrollState())
@@ -164,8 +172,9 @@ fun ScoreHistoryScreen(
                         .size(16.dp)
                 )
             }
-        }   // end Box
-    }
+        }   // end (inner table) Box
+    }   // end Column
+    }   // end (centering) Box
 }
 
 /**

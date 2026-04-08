@@ -83,6 +83,8 @@ app/src/main/java/fr/mandarine/tarotcounter/
 
 **Button convention**: never use raw `Button` / `OutlinedButton` / `TextButton` — always use `AppButton` / `AppOutlinedButton` / `AppTextButton` from `UiComponents.kt`. These wrappers automatically shrink labels to fit any screen width or translation length. See [`docs/ui-components.md`](docs/ui-components.md) for details.
 
+**Tablet & landscape support**: every screen wraps its content in a `Box(contentAlignment = TopCenter)` and constrains the inner column to `MAX_CONTENT_WIDTH = 600 dp` via `widthIn`. On phones the column fills the screen normally; on 10-inch tablets in landscape the content is centered with comfortable margins on each side.
+
 **Persistence**: completed games are saved to **DataStore** as JSON (via `kotlinx.serialization`). A `GameViewModel` holds the `StateFlow<List<SavedGame>>` that the setup screen observes.
 
 ## Tech Stack

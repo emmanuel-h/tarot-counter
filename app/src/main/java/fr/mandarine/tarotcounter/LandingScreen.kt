@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -39,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
@@ -87,14 +89,24 @@ fun LandingScreen(
     // Initialized with 3 empty strings matching the default player count.
     val playerNames = remember { mutableStateListOf("", "", "") }
 
+    // Box fills the whole screen and centers its child horizontally.
+    // This ensures the content Column is centered on wide screens (e.g. tablets in landscape)
+    // while still filling the entire width on small phones.
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
+    ) {
     // Column stacks children vertically. `verticalScroll` makes it scrollable
     // in case the content (name fields + button) doesn't fit on smaller screens.
+    // `widthIn(max = MAX_CONTENT_WIDTH)` caps the column at 600 dp so it doesn't
+    //   stretch across a full 10-inch tablet screen.
     // `imePadding()` shrinks this Column by the keyboard height when the IME is open.
     // `Arrangement.Top` is the correct choice for scrollable columns: centering fights
     // with overflow and can clip content when the keyboard reduces the available height.
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = Modifier
+            .widthIn(max = MAX_CONTENT_WIDTH)
+            .fillMaxWidth()
             .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),
@@ -319,7 +331,8 @@ fun LandingScreen(
                 AutoSizeText(text = strings.feedbackButton)
             }
         }
-    }
+    }   // end Column
+    }   // end Box
 }
 
 // ResumeGameCard is shown when there is an unfinished game saved from a previous session.
@@ -482,6 +495,16 @@ private fun PastGameCard(game: SavedGame, strings: AppStrings) {
 @Preview(showBackground = true)
 @Composable
 fun LandingScreenPreview() {
+    TarotCounterTheme {
+        LandingScreen()
+    }
+}
+
+// Tablet landscape preview — verifies that content is centered and not stretched
+// across the full width of a 10-inch tablet screen in landscape orientation.
+@Preview(showBackground = true, device = Devices.PIXEL_TABLET, widthDp = 1032, heightDp = 800)
+@Composable
+fun LandingScreenTabletLandscapePreview() {
     TarotCounterTheme {
         LandingScreen()
     }

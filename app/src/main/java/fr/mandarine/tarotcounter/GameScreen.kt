@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -129,11 +131,23 @@ fun GameScreen(
     // the contract chips, and — when a contract is selected — the details form,
     // without navigating away.
 
+    // Box fills the entire screen and centers the game Column horizontally.
+    // On tablets in landscape the Column is capped at MAX_CONTENT_WIDTH and
+    // centered, preventing the form fields and scoreboard from stretching
+    // uncomfortably wide.
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
+    ) {
     // Outer non-scrolling column: owns imePadding() so the entire layout (scrollable
     // content + bottom bar) shifts above the keyboard as a unit.
+    // fillMaxHeight() is required so the inner weight(1f) column and the
+    // pinned bottom bar share available vertical space correctly.
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = Modifier
+            .widthIn(max = MAX_CONTENT_WIDTH)
+            .fillMaxWidth()
+            .fillMaxHeight()
             .imePadding()
     ) {
         // Inner scrollable column: weight(1f) takes all vertical space above
@@ -603,6 +617,7 @@ fun GameScreen(
             )
         }
     }  // end outer Column
+    }  // end Box
 }
 
 // ── Compact scoreboard ────────────────────────────────────────────────────────
