@@ -638,6 +638,9 @@ private fun CompactScoreboard(
     )
     Spacer(Modifier.height(4.dp))
 
+    // Delegate total computation to the tested helper so both places stay in sync.
+    val totals = computeFinalTotals(displayNames, roundHistory)
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -646,8 +649,7 @@ private fun CompactScoreboard(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             for (name in displayNames) {
-                // Sum every round's score for this player (0 for skipped rounds).
-                val total = roundHistory.sumOf { it.playerScores[name] ?: 0 }
+                val total = totals[name] ?: 0
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
