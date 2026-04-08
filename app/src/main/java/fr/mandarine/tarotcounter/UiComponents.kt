@@ -1,7 +1,10 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -12,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
@@ -38,10 +42,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fr.mandarine.tarotcounter.ui.theme.GoldWinnerDark
 import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -436,6 +445,97 @@ fun CompactBonusGrid(
                         modifier = Modifier.weight(colWeight)
                     )
                 }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared score-table building blocks
+//
+// These were extracted from ScoreHistoryScreen and FinalScoreScreen (issue #75)
+// to eliminate duplication: any bug fix or visual change now applies everywhere.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Width for the "Round" / "Manche" column — short, as round numbers are at most two digits.
+internal val SCORE_TABLE_ROUND_COL_WIDTH: Dp = 64.dp
+
+// Width for each player column — wide enough for score strings like "+1000"
+// and player names up to about 8 characters.
+internal val SCORE_TABLE_PLAYER_COL_WIDTH: Dp = 80.dp
+
+/**
+ * A single horizontal row in a score table.
+ *
+ * Replaces the near-identical `ScoreTableRow` (ScoreHistoryScreen) and
+ * `FinalScoreTableRow` (FinalScoreScreen) that existed before issue #75.
+ *
+ * The first column (index 0) uses [SCORE_TABLE_ROUND_COL_WIDTH]; all others use
+ * [SCORE_TABLE_PLAYER_COL_WIDTH].
+ *
+ * @param cells               Text content for each cell in left-to-right order.
+ * @param isHeader            If true, renders all text in bold (header row).
+ * @param scoreValues         Optional parallel list of raw score integers for colour
+ *                            coding. A null entry means "use the default text colour";
+ *                            a non-null entry is passed to [scoreColor].
+ * @param winnerColumnIndices Zero-based column indices to highlight with a gold background
+ *                            and bold text. Defaults to an empty set (no highlighting),
+ *                            so ScoreHistoryScreen can use this composable unchanged.
+ */
+@Composable
+fun ScoreTableRow(
+    cells: List<String>,
+    isHeader: Boolean,
+    scoreValues: List<Int?>? = null,
+    winnerColumnIndices: Set<Int> = emptySet()
+) {
+    Row {
+        cells.forEachIndexed { index, text ->
+            // First column ("Round") is narrower; all player columns are wider.
+            val cellWidth = if (index == 0) SCORE_TABLE_ROUND_COL_WIDTH
+                            else           SCORE_TABLE_PLAYER_COL_WIDTH
+
+            val isWinnerColumn = index in winnerColumnIndices
+
+            // Winner columns: saturated amber in light mode, muted dark gold in dark mode.
+            // `Color.Unspecified` leaves the background transparent (no winner highlight).
+            val bgColor = when {
+                isWinnerColumn && isSystemInDarkTheme() -> GoldWinnerDark
+                isWinnerColumn                          -> MaterialTheme.colorScheme.secondary
+                else                                    -> Color.Unspecified
+            }
+            val bgModifier = if (bgColor != Color.Unspecified) Modifier.background(bgColor)
+                             else Modifier
+
+            // Semantic colour for score cells: green (positive/zero) or red (negative).
+            // Header rows and the round-number column (null scoreValue) always use default.
+            val textColor = if (!isHeader && scoreValues != null) {
+                val value = scoreValues.getOrNull(index)
+                if (value != null) scoreColor(value) else Color.Unspecified
+            } else {
+                Color.Unspecified
+            }
+
+            Box(
+                modifier = Modifier
+                    .width(cellWidth)
+                    .then(bgModifier)
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = text,
+                    // Bold for header rows and for every cell in a winner column.
+                    style = if (isHeader || isWinnerColumn) {
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                    } else {
+                        MaterialTheme.typography.bodyMedium
+                    },
+                    color = textColor,
+                    textAlign = TextAlign.Center,
+                    // Prevent long names from wrapping and making rows uneven.
+                    maxLines = 1
+                )
             }
         }
     }
