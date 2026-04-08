@@ -42,7 +42,7 @@ The current taker's name is shown above a row of FilterChips — one per contrac
 | Garde Sans   | ×4         | Play without the dog           |
 | Garde Contre | ×6         | Play against the dog           |
 
-The taker can also **Skip round** to record the round without any details.
+The three action buttons at the bottom of the screen let the taker confirm, skip, or end the game (see [Bottom action bar](#bottom-action-bar) below).
 
 #### Inline round details
 
@@ -78,7 +78,7 @@ The bonus is a flat amount exchanged between the taker and each defender individ
 
 **Chelem player**: when a non-None chelem option is selected a second selector appears — "Who called the chelem?". Available choices are the taker and (in 5-player games) the partner if one has been selected. Once a player is chosen and the chelem is of the *announced* type, a note is shown reminding the table that **that player leads the first trick of the round**, overriding the normal turn order.
 
-Tapping **Confirm round** saves the result and moves to the next round.
+Tapping **Confirm round** (in the bottom bar) saves the result and moves to the next round. The button is disabled until both a contract and a non-empty score have been entered.
 
 ## Win Condition
 
@@ -197,13 +197,15 @@ The **History** icon button opens a full scrollable score table overlay (with ru
 
 #### Bottom action bar
 
-A persistent split bar at the bottom of the screen, always visible regardless of scroll position (issue #32):
+A persistent three-button bar at the bottom of the screen, always visible regardless of scroll position (issues #32, #89). All three buttons sit on a single horizontal row and each receives an equal share of the width via `Modifier.weight(1f)`.
 
-| Left half | Right half |
-|-----------|------------|
-| **End Game** (`OutlinedButton`) — ends the current game and navigates to the Final Score screen. | **Skip round** (`Button`) — records the current round as skipped and advances to the next one. |
+| Button | Style | Behaviour |
+|--------|-------|-----------|
+| **End Game** | Filled — error container (red) | Ends the current game and navigates to the Final Score screen. The red color signals that this action terminates the game. |
+| **Skip round** | Outlined | Records the current round as skipped (no contract, no score) and advances to the next one. The outlined style marks it as a secondary/neutral action. |
+| **Confirm round** | Filled — primary | Saves the contract, score, and all bonus details, then advances to the next round. **Disabled** until both a contract is selected *and* a non-empty score is entered. Also disabled while the points field contains an invalid value (> 91). |
 
-Both buttons use `Modifier.weight(1f)` so they share the width equally. The bar is a direct child of the outer (non-scrollable) `Column`, which also owns `imePadding()` so the bar and the scroll area shift up together when the keyboard opens.
+The bar is a direct child of the outer (non-scrollable) `Column`, which also owns `imePadding()` so the bar and the scroll area shift up together when the keyboard opens.
 
 ## Data Model
 

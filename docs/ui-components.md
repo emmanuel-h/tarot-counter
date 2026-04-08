@@ -273,11 +273,12 @@ fun AppButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    textStyle: TextStyle = TextStyle.Default
+    textStyle: TextStyle = TextStyle.Default,
+    colors: ButtonColors = ButtonDefaults.buttonColors()
 )
 ```
 
-A filled `Button` with an auto-sizing label. Use `textStyle` for prominent call-to-action buttons that need a larger starting size:
+A filled `Button` with an auto-sizing label. Use `textStyle` for prominent call-to-action buttons that need a larger starting size, and `colors` to override the fill color (e.g. for destructive actions):
 
 ```kotlin
 // Standard button
@@ -289,6 +290,16 @@ AppButton(
     onClick   = onNewGame,
     modifier  = Modifier.fillMaxWidth(),
     textStyle = MaterialTheme.typography.titleMedium
+)
+
+// Destructive action (red background)
+AppButton(
+    text    = strings.endGame,
+    onClick = onEndGame,
+    colors  = ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.errorContainer,
+        contentColor   = MaterialTheme.colorScheme.onErrorContainer
+    )
 )
 ```
 
