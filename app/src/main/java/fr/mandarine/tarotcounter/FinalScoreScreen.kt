@@ -206,9 +206,8 @@ fun FinalScoreScreen(
                             )
                         }
                         val score = totals[winners.first()] ?: 0
-                        val sign = if (score >= 0) "+" else ""
                         Text(
-                            text = strings.scoreDisplay(sign, score),
+                            text = strings.scoreDisplay(score.withSign()),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer
                         )

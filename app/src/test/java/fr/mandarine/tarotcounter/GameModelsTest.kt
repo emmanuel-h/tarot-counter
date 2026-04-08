@@ -17,6 +17,23 @@ import org.junit.Test
  */
 class GameModelsTest {
 
+    // ── Int.withSign ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `withSign prefixes positive integer with plus sign`() {
+        assertEquals("+42", 42.withSign())
+    }
+
+    @Test
+    fun `withSign zero is treated as positive`() {
+        assertEquals("+0", 0.withSign())
+    }
+
+    @Test
+    fun `withSign negative integer keeps its minus sign`() {
+        assertEquals("-5", (-5).withSign())
+    }
+
     // ── Contract ──────────────────────────────────────────────────────────────
 
     @Test

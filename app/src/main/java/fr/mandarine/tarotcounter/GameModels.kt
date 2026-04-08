@@ -3,6 +3,13 @@ package fr.mandarine.tarotcounter
 import kotlin.math.abs
 import kotlinx.serialization.Serializable
 
+// Formats an integer score with an explicit sign so the direction is always visible:
+//   42  → "+42"
+//   -5  → "-5"
+//   0   → "+0"
+// Used everywhere a cumulative or final score is displayed in the UI.
+fun Int.withSign(): String = if (this >= 0) "+$this" else "$this"
+
 // The contracts a player can announce in French Tarot, ordered from weakest to strongest.
 // Each entry has a `displayName` shown in the UI and a `multiplier` used in score calculation.
 //   PRISE    × 1  (formerly called "Petite" in some regional variants)
@@ -334,8 +341,7 @@ fun buildScoreTableData(
             for (name in playerNames) {
                 val total = runningTotals[name] ?: 0
                 // Always show the sign so positive/negative is immediately visible.
-                val sign = if (total >= 0) "+" else ""
-                add("$sign$total")
+                add(total.withSign())
             }
         }
 
