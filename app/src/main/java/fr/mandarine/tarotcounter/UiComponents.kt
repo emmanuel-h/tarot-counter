@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -194,6 +196,9 @@ fun AutoSizeText(
  * @param textStyle  Optional style override (e.g. [MaterialTheme.typography.titleMedium]
  *                   for a larger call-to-action button). Merged on top of the button's
  *                   default `labelLarge` ambient style.
+ * @param colors     Optional color override (e.g. [ButtonDefaults.buttonColors] with
+ *                   [MaterialTheme.colorScheme.errorContainer] for a destructive action).
+ *                   Defaults to the standard filled-button scheme.
  */
 @Composable
 fun AppButton(
@@ -201,9 +206,10 @@ fun AppButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    textStyle: TextStyle = TextStyle.Default
+    textStyle: TextStyle = TextStyle.Default,
+    colors: ButtonColors = ButtonDefaults.buttonColors()
 ) {
-    Button(onClick = onClick, modifier = modifier, enabled = enabled) {
+    Button(onClick = onClick, modifier = modifier, enabled = enabled, colors = colors) {
         AutoSizeText(text, style = textStyle)
     }
 }

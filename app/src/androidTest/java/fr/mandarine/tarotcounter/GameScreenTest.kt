@@ -64,6 +64,16 @@ class GameScreenTest {
         }
     }
 
+    /**
+     * Selects [contract] then types [score] into the points field so the Confirm
+     * button becomes enabled. Required in every test that submits a round, because
+     * Confirm is now disabled until both a contract and a non-empty score are set.
+     */
+    private fun selectContractAndEnterScore(contract: String = "Garde", score: String = "45") {
+        composeTestRule.onNodeWithText(contract).performClick()
+        composeTestRule.onNodeWithTag("points_input").performTextInput(score)
+    }
+
     // ── Spec: round header ────────────────────────────────────────────────────
 
     @Test
@@ -102,12 +112,45 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Pousse").assertDoesNotExist()
     }
 
-    // ── Spec: bottom action bar (issue #32) ──────────────────────────────────
+    // ── Spec: bottom action bar (issues #32, #89) ────────────────────────────
+    // All three action buttons must sit on a single horizontal row at the bottom.
 
     @Test
     fun skip_round_button_is_displayed_in_bottom_bar() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
+    }
+
+    @Test
+    fun all_three_bottom_bar_buttons_are_displayed_from_the_start() {
+        // Spec (#89): End Game, Skip Round, and Confirm round must all be visible
+        // on the same row from the moment the game starts.
+        launchGame()
+        composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
+    }
+
+    @Test
+    fun confirm_button_is_disabled_when_no_contract_is_selected() {
+        // Spec (#89): Confirm is always visible but disabled until a contract is chosen.
+        launchGame()
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    @Test
+    fun confirm_button_remains_disabled_when_contract_selected_but_no_score_entered() {
+        // Spec: contract alone is not enough — a score value must also be typed.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    @Test
+    fun confirm_button_becomes_enabled_when_contract_selected_and_score_entered() {
+        launchGame()
+        selectContractAndEnterScore()
+        composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
     }
 
     @Test
@@ -123,6 +166,7 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Garde").performClick()
         composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
         composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
     }
 
     // ── Spec: selecting a contract opens the details form (Step 2) ────────────
@@ -132,8 +176,10 @@ class GameScreenTest {
         launchGame()
         composeTestRule.onNodeWithText("Garde").performClick()
 
+        // The bouts field appears in the scrollable form content.
         composeTestRule.onNodeWithText("Number of bouts (oudlers)").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
+        // Confirm is visible in the bottom bar but still disabled until a score is entered.
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 
     @Test
@@ -202,7 +248,7 @@ class GameScreenTest {
     @Test
     fun confirming_a_round_advances_to_round_2() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectContractAndEnterScore()
         composeTestRule.onNodeWithText("Confirm round").performClick()
         composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
     }
@@ -237,7 +283,8 @@ class GameScreenTest {
     @Test
     fun played_round_shows_contract_and_score_in_history() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        // Enter 0 explicitly so the history row shows "0 pts".
+        selectContractAndEnterScore(score = "0")
         composeTestRule.onNodeWithText("Confirm round").performClick()
         composeTestRule
             .onNodeWithText("Garde", substring = true)
@@ -249,9 +296,9 @@ class GameScreenTest {
 
     @Test
     fun played_round_shows_Lost_in_history_when_taker_did_not_reach_threshold() {
-        // Default form values: 0 bouts, 0 points → needs 56 → Lost.
+        // 0 bouts, 10 points → needs 56 to win → Lost.
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectContractAndEnterScore(score = "10")
         composeTestRule.onNodeWithText("Confirm round").performClick()
         composeTestRule
             .onNodeWithText("Lost", substring = true)
@@ -273,7 +320,7 @@ class GameScreenTest {
     @Test
     fun scores_section_appears_after_first_played_round() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectContractAndEnterScore()
         composeTestRule.onNodeWithText("Confirm round").performClick()
 
         composeTestRule.onNodeWithText("Scores").assertIsDisplayed()
@@ -452,7 +499,7 @@ class GameScreenTest {
     @Test
     fun lost_round_shows_lost_indicator() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectContractAndEnterScore(score = "10") // 10 pts, 0 bouts → Lost
         composeTestRule.onNodeWithText("Confirm round").performClick()
         composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
     }
@@ -507,9 +554,9 @@ class GameScreenTest {
     @Test
     fun multiple_rounds_show_correct_indicators() {
         launchGame()
-        composeTestRule.onNodeWithText("Skip round").performClick()   // round 1 → skipped
-        composeTestRule.onNodeWithText("Garde").performClick()
-        composeTestRule.onNodeWithText("Confirm round").performClick() // round 2 → lost (0 pts)
+        composeTestRule.onNodeWithText("Skip round").performClick()  // round 1 → skipped
+        selectContractAndEnterScore(score = "10")                    // round 2 → lost
+        composeTestRule.onNodeWithText("Confirm round").performClick()
 
         composeTestRule.onNodeWithTag("round_indicator_skipped").assertIsDisplayed()
         composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
