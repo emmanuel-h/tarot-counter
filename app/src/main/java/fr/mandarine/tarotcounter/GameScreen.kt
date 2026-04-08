@@ -527,14 +527,18 @@ fun GameScreen(
                             onSelect       = { chelemPlayer = it }
                         )
                         // Informational note: the chelem caller plays first this round.
-                        if (chelemPlayer != null &&
-                            (chelem == Chelem.ANNOUNCED_REALIZED || chelem == Chelem.ANNOUNCED_NOT_REALIZED)) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text  = strings.chelemPlaysFirst(chelemPlayer!!),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                        // Using ?.let instead of !! for idiomatic null-safe access:
+                        // this only renders when chelemPlayer is non-null AND the chelem
+                        // type is one that was announced (realized or not).
+                        if (chelem == Chelem.ANNOUNCED_REALIZED || chelem == Chelem.ANNOUNCED_NOT_REALIZED) {
+                            chelemPlayer?.let { player ->
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text  = strings.chelemPlaysFirst(player),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
 
