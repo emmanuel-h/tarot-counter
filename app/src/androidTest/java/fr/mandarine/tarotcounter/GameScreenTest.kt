@@ -102,12 +102,37 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Pousse").assertDoesNotExist()
     }
 
-    // ── Spec: bottom action bar (issue #32) ──────────────────────────────────
+    // ── Spec: bottom action bar (issues #32, #89) ────────────────────────────
+    // All three action buttons must sit on a single horizontal row at the bottom.
 
     @Test
     fun skip_round_button_is_displayed_in_bottom_bar() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
+    }
+
+    @Test
+    fun all_three_bottom_bar_buttons_are_displayed_from_the_start() {
+        // Spec (#89): End Game, Skip Round, and Confirm round must all be visible
+        // on the same row from the moment the game starts.
+        launchGame()
+        composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
+    }
+
+    @Test
+    fun confirm_button_is_disabled_when_no_contract_is_selected() {
+        // Spec (#89): Confirm is always visible but disabled until a contract is chosen.
+        launchGame()
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    @Test
+    fun confirm_button_becomes_enabled_when_contract_is_selected() {
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
     }
 
     @Test
@@ -123,6 +148,7 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Garde").performClick()
         composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
         composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
     }
 
     // ── Spec: selecting a contract opens the details form (Step 2) ────────────
@@ -132,8 +158,10 @@ class GameScreenTest {
         launchGame()
         composeTestRule.onNodeWithText("Garde").performClick()
 
+        // The bouts field appears in the scrollable form content.
         composeTestRule.onNodeWithText("Number of bouts (oudlers)").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
+        // Confirm is always visible in the bottom bar; it becomes enabled on contract selection.
+        composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
     }
 
     @Test
