@@ -130,6 +130,9 @@ data class AppStrings(
     val chelemAnnouncedRealized: String,
     val chelemAnnouncedNotRealized: String,
     val chelemNotAnnouncedRealized: String,
+    // Label for the rare defender-chelem case (R-RO201206.pdf p.6):
+    // defenders won every trick without announcing it.
+    val chelemDefendersRealized: String,
 
     // ── Contract enum labels ──────────────────────────────────────────────────
     // In French (and internationally) these are always the French Tarot terms.
@@ -184,7 +187,7 @@ val EnStrings = AppStrings(
     poigneeTooltipBody    = { n -> "${poigneeThresholds(n).first} trumps shown before play.\nBonus: 20 pts per player." },
     doublePoigneeTooltipBody = { n -> "${poigneeThresholds(n).second} trumps shown before play.\nBonus: 30 pts per player." },
     triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} trumps shown before play.\nBonus: 40 pts per player." },
-    chelemTooltipBody     = "All tricks won by the same team.\n\nAnnounced & realized: +400 pts\nNot announced, realized: +200 pts\nAnnounced, not realized: −200 pts",
+    chelemTooltipBody     = "All tricks won by the same team.\n\nAnnounced & realized: +400 pts\nNot announced, realized: +200 pts\nAnnounced, not realized: −200 pts\nDefenders realized: −200 pts (taker pays each defender)",
     pointsOutOfRange      = "Must be between 0 and 91",
     skipRoundConfirmTitle = "Skip this round?",
     skipRoundConfirmBody  = "No contract will be recorded for this round.",
@@ -215,6 +218,7 @@ val EnStrings = AppStrings(
     chelemAnnouncedRealized  = "Announced & realized",
     chelemAnnouncedNotRealized = "Announced, not realized",
     chelemNotAnnouncedRealized = "Not announced, realized",
+    chelemDefendersRealized  = "Defenders realized",
 
     // English translations for the four contract levels.
     contractPrise        = "Small",
@@ -269,7 +273,7 @@ val FrStrings = AppStrings(
     poigneeTooltipBody    = { n -> "${poigneeThresholds(n).first} atouts déclarés avant le jeu.\nBonus : 20 pts par joueur." },
     doublePoigneeTooltipBody = { n -> "${poigneeThresholds(n).second} atouts déclarés avant le jeu.\nBonus : 30 pts par joueur." },
     triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} atouts déclarés avant le jeu.\nBonus : 40 pts par joueur." },
-    chelemTooltipBody     = "Tous les plis remportés par la même équipe.\n\nAnnoncé et réalisé : +400 pts\nNon annoncé, réalisé : +200 pts\nAnnoncé, non réalisé : −200 pts",
+    chelemTooltipBody     = "Tous les plis remportés par la même équipe.\n\nAnnoncé et réalisé : +400 pts\nNon annoncé, réalisé : +200 pts\nAnnoncé, non réalisé : −200 pts\nDéfense réalise : −200 pts (le preneur paye chaque défenseur)",
     pointsOutOfRange      = "Doit être entre 0 et 91",
     skipRoundConfirmTitle = "Passer ce tour ?",
     skipRoundConfirmBody  = "Aucun contrat ne sera enregistré pour ce tour.",
@@ -300,6 +304,7 @@ val FrStrings = AppStrings(
     chelemAnnouncedRealized  = "Annoncé et réalisé",
     chelemAnnouncedNotRealized = "Annoncé, non réalisé",
     chelemNotAnnouncedRealized = "Non annoncé, réalisé",
+    chelemDefendersRealized  = "Défense réalise",
 
     // French contract names — the canonical French Tarot terminology.
     contractPrise        = "Prise",
@@ -338,4 +343,6 @@ fun Chelem.localizedName(locale: AppLocale): String = when (this) {
     Chelem.ANNOUNCED_REALIZED     -> appStrings(locale).chelemAnnouncedRealized
     Chelem.ANNOUNCED_NOT_REALIZED -> appStrings(locale).chelemAnnouncedNotRealized
     Chelem.NOT_ANNOUNCED_REALIZED -> appStrings(locale).chelemNotAnnouncedRealized
+    // Rare case from R-RO201206.pdf p.6: defenders won every trick without announcing it.
+    Chelem.DEFENDERS_REALIZED     -> appStrings(locale).chelemDefendersRealized
 }
