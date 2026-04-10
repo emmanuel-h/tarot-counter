@@ -1230,4 +1230,145 @@ class GameModelsTest {
         assertEquals(players.size + 1, result[0].cells.size)
         assertEquals(players.size + 1, result[0].scoreValues.size)
     }
+
+    // ── poigneeThresholds — official FFT thresholds per player count ──────────
+    //
+    // Source: R-RO201206.pdf
+    //   Page 11 (3 players):  simple 13, double 15, triple 18
+    //   Standard (4 players): simple 10, double 13, triple 15
+    //   Page 12 (5 players):  simple  8, double 10, triple 13
+
+    @Test
+    fun `poigneeThresholds for 3 players returns 13-15-18`() {
+        // 3-player game uses more trumps per hand (24 cards each, 78-card deck).
+        // The bar for showing a Poignée is therefore higher.
+        val (simple, double, triple) = poigneeThresholds(3)
+        assertEquals(13, simple)
+        assertEquals(15, double)
+        assertEquals(18, triple)
+    }
+
+    @Test
+    fun `poigneeThresholds for 4 players returns 10-13-15`() {
+        // Standard 4-player thresholds used in most Tarot games.
+        val (simple, double, triple) = poigneeThresholds(4)
+        assertEquals(10, simple)
+        assertEquals(13, double)
+        assertEquals(15, triple)
+    }
+
+    @Test
+    fun `poigneeThresholds for 5 players returns 8-10-13`() {
+        // In 5-player games each player holds only 15 cards (distributed 3 by 3),
+        // so the Poignée bars are lower: 8, 10, and 13 trumps respectively.
+        // This matches page 12 of R-RO201206.pdf.
+        val (simple, double, triple) = poigneeThresholds(5)
+        assertEquals(8,  simple)
+        assertEquals(10, double)
+        assertEquals(13, triple)
+    }
+
+    @Test
+    fun `poigneeThresholds thresholds are strictly increasing within each player count`() {
+        // A double Poignée always requires more trumps than a simple Poignée,
+        // and a triple always requires more than a double — for every player count.
+        for (n in 3..5) {
+            val (simple, double, triple) = poigneeThresholds(n)
+            assertTrue("simple < double for $n players", simple < double)
+            assertTrue("double < triple for $n players", double < triple)
+        }
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `poigneeThresholds throws for player count below 3`() {
+        poigneeThresholds(2)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `poigneeThresholds throws for player count above 5`() {
+        poigneeThresholds(6)
+    }
+
+    // ── 5-player scoring — taker plays alone (called King in the Dog) ─────────
+    //
+    // When the called King is in the Dog, the taker plays 1 vs 4.
+    // The official rule (page 12): the taker collects ALL points in + or −.
+    // In computePlayerScores this is the case where partnerName = null in a 5-player
+    // game (allPlayers.size = 5), so numDefenders = 4 and takerMultiplier = 4.
+
+    @Test
+    fun `computePlayerScores 5-player taker-alone win — taker gets 4x, each defender gets -1x`() {
+        // 5 players, no partner (King was in the Dog): numDefenders = 4, takerMultiplier = 4.
+        // roundScore = 30 → Alice gets +120; Bob/Charlie/Dave/Eve each get -30.
+        // Sum: 120 - 30 - 30 - 30 - 30 = 0.
+        val players = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
+        val scores  = computePlayerScores(
+            allPlayers  = players,
+            takerName   = "Alice",
+            partnerName = null,   // taker plays alone — no partner
+            won         = true,
+            roundScore  = 30
+        )
+        assertEquals(+120, scores["Alice"])   // taker: +4 × 30
+        assertEquals( -30, scores["Bob"])     // defender: −30
+        assertEquals( -30, scores["Charlie"]) // defender: −30
+        assertEquals( -30, scores["Dave"])    // defender: −30
+        assertEquals( -30, scores["Eve"])     // defender: −30
+        assertEquals(0, scores.values.sum())  // zero-sum invariant
+    }
+
+    @Test
+    fun `computePlayerScores 5-player taker-alone loss — taker pays 4x, each defender gains 1x`() {
+        // Same setup, taker loses: sign flips.
+        val players = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
+        val scores  = computePlayerScores(
+            allPlayers  = players,
+            takerName   = "Alice",
+            partnerName = null,
+            won         = false,
+            roundScore  = 30
+        )
+        assertEquals(-120, scores["Alice"])   // taker: −4 × 30
+        assertEquals( +30, scores["Bob"])     // defender: +30
+        assertEquals( +30, scores["Charlie"])
+        assertEquals( +30, scores["Dave"])
+        assertEquals( +30, scores["Eve"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    @Test
+    fun `computePlayerScores 5-player with partner win — taker 2x, partner 1x, defenders -1x`() {
+        // Standard 5-player game with a called partner.
+        // numDefenders = 3, takerMultiplier = 2, partnerMultiplier = 1.
+        // roundScore = 40 → Alice +80, Bob +40, Charlie/Dave/Eve -40 each.
+        val players = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
+        val scores  = computePlayerScores(
+            allPlayers  = players,
+            takerName   = "Alice",
+            partnerName = "Bob",
+            won         = true,
+            roundScore  = 40
+        )
+        assertEquals(+80, scores["Alice"])    // taker: +2 × 40
+        assertEquals(+40, scores["Bob"])      // partner: +1 × 40
+        assertEquals(-40, scores["Charlie"])  // defender: −40
+        assertEquals(-40, scores["Dave"])
+        assertEquals(-40, scores["Eve"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    @Test
+    fun `computePlayerScores 5-player zero-sum holds for all roles`() {
+        // Regardless of who wins or what roundScore is, the sum of all 5 players is always 0.
+        for (won in listOf(true, false)) {
+            val scores = computePlayerScores(
+                allPlayers  = listOf("A", "B", "C", "D", "E"),
+                takerName   = "A",
+                partnerName = "B",
+                won         = won,
+                roundScore  = 57
+            )
+            assertEquals("Zero-sum must hold when won=$won", 0, scores.values.sum())
+        }
+    }
 }

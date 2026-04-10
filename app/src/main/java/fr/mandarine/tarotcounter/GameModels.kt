@@ -133,6 +133,24 @@ fun computePlayerScores(
     }
 }
 
+// Returns the minimum number of trumps a player must show to declare a Poignée,
+// based on the number of players in the game.
+//
+// The official FFT rules (R-RO201206.pdf) specify different thresholds per player count:
+//
+//   3 players  →  simple: 13,  double: 15,  triple: 18
+//   4 players  →  simple: 10,  double: 13,  triple: 15
+//   5 players  →  simple:  8,  double: 10,  triple: 13
+//
+// Returns a Triple of (simpleThreshold, doubleThreshold, tripleThreshold).
+// Throws IllegalArgumentException for any player count outside 3–5.
+fun poigneeThresholds(playerCount: Int): Triple<Int, Int, Int> = when (playerCount) {
+    3    -> Triple(13, 15, 18)
+    4    -> Triple(10, 13, 15)
+    5    -> Triple( 8, 10, 13)
+    else -> throw IllegalArgumentException("playerCount must be 3–5, got $playerCount")
+}
+
 // Returns the petit-au-bout bonus amount per defender.
 //
 // The petit au bout is achieved when the Petit (1 of trumps) is captured on the

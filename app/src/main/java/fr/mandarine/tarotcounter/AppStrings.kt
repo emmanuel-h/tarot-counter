@@ -70,9 +70,12 @@ data class AppStrings(
     val triplePoignee: String,
     // Tooltip body texts shown when the user taps the ⓘ icon next to a bonus or chelem label.
     val petitTooltipBody: String,
-    val poigneeTooltipBody: String,
-    val doublePoigneeTooltipBody: String,
-    val triplePoigneeTooltipBody: String,
+    // Poignée tooltip bodies are lambdas so the trump threshold adapts to the player count.
+    // The official FFT rules specify different thresholds: 8/10/13 for 5 players,
+    // 10/13/15 for 4 players, and 13/15/18 for 3 players.
+    val poigneeTooltipBody: (playerCount: Int) -> String,
+    val doublePoigneeTooltipBody: (playerCount: Int) -> String,
+    val triplePoigneeTooltipBody: (playerCount: Int) -> String,
     val chelemTooltipBody: String,
     // Error shown below the points text field when the entered value exceeds 91.
     val pointsOutOfRange: String,
@@ -177,9 +180,10 @@ val EnStrings = AppStrings(
     doublePoignee         = "Double poignée",
     triplePoignee         = "Triple poignée",
     petitTooltipBody      = "The Petit (1 of trumps) is played in the last trick.\n+10 pts × contract multiplier.",
-    poigneeTooltipBody    = "10 trumps shown before play.\nBonus: 20 pts per player.",
-    doublePoigneeTooltipBody = "13 trumps shown before play.\nBonus: 30 pts per player.",
-    triplePoigneeTooltipBody = "15 trumps shown before play.\nBonus: 40 pts per player.",
+    // Use poigneeThresholds() to get the correct trump count for the current player count.
+    poigneeTooltipBody    = { n -> "${poigneeThresholds(n).first} trumps shown before play.\nBonus: 20 pts per player." },
+    doublePoigneeTooltipBody = { n -> "${poigneeThresholds(n).second} trumps shown before play.\nBonus: 30 pts per player." },
+    triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} trumps shown before play.\nBonus: 40 pts per player." },
     chelemTooltipBody     = "All tricks won by the same team.\n\nAnnounced & realized: +400 pts\nNot announced, realized: +200 pts\nAnnounced, not realized: −200 pts",
     pointsOutOfRange      = "Must be between 0 and 91",
     skipRoundConfirmTitle = "Skip this round?",
@@ -261,9 +265,10 @@ val FrStrings = AppStrings(
     doublePoignee         = "Double poignée",
     triplePoignee         = "Triple poignée",
     petitTooltipBody      = "Le Petit est joué au dernier pli.\n+10 pts × multiplicateur du contrat.",
-    poigneeTooltipBody    = "10 atouts déclarés avant le jeu.\nBonus : 20 pts par joueur.",
-    doublePoigneeTooltipBody = "13 atouts déclarés avant le jeu.\nBonus : 30 pts par joueur.",
-    triplePoigneeTooltipBody = "15 atouts déclarés avant le jeu.\nBonus : 40 pts par joueur.",
+    // Use poigneeThresholds() pour obtenir le bon seuil d'atouts selon le nombre de joueurs.
+    poigneeTooltipBody    = { n -> "${poigneeThresholds(n).first} atouts déclarés avant le jeu.\nBonus : 20 pts par joueur." },
+    doublePoigneeTooltipBody = { n -> "${poigneeThresholds(n).second} atouts déclarés avant le jeu.\nBonus : 30 pts par joueur." },
+    triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} atouts déclarés avant le jeu.\nBonus : 40 pts par joueur." },
     chelemTooltipBody     = "Tous les plis remportés par la même équipe.\n\nAnnoncé et réalisé : +400 pts\nNon annoncé, réalisé : +200 pts\nAnnoncé, non réalisé : −200 pts",
     pointsOutOfRange      = "Doit être entre 0 et 91",
     skipRoundConfirmTitle = "Passer ce tour ?",
