@@ -159,17 +159,30 @@ gh release upload "$TAG" \
 
 ## Step 9 — Generate Play Store release notes and copy to clipboard
 
-Get all commits since the last release tag (feat/fix only, excluding chores/refactors/docs):
+Get all commits since the last release tag (feat/fix only, excluding chores/refactors/docs/tests):
 
 ```bash
 PREV_TAG=$(gh release list --limit 2 --json tagName --jq '.[1].tagName')
 git log "${PREV_TAG}..HEAD" --oneline --no-merges \
   | grep -E '^[a-f0-9]+ (feat|fix)' \
-  | sed 's/^[a-f0-9]* //'
+  | sed 's/^[a-f0-9]* //' \
+  | sed 's/^(feat|fix)(\([^)]*\))?!?:\s*//'
 ```
 
-From those commit subjects, write concise release notes:
-- In **French** (`<fr-FR>` tags) — bullet points, user-facing language, imperative style
+**Rewrite those raw commit subjects into user-facing release notes.** Do NOT copy commit messages verbatim — they contain technical jargon (issue numbers, scope tags, internal names) that means nothing to end users.
+
+Rules for writing the bullets:
+- Describe **what the user can now do or what changed from their perspective** — never mention branch names, issue numbers, PR numbers, commit hashes, or code/class names.
+- Use **plain language** (no conventional-commit prefixes like `feat:` or `fix:`).
+- Use **imperative style** ("Add …", "Fix …", "Improve …").
+- Merge commits that describe the same end-user change into a single bullet.
+- Omit any change that has zero visible impact for end users (e.g. internal refactors, CI changes, test improvements, dependency upgrades, build system changes).
+- If **all** changes in the release are purely technical (nothing is visible to the user), do not list bullets. Instead use a single generic line:
+  - French: `- Améliorations internes et corrections mineures.`
+  - English: `- Internal improvements and minor fixes.`
+
+Write the notes:
+- In **French** (`<fr-FR>` tags) — bullet points, user-facing language
 - In **English** (`<en-US>` tags) — same bullets translated
 
 Format:
