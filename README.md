@@ -35,12 +35,12 @@ The taker wins if they score enough points based on the number of **bouts** (spe
 
 ### Contracts (weakest → strongest)
 
-| Contract | Multiplier |
-|---|:---:|
-| Prise | ×1 |
-| Garde | ×2 |
-| Garde Sans | ×4 |
-| Garde Contre | ×6 |
+| Contract (FR) | Contract (EN) | Multiplier |
+|---|---|:---:|
+| Prise | Small | ×1 |
+| Garde | Guard | ×2 |
+| Garde Sans | Guard Without | ×4 |
+| Garde Contre | Guard Against | ×6 |
 
 ### Round Score
 

@@ -151,25 +151,55 @@ class AppLocaleTest {
     // ── Contract.localizedName ────────────────────────────────────────────────
 
     @Test
-    fun contract_names_are_same_in_both_locales() {
-        // Prise, Garde, Garde Sans, Garde Contre are French Tarot terms used internationally.
+    fun contract_localizedName_en_prise() {
+        assertEquals("Small", Contract.PRISE.localizedName(AppLocale.EN))
+    }
+
+    @Test
+    fun contract_localizedName_en_garde() {
+        assertEquals("Guard", Contract.GARDE.localizedName(AppLocale.EN))
+    }
+
+    @Test
+    fun contract_localizedName_en_garde_sans() {
+        assertEquals("Guard Without", Contract.GARDE_SANS.localizedName(AppLocale.EN))
+    }
+
+    @Test
+    fun contract_localizedName_en_garde_contre() {
+        assertEquals("Guard Against", Contract.GARDE_CONTRE.localizedName(AppLocale.EN))
+    }
+
+    @Test
+    fun contract_localizedName_fr_prise() {
+        assertEquals("Prise", Contract.PRISE.localizedName(AppLocale.FR))
+    }
+
+    @Test
+    fun contract_localizedName_fr_garde() {
+        assertEquals("Garde", Contract.GARDE.localizedName(AppLocale.FR))
+    }
+
+    @Test
+    fun contract_localizedName_fr_garde_sans() {
+        assertEquals("Garde Sans", Contract.GARDE_SANS.localizedName(AppLocale.FR))
+    }
+
+    @Test
+    fun contract_localizedName_fr_garde_contre() {
+        assertEquals("Garde Contre", Contract.GARDE_CONTRE.localizedName(AppLocale.FR))
+    }
+
+    @Test
+    fun contract_localizedName_en_and_fr_differ() {
+        // English translations must be distinct from the French Tarot terms.
         for (contract in Contract.entries) {
-            assertEquals(
-                "Contract ${contract.name} should have the same display name in EN and FR",
+            assertNotEquals(
+                "Contract ${contract.name} EN and FR names should differ",
                 contract.localizedName(AppLocale.EN),
                 contract.localizedName(AppLocale.FR)
             )
         }
-    }
-
-    @Test
-    fun contract_localizedName_returns_the_contract_displayName() {
-        // localizedName delegates to Contract.displayName — must not return an empty string
-        // or any other value. PIT would mutate the return to "" which this test catches.
-        assertEquals("Prise",         Contract.PRISE.localizedName(AppLocale.EN))
-        assertEquals("Garde",         Contract.GARDE.localizedName(AppLocale.EN))
-        assertEquals("Garde Sans",    Contract.GARDE_SANS.localizedName(AppLocale.EN))
-        assertEquals("Garde Contre",  Contract.GARDE_CONTRE.localizedName(AppLocale.EN))
     }
 
     // ── Round history string builders ─────────────────────────────────────────
