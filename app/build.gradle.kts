@@ -82,6 +82,15 @@ android {
                 // Project-specific rules (see app/proguard-rules.pro).
                 "proguard-rules.pro"
             )
+            // Include native debug symbols in the App Bundle so Google Play Console can
+            // symbolicate native crash stack traces (e.g. from Compose's native libraries).
+            // "FULL"         → unstripped .so files (largest, most detailed — recommended for
+            //                  Play Console crash analysis)
+            // "SYMBOL_TABLE" → stripped symbols only (smaller upload, less detail)
+            // "NONE"         → default; triggers the Play Console warning we are fixing
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
     compileOptions {
