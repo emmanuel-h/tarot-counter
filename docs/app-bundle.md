@@ -53,6 +53,38 @@ for full keystore setup and CI/CD instructions.
 If signing credentials are **not** configured, the bundle is produced unsigned and
 cannot be uploaded to the Play Store.
 
+## Native Debug Symbols
+
+Even though TarotCounter contains no custom C/C++ code, Jetpack Compose ships
+native libraries (e.g. `libandroidx.graphics.path.so`). Without debug symbols,
+Google Play Console cannot symbolicate native crash stack traces and will display
+the following warning:
+
+> *This App Bundle contains native code, and you have not imported debug symbols.*
+
+### Configuration
+
+The release build type in `app/build.gradle.kts` includes:
+
+```kotlin
+ndk {
+    debugSymbolLevel = "FULL"
+}
+```
+
+`"FULL"` instructs AGP to package the unstripped `.so` files alongside the
+stripped ones inside the App Bundle. Play Console extracts them automatically
+during the upload and uses them for crash analysis.
+
+| Value | Description |
+|---|---|
+| `"NONE"` | Default — triggers the Play Console warning |
+| `"SYMBOL_TABLE"` | Smaller upload; only symbol tables, less detail |
+| `"FULL"` | Recommended — full debug info, best crash analysis |
+
+No additional tooling or manual upload is required; the symbols are embedded in
+the `.aab` and processed by Play automatically.
+
 ## Uploading to Google Play
 
 1. Go to the [Google Play Console](https://play.google.com/console).
