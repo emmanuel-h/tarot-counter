@@ -50,7 +50,7 @@ defaultConfig {
 4. **Patch `build.gradle.kts`** — updates both fields in place with `sed`.
 5. **Build** — runs `./gradlew bundleRelease`; output is `app/build/outputs/bundle/release/app-release.aab`.
 6. **Commit** — stages only `app/build.gradle.kts` and commits the version bump.
-7. **GitHub release** — runs `gh release create vX.Y[.Z] --generate-notes` and uploads the `.aab`.
+7. **GitHub release** — runs `gh release create vX.Y[.Z] --generate-notes` and uploads the `.aab` **and** the R8 mapping file (`mapping.txt`) as release assets. The mapping file is required to deobfuscate crash stack traces for that specific version — see [`docs/crash-reporting.md`](crash-reporting.md).
 8. **Display URL** — retrieves and prints the asset download URL via `gh release view`.
 
 ## After the skill finishes
