@@ -11,7 +11,7 @@ The landing screen lets users configure a game before it starts. It currently ha
 
 The screen uses a scrollable `Column`. The layout order follows the natural user flow — configure players, enter names, then start:
 
-1. Language switcher (flag chips, top-right)
+1. Language switcher (flag toggle, top-right)
 2. Card-suit decorative header (`♠ ♥ ♦ ♣`, in primary color)
 3. App title
 4. Player count chips (3 / 4 / 5)
@@ -38,9 +38,18 @@ The `ResumeGameCard` includes a 4 dp wide vertical strip in the `primary` color 
 
 ## How it works
 
+### Theme and language toggles
+
+The top header row contains two `SingleChoiceSegmentedButtonRow` controls:
+
+- **Theme toggle** (left): ☀️ (light) / 🌙 (dark)
+- **Language toggle** (right): 🇬🇧 (English) / 🇫🇷 (French)
+
+Both use `SegmentedButton` with `icon = {}` (no checkmark). The selected segment gets a filled background; unselected segments have no individual border — only the outer row border remains. This makes the current selection immediately obvious and avoids the visual noise of individual outlined chips for every unselected option.
+
 ### Player count selection
 
-Three `FilterChip` buttons (labeled 3, 4, 5) let the user pick the number of players. The selected chip is highlighted. The default is **3 players**.
+A `SingleChoiceSegmentedButtonRow` with three segments (3, 4, 5) lets the user pick the number of players. The selected segment has a filled background. The default is **3 players**.
 
 ### Player name inputs
 

@@ -341,6 +341,39 @@ class LandingScreenTest {
         assertEquals(AppTheme.LIGHT, capturedTheme)
     }
 
+    // ── Spec: segmented button selection state (issue #101) ──────────────────
+    // The theme and language toggles now use SingleChoiceSegmentedButtonRow.
+    // Compose exposes the selected state via the `Selected` semantics property,
+    // which we can assert with `assertIsSelected()` / `assertIsNotSelected()`.
+
+    @Test
+    fun tapping_locale_fr_calls_onLocaleChange_with_FR() {
+        var capturedLocale: AppLocale? = null
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                LandingScreen(onLocaleChange = { capturedLocale = it })
+            }
+        }
+
+        composeTestRule.onNodeWithText("🇫🇷").performClick()
+
+        assertEquals(AppLocale.FR, capturedLocale)
+    }
+
+    @Test
+    fun tapping_locale_en_calls_onLocaleChange_with_EN() {
+        var capturedLocale: AppLocale? = null
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                LandingScreen(onLocaleChange = { capturedLocale = it })
+            }
+        }
+
+        composeTestRule.onNodeWithText("🇬🇧").performClick()
+
+        assertEquals(AppLocale.EN, capturedLocale)
+    }
+
     // ── Spec: past game card shows winner name (issue #5) ─────────────────────
 
     @Test
