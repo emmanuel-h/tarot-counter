@@ -113,10 +113,12 @@ class GameViewModel internal constructor(
     val startingIndex: Int get() = _startingIndex
     val gameId: String get() = _gameId
 
-    // The display name of the player who takes in the current round.
+    // The display name of the player whose turn it is to *deal* the cards this round.
+    // Deals rotate through players in setup order starting from a random first dealer.
+    // This is NOT the attacker — any player can bid and become the attacker.
     // Derived from _startingIndex and currentRound so it updates automatically
     // when currentRound (a snapshot state) changes during composition.
-    val currentTaker: String
+    val currentDealer: String
         get() {
             if (_displayNames.isEmpty()) return ""
             val index = (_startingIndex + currentRound - 1) % _displayNames.size
@@ -144,21 +146,24 @@ class GameViewModel internal constructor(
     // All scoring logic runs here — previously these calculations lived inside the
     // GameScreen composable as a local `fun recordPlayed()`, which meant they were
     // recreated on every recomposition and could not be unit-tested.
-    fun recordPlayed(contract: Contract, details: RoundDetails) {
-        val taker    = currentTaker
+    //
+    // takerName : the player who won the bidding and took the contract (the attacker).
+    //             This is explicitly passed by the UI — it is NOT derived from the
+    //             dealer rotation, because any player can bid regardless of who deals.
+    fun recordPlayed(takerName: String, contract: Contract, details: RoundDetails) {
         val won      = takerWon(details.bouts, details.points)
         val score    = calculateRoundScore(contract, details.bouts, details.points)
         val base     = computePlayerScores(
             allPlayers  = _displayNames,
-            takerName   = taker,
+            takerName   = takerName,
             partnerName = details.partnerName,
             won         = won,
             roundScore  = score
         )
         // 3/4-player: every non-taker is a defender; 5-player: exactly 3 defenders.
         val numDef   = if (details.partnerName != null) 3 else _displayNames.size - 1
-        val scores   = applyBonuses(base, contract, details, taker, won, numDef)
-        roundHistory.add(RoundResult(currentRound, taker, contract, details, won, scores))
+        val scores   = applyBonuses(base, contract, details, takerName, won, numDef)
+        roundHistory.add(RoundResult(currentRound, takerName, contract, details, won, scores))
         currentRound++
         saveInProgressGame(buildProgressSnapshot())
     }
@@ -169,7 +174,8 @@ class GameViewModel internal constructor(
         roundHistory.add(
             RoundResult(
                 roundNumber = currentRound,
-                takerName   = currentTaker,
+                // For skipped rounds, record the dealer's name as the taker (no attacker was chosen).
+                takerName   = currentDealer,
                 contract    = null,
                 details     = null,
                 won         = null

@@ -65,11 +65,33 @@ class GameScreenTest {
     }
 
     /**
-     * Selects [contract] then types [score] into the points field so the Confirm
-     * button becomes enabled. Required in every test that submits a round, because
-     * Confirm is now disabled until both a contract and a non-empty score are set.
+     * Selects [attackerName] as the attacker by tapping their name in the attacker
+     * segmented-button row. Must be called before selecting a contract, because the
+     * "choose a contract" prompt is only shown once an attacker is selected.
      */
-    private fun selectContractAndEnterScore(contract: String = "Garde", score: String = "45") {
+    private fun selectAttacker(attackerName: String = "Alice") {
+        // The attacker selector shows all player names as segmented-button labels.
+        // We need to find the one in the attacker row (not the bonus grid or history).
+        // Using onAllNodesWithText and picking the first match is safe because the
+        // attacker selector is the topmost occurrence of each name before the form opens.
+        composeTestRule.onAllNodesWithText(attackerName).fetchSemanticsNodes().let {
+            require(it.isNotEmpty()) { "No node found with text '$attackerName'" }
+        }
+        composeTestRule.onAllNodesWithText(attackerName)[0].performClick()
+    }
+
+    /**
+     * Selects an attacker, selects [contract], then types [score] into the points
+     * field so the Confirm button becomes enabled. Required in every test that submits
+     * a round, because Confirm is disabled until an attacker, a contract, and a
+     * non-empty score are all provided (issue #124).
+     */
+    private fun selectContractAndEnterScore(
+        attacker: String = "Alice",
+        contract: String = "Garde",
+        score: String = "45"
+    ) {
+        selectAttacker(attacker)
         composeTestRule.onNodeWithText(contract).performClick()
         composeTestRule.onNodeWithTag("points_input").performTextInput(score)
     }
@@ -147,7 +169,26 @@ class GameScreenTest {
     }
 
     @Test
-    fun confirm_button_becomes_enabled_when_contract_selected_and_score_entered() {
+    fun confirm_button_remains_disabled_when_attacker_and_contract_selected_but_no_score() {
+        // All three conditions must be met: attacker + contract + score.
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    @Test
+    fun confirm_button_remains_disabled_when_only_attacker_selected() {
+        // Selecting only the attacker is not enough — a contract is also required.
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    @Test
+    fun confirm_button_becomes_enabled_when_attacker_contract_and_score_all_set() {
+        // Fix for issue #124: attacker selection is now required in addition to
+        // contract and score before the Confirm button becomes active.
         launchGame()
         selectContractAndEnterScore()
         composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
@@ -468,6 +509,7 @@ class GameScreenTest {
     @Test
     fun entering_91_does_not_show_error() {
         launchGame()
+        selectAttacker()
         composeTestRule.onNodeWithText("Garde").performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("91")
@@ -479,7 +521,9 @@ class GameScreenTest {
 
     @Test
     fun entering_91_keeps_confirm_button_enabled() {
+        // An attacker must also be selected — issue #124.
         launchGame()
+        selectAttacker()
         composeTestRule.onNodeWithText("Garde").performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("91")
@@ -507,6 +551,8 @@ class GameScreenTest {
     @Test
     fun won_round_shows_won_indicator() {
         launchGame()
+        // Select an attacker (required since issue #124) before picking the contract.
+        selectAttacker()
         composeTestRule.onNodeWithText("Garde").performClick()
 
         composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
@@ -677,12 +723,91 @@ class GameScreenTest {
 
         // Confirm one round so roundHistory is non-empty.
         selectContractAndEnterScore()
-        composeTestRule.onNodeWithText("Confirm").performClick()
+        composeTestRule.onNodeWithText("Confirm round").performClick()
 
         // Now end the game.
         composeTestRule.onNodeWithText("End Game").performClick()
 
         // Final Score screen must be shown.
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+    }
+
+    // ── Spec: attacker selection (issue #124) ─────────────────────────────────
+    // The attacker is the player who wins the bidding and takes the contract.
+    // Any player can be the attacker, regardless of who is dealing this round.
+
+    @Test
+    fun attacker_selector_shows_all_player_names() {
+        // All players must be visible in the attacker selector so any can be chosen.
+        launchGame()
+        players.forEach { name ->
+            assertTrue(
+                "$name should appear in the attacker selector",
+                composeTestRule.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty()
+            )
+        }
+    }
+
+    @Test
+    fun dealer_label_is_displayed() {
+        // The dealer label ("Dealer: Alice" / "Distributeur : Alice") should always
+        // be visible so the table knows whose turn it is to distribute the cards.
+        launchGame()
+        assertTrue(
+            "Dealer label should be visible",
+            composeTestRule.onAllNodesWithText("Dealer:", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        )
+    }
+
+    @Test
+    fun attacker_label_is_displayed() {
+        // The "Attacker" label should always be visible above the selector row.
+        launchGame()
+        composeTestRule.onNodeWithText("Attacker").assertIsDisplayed()
+    }
+
+    @Test
+    fun confirm_disabled_without_attacker_even_when_contract_and_score_set() {
+        // Core regression test for issue #124: scoring must go to the selected attacker.
+        // Confirm must stay disabled when no attacker is selected.
+        launchGame()
+        // Select contract and enter score, but do NOT select an attacker.
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("points_input").performTextInput("45")
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    @Test
+    fun selecting_attacker_then_contract_and_score_enables_confirm() {
+        // Selecting the attacker should allow the round to be confirmed once the
+        // other required fields (contract, score) are also filled in.
+        launchGame()
+        selectContractAndEnterScore(attacker = "Bob")
+        composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
+    }
+
+    @Test
+    fun choose_contract_prompt_appears_after_attacker_is_selected() {
+        // The "Attacker — choose a contract:" prompt should appear once an attacker
+        // is selected, and include the selected attacker's name.
+        launchGame()
+        selectAttacker("Charlie")
+        composeTestRule
+            .onNodeWithText("Charlie", substring = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun attacker_resets_after_round_is_confirmed() {
+        // After a round is confirmed the attacker selection must clear so the next
+        // round starts fresh — no player should be pre-selected.
+        launchGame()
+        selectContractAndEnterScore(attacker = "Alice")
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        // After advancing to round 2, the Confirm button must again be disabled
+        // (no attacker selected yet for the new round).
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 }

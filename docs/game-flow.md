@@ -20,20 +20,29 @@ After setting up players on the setup screen, the user taps **Start Game** to be
 | Concern | Where it lives |
 |---|---|
 | Game session state (`currentRound`, `roundHistory`) | `GameViewModel` |
-| `recordPlayed`, `recordSkipped`, `endGame` | `GameViewModel` |
-| Contract selection, overlay visibility | `GameScreen` (local `remember` state) |
+| `recordPlayed(takerName, contract, details)`, `recordSkipped`, `endGame` | `GameViewModel` |
+| Dealer rotation (`currentDealer`) | `GameViewModel` |
+| Attacker selection, contract selection, overlay visibility | `GameScreen` (local `remember` state) |
 | Sub-composables (`CompactBonusGrid`, `PlayerChipSelector`, etc.) | `UiComponents.kt` |
 
-The game is divided into **rounds**. The taker for each round is determined automatically:
+The game is divided into **rounds**. Each round has two distinct roles:
 
-- **Round 1** — a random player is chosen as the first taker.
-- **Round 2+** — players take turns in the order they were entered on the setup screen, cycling back to the first player after the last one.
+- **Dealer** — deals the cards. The dealer role rotates each round:
+  - **Round 1**: a random player is chosen as the first dealer.
+  - **Round 2+**: players take turns dealing in the order they were entered on the setup screen, cycling back to the first player after the last one.
+- **Attacker (taker / preneur)** — the player who wins the bidding and takes the contract. *Any* player can bid for the contract regardless of who deals. The player with the highest bid becomes the attacker and their score is affected by the round outcome.
 
-Everything is presented on **a single scrollable page**: the compact scoreboard, the contract chips, the inline details form, and the round history log are all visible without navigating to a separate screen.
+The current dealer's name is shown at the top of the round section for reference. The user then selects the attacker by tapping any player's name in the segmented-button row.
+
+Everything is presented on **a single scrollable page**: the compact scoreboard, the dealer label, the attacker selector, the contract chips, the inline details form, and the round history log are all visible without navigating to a separate screen.
+
+#### Attacker selection
+
+A segmented-button row listing every player's name is shown above the contract chips. The user taps the player who won the bidding to select them as the attacker. Tapping the same player again deselects them. The **Confirm round** button stays disabled until an attacker is selected (in addition to a contract and a score).
 
 #### Contract selection
 
-The current taker's name is shown above a row of FilterChips — one per contract (weakest → strongest):
+Once an attacker is selected, a prompt shows their name above a row of SegmentedButtons — one per contract (weakest → strongest):
 
 | Contract (FR) | Contract (EN)  | Multiplier | Description                    |
 |---------------|----------------|:----------:|-------------------------------|
@@ -226,6 +235,8 @@ The bar is a direct child of the outer (non-scrollable) `Column`, which also own
 
 ## Data Model
 
+- **`currentDealer: String`** (read-only property on `GameViewModel`) — the name of the player who deals cards this round, computed by `(startingIndex + currentRound − 1) % playerCount`. This is separate from the attacker, which is chosen by the user each round.
+- **`recordPlayed(takerName, contract, details)`** — accepts an explicit `takerName` parameter (the attacker) rather than deriving it from the dealer rotation. This ensures scores are always attributed to the player who won the bidding.
 - `Contract` enum — four contracts with `displayName` and `multiplier`.
 - `Chelem` enum — five grand slam outcomes (`NONE`, `ANNOUNCED_REALIZED`, `ANNOUNCED_NOT_REALIZED`, `NOT_ANNOUNCED_REALIZED`, `DEFENDERS_REALIZED`). The last entry covers the FFT-official defenders-chelem scenario (R-RO201206.pdf p.6).
 - `RoundDetails` data class — all scoring fields: bouts, points, `partnerName` (5-player only), player-assigned bonuses, the chelem outcome, and `chelemPlayer` (which player called/achieved the chelem — null when `chelem == NONE`).
