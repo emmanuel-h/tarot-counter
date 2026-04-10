@@ -29,12 +29,20 @@ enum class Contract(val displayName: String, val multiplier: Int) {
 
 // The possible chelem (grand slam) outcomes for a round.
 // A chelem means winning every single trick.
+//
+// The first three cases describe the taker's camp announcing or achieving a grand slam.
+// The last case (DEFENDERS_REALIZED) covers the rare but legal scenario — described in
+// R-RO201206.pdf page 6 — where the defending camp wins every single trick without having
+// announced it. The taker pays 200 points to each defender in addition to the normal score.
 @Serializable
 enum class Chelem(val displayName: String) {
     NONE("None"),
     ANNOUNCED_REALIZED("Announced & realized"),
     ANNOUNCED_NOT_REALIZED("Announced, not realized"),
-    NOT_ANNOUNCED_REALIZED("Not announced, realized")
+    NOT_ANNOUNCED_REALIZED("Not announced, realized"),
+    // Defenders won every trick without announcing it (R-RO201206.pdf p.6).
+    // Financial effect: each defender receives +200; taker pays −200 per defender.
+    DEFENDERS_REALIZED("Defenders realized")
 }
 
 // All the bonus and scoring details collected after a contract is chosen.
@@ -209,6 +217,9 @@ fun chelemBonus(chelem: Chelem): Int = when (chelem) {
     Chelem.ANNOUNCED_REALIZED     ->  400
     Chelem.NOT_ANNOUNCED_REALIZED ->  200
     Chelem.ANNOUNCED_NOT_REALIZED -> -200
+    // Defenders won every trick: each defender receives 200 from the taker
+    // (R-RO201206.pdf p.6). Same sign as ANNOUNCED_NOT_REALIZED but different semantics.
+    Chelem.DEFENDERS_REALIZED     -> -200
 }
 
 // Applies all three bonus adjustments to a base score map and returns the final scores.

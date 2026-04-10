@@ -73,9 +73,10 @@ class GameModelsTest {
     // ── Chelem ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `Chelem has exactly four values`() {
-        // Spec: None, Announced+realized, Announced+not realized, Not announced+realized.
-        assertEquals(4, Chelem.entries.size)
+    fun `Chelem has exactly five values`() {
+        // Spec: None, Announced+realized, Announced+not realized, Not announced+realized,
+        // and DEFENDERS_REALIZED (R-RO201206.pdf p.6 — defenders win all tricks).
+        assertEquals(5, Chelem.entries.size)
     }
 
     @Test
@@ -1370,5 +1371,594 @@ class GameModelsTest {
             )
             assertEquals("Zero-sum must hold when won=$won", 0, scores.values.sum())
         }
+    }
+
+    // ── Chelem.DEFENDERS_REALIZED — new case from R-RO201206.pdf p.6 ─────────
+    //
+    // "Paradoxalement, il arrive que la défense inflige un Chelem au déclarant.
+    // Dans ce cas, chaque défenseur reçoit, en plus de la marque normale,
+    // une prime de 200 points."
+    //
+    // Financial effect: each defender +200, taker pays -200 per defender.
+    // Same sign as ANNOUNCED_NOT_REALIZED but distinct semantics.
+
+    @Test
+    fun `Chelem has exactly five values after adding DEFENDERS_REALIZED`() {
+        // Adding DEFENDERS_REALIZED brings the total from 4 to 5.
+        assertEquals(5, Chelem.entries.size)
+    }
+
+    @Test
+    fun `chelemBonus returns -200 for DEFENDERS_REALIZED`() {
+        // Each defender gains 200 from the taker → bonus = -200 (taker's perspective).
+        assertEquals(-200, chelemBonus(Chelem.DEFENDERS_REALIZED))
+    }
+
+    @Test
+    fun `chelemBonus DEFENDERS_REALIZED distribution is zero-sum in a 4-player game`() {
+        // 4-player: taker delta = -200 × 3 = -600; each defender delta = +200. Sum = 0.
+        val bonus = chelemBonus(Chelem.DEFENDERS_REALIZED)
+        val numDefenders = 3
+        val takerDelta    = bonus * numDefenders   // -600
+        val defenderDelta = -bonus                  // +200 each
+        assertEquals(0, takerDelta + defenderDelta * numDefenders)
+        assertEquals(-600, takerDelta)
+        assertEquals(+200, defenderDelta)
+    }
+
+    @Test
+    fun `chelemBonus DEFENDERS_REALIZED distribution is zero-sum in a 3-player game`() {
+        // 3-player: 2 defenders. Taker delta = -200 × 2 = -400; each defender +200.
+        val bonus = chelemBonus(Chelem.DEFENDERS_REALIZED)
+        val numDefenders = 2
+        assertEquals(0, bonus * numDefenders + (-bonus) * numDefenders)
+    }
+
+    @Test
+    fun `applyBonuses — DEFENDERS_REALIZED adds 200 to each defender, taker pays (4-player)`() {
+        // Base: taker=-120, each defender=+40 (taker chuted with 3 defenders).
+        // DEFENDERS_REALIZED bonus = -200 per defender to taker.
+        // Taker delta = -200 × 3 = -600 → -120 - 600 = -720
+        // Each defender delta = +200 → +40 + 200 = +240
+        val base = mapOf("Alice" to -120, "Bob" to +40, "Charlie" to +40, "Dave" to +40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(chelem = Chelem.DEFENDERS_REALIZED),
+            takerName    = "Alice",
+            won          = false,
+            numDefenders = 3
+        )
+        assertEquals(-720, result["Alice"])
+        assertEquals(+240, result["Bob"])
+        assertEquals(+240, result["Charlie"])
+        assertEquals(+240, result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — DEFENDERS_REALIZED partner is unaffected (5-player)`() {
+        // In a 5-player game the partner does not participate in the chelem bonus.
+        // Base: Alice=-60, Bob=-30, Charlie/Dave/Eve=+30 each.
+        val base = mapOf(
+            "Alice" to -60, "Bob" to -30,
+            "Charlie" to +30, "Dave" to +30, "Eve" to +30
+        )
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(
+                partnerName = "Bob",
+                chelem      = Chelem.DEFENDERS_REALIZED
+            ),
+            takerName    = "Alice",
+            won          = false,
+            numDefenders = 3
+        )
+        // Partner (Bob) must not change.
+        assertEquals(-30, result["Bob"])
+        // Result must be zero-sum.
+        assertEquals(0, result.values.sum())
+    }
+
+    // ── Petit au Bout with each contract multiplier (complete coverage) ────────
+    //
+    // The issue requires "Petit au Bout: taker wins it, defender wins it,
+    // and both with each contract multiplier."
+    //
+    // petitAuBoutBonus() is already tested for each contract multiplier in isolation.
+    // These tests verify the full applyBonuses pipeline for each of the four contracts.
+
+    @Test
+    fun `applyBonuses — PAB by taker with Prise (×1) — taker gains 10 per defender`() {
+        // Prise → pabAmount = 10. Taker achieved → pabSign = +1. 3 defenders.
+        // Taker delta = +10 × 3 = +30; each defender delta = -10.
+        // Base uses roundScore=25 (Prise at exact threshold): taker=+75, defenders=-25 each.
+        val base = mapOf("Alice" to +75, "Bob" to -25, "Charlie" to -25, "Dave" to -25)
+        // We only care about the PAB component here, so Chelem.NONE and no Poignée.
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.PRISE,
+            details      = details(petitAuBout = "Alice"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+75 + 30, result["Alice"])   // +105
+        assertEquals(-25 - 10, result["Bob"])     // -35
+        assertEquals(-25 - 10, result["Charlie"]) // -35
+        assertEquals(-25 - 10, result["Dave"])    // -35
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — PAB by defender with Prise (×1) — each defender gains 10`() {
+        // Prise → pabAmount = 10. Defender achieved → pabSign = -1. 3 defenders.
+        // Taker delta = -10 × 3 = -30; each defender delta = +10.
+        // Base uses roundScore=25 (Prise at exact threshold): taker=+75, defenders=-25 each.
+        val base = mapOf("Alice" to +75, "Bob" to -25, "Charlie" to -25, "Dave" to -25)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.PRISE,
+            details      = details(petitAuBout = "Bob"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+75 - 30, result["Alice"])   // +45
+        assertEquals(-25 + 10, result["Bob"])     // -15
+        assertEquals(-25 + 10, result["Charlie"]) // -15
+        assertEquals(-25 + 10, result["Dave"])    // -15
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — PAB by taker with Garde Sans (×4) — taker gains 40 per defender`() {
+        // Garde Sans → pabAmount = 40. Taker achieved → pabSign = +1. 3 defenders.
+        // Taker delta = +40 × 3 = +120; each defender delta = -40.
+        val base = mapOf("Alice" to +300, "Bob" to -100, "Charlie" to -100, "Dave" to -100)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE_SANS,
+            details      = details(petitAuBout = "Alice"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+300 + 120, result["Alice"])  // +420
+        assertEquals(-100 - 40,  result["Bob"])    // -140
+        assertEquals(-100 - 40,  result["Charlie"])
+        assertEquals(-100 - 40,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — PAB by defender with Garde Sans (×4) — each defender gains 40`() {
+        // Garde Sans → pabAmount = 40. Defender achieved → pabSign = -1. 3 defenders.
+        // Taker delta = -40 × 3 = -120; each defender delta = +40.
+        val base = mapOf("Alice" to +300, "Bob" to -100, "Charlie" to -100, "Dave" to -100)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE_SANS,
+            details      = details(petitAuBout = "Bob"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+300 - 120, result["Alice"])  // +180
+        assertEquals(-100 + 40,  result["Bob"])    // -60
+        assertEquals(-100 + 40,  result["Charlie"])
+        assertEquals(-100 + 40,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — PAB by taker with Garde Contre (×6) — taker gains 60 per defender`() {
+        // Garde Contre → pabAmount = 60. Taker achieved → pabSign = +1. 3 defenders.
+        // Taker delta = +60 × 3 = +180; each defender delta = -60.
+        val base = mapOf("Alice" to +450, "Bob" to -150, "Charlie" to -150, "Dave" to -150)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE_CONTRE,
+            details      = details(petitAuBout = "Alice"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+450 + 180, result["Alice"])  // +630
+        assertEquals(-150 - 60,  result["Bob"])    // -210
+        assertEquals(-150 - 60,  result["Charlie"])
+        assertEquals(-150 - 60,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — PAB by defender with Garde Contre (×6) — each defender gains 60`() {
+        // Garde Contre → pabAmount = 60. Defender achieved → pabSign = -1. 3 defenders.
+        // Taker delta = -60 × 3 = -180; each defender delta = +60.
+        val base = mapOf("Alice" to +450, "Bob" to -150, "Charlie" to -150, "Dave" to -150)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE_CONTRE,
+            details      = details(petitAuBout = "Bob"),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+450 - 180, result["Alice"])  // +270
+        assertEquals(-150 + 60,  result["Bob"])    // -90
+        assertEquals(-150 + 60,  result["Charlie"])
+        assertEquals(-150 + 60,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    // ── Poignée: each bonus level when the taker loses ─────────────────────────
+    //
+    // When the taker loses the Poignée bonus goes to the defenders (winning camp).
+    // Tests for the taker-wins case already exist above; these cover the taker-loses path
+    // for simple, double, and triple Poignée explicitly.
+
+    @Test
+    fun `applyBonuses — simple poignee when taker loses goes to defenders (4-player)`() {
+        // Simple poignée: 20 pts. Taker lost → pSign = -1.
+        // Taker delta = -1 × 20 × 3 = -60; each defender delta = +20.
+        val base = mapOf("Alice" to -75, "Bob" to +25, "Charlie" to +25, "Dave" to +25)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.PRISE,
+            details      = details(poignee = "Alice"),
+            takerName    = "Alice",
+            won          = false,
+            numDefenders = 3
+        )
+        assertEquals(-75 - 60, result["Alice"])   // -135
+        assertEquals(+25 + 20, result["Bob"])     // +45
+        assertEquals(+25 + 20, result["Charlie"])
+        assertEquals(+25 + 20, result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — double poignee when taker loses goes to defenders (4-player)`() {
+        // Double poignée: 30 pts. Taker lost → pSign = -1.
+        // Taker delta = -1 × 30 × 3 = -90; each defender delta = +30.
+        val base = mapOf("Alice" to -75, "Bob" to +25, "Charlie" to +25, "Dave" to +25)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = details(doublePoignee = "Bob"),
+            takerName    = "Alice",
+            won          = false,
+            numDefenders = 3
+        )
+        assertEquals(-75 - 90, result["Alice"])   // -165
+        assertEquals(+25 + 30, result["Bob"])     // +55
+        assertEquals(+25 + 30, result["Charlie"])
+        assertEquals(+25 + 30, result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    @Test
+    fun `applyBonuses — triple poignee when taker loses goes to defenders (4-player)`() {
+        // Triple poignée: 40 pts. Taker lost → pSign = -1.
+        // Taker delta = -1 × 40 × 3 = -120; each defender delta = +40.
+        val base = mapOf("Alice" to -75, "Bob" to +25, "Charlie" to +25, "Dave" to +25)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE_SANS,
+            details      = details(triplePoignee = "Alice"),
+            takerName    = "Alice",
+            won          = false,
+            numDefenders = 3
+        )
+        assertEquals(-75 - 120, result["Alice"])  // -195
+        assertEquals(+25 + 40,  result["Bob"])    // +65
+        assertEquals(+25 + 40,  result["Charlie"])
+        assertEquals(+25 + 40,  result["Dave"])
+        assertEquals(0, result.values.sum())
+    }
+
+    // ── End-to-end scoring examples from R-RO201206.pdf page 9 ────────────────
+    //
+    // "La marque en donnes libres" — five worked examples from the official rulebook.
+    // These tests provide the highest-confidence verification that the scoring pipeline
+    // (calculateRoundScore → computePlayerScores → applyBonuses) produces the exact
+    // values published by the FFT.
+    //
+    // The helper pdfExample() wires the full pipeline together.
+    //
+    // All examples are 4-player games unless stated otherwise.
+
+    private fun pdfExample(
+        contract: Contract,
+        bouts: Int,
+        points: Int,
+        partnerName: String?      = null,
+        petitAuBout: String?      = null,
+        poignee: String?          = null,
+        doublePoignee: String?    = null,
+        triplePoignee: String?    = null,
+        chelem: Chelem            = Chelem.NONE,
+        allPlayers: List<String>  = listOf("Alice", "Bob", "Charlie", "Dave"),
+        takerName: String         = "Alice"
+    ): Map<String, Int> {
+        val won         = takerWon(bouts, points)
+        val roundScore  = calculateRoundScore(contract, bouts, points)
+        val numDefenders = if (partnerName != null) 3 else allPlayers.size - 1
+        val base = computePlayerScores(allPlayers, takerName, partnerName, won, roundScore)
+        val det  = RoundDetails(
+            bouts         = bouts,
+            points        = points,
+            partnerName   = partnerName,
+            petitAuBout   = petitAuBout,
+            poignee       = poignee,
+            doublePoignee = doublePoignee,
+            chelem        = chelem
+        )
+        return applyBonuses(base, contract, det, takerName, won, numDefenders)
+    }
+
+    @Test
+    fun `PDF example 1 — Garde, 2 bouts, 49 pts, simple poignee, PAB by taker`() {
+        // Source: R-RO201206.pdf p.9, example 1.
+        //
+        // "Le preneur tente une Garde, présente une Poignée de 10 Atouts.
+        //  Il mène le Petit au Bout et réalise 49 points en détenant deux Bouts."
+        //
+        // Breakdown:
+        //   diff = 49 - 41 = 8
+        //   base = (25 + 8) × 2 = 66
+        //   Poignée = 20 (flat)
+        //   PAB = 10 × 2 = 20 (Garde)
+        //   Total per defender = 66 + 20 + 20 = 106
+        //   Taker = 106 × 3 = +318
+        //
+        // Expected: each defender −106, taker +318.
+        val scores = pdfExample(
+            contract    = Contract.GARDE,
+            bouts       = 2,
+            points      = 49,
+            poignee     = "Alice",
+            petitAuBout = "Alice"
+        )
+        assertEquals(+318, scores["Alice"])
+        assertEquals(-106, scores["Bob"])
+        assertEquals(-106, scores["Charlie"])
+        assertEquals(-106, scores["Dave"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    @Test
+    fun `PDF example 2 — Garde Sans, 1 bout, 29 pts, PAB by defender, taker wins`() {
+        // Source: R-RO201206.pdf p.9, example 2.
+        //
+        // "Le preneur gagne une Garde Sans de 4 points, mais le Petit est mené
+        //  au Bout par la Défense."
+        //
+        // Note: "4 points" = 4 points above the threshold.
+        // With 1 bout, threshold = 51. So taker scored 51 + 4 - wait, let me re-read.
+        // "une Garde Sans de 4 points" means the taker gained 4 points above threshold.
+        // But the PDF says score=116 for base and 116 - 40 = 76 per defender.
+        //
+        // Actually the PDF text says: "(25+4) × 4 (Garde Sans) = 116" and
+        // "Il faut retrancher 40 pour le Petit au Bout". So diff = 4.
+        //
+        // With any bout count, diff = 4 means takerPoints = requiredPoints + 4.
+        // We use bouts=0, points=60 → required=56, diff=4. But that gives (25+4)×4=116. ✅
+        //
+        // PAB by defender: pabAmount = 10 × 4 = 40. pabSign = -1.
+        // Taker delta = -40 × 3 = -120; each defender delta = +40.
+        // Net per defender = 116 - 40 = 76. Taker = 76 × 3 = +228.
+        //
+        // Expected: each defender −76, taker +228.
+        val scores = pdfExample(
+            contract    = Contract.GARDE_SANS,
+            bouts       = 0,
+            points      = 60,           // 60 - 56 = 4 above threshold
+            petitAuBout = "Bob"         // a defender captured the Petit
+        )
+        assertEquals(+228, scores["Alice"])
+        assertEquals(-76,  scores["Bob"])
+        assertEquals(-76,  scores["Charlie"])
+        assertEquals(-76,  scores["Dave"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    @Test
+    fun `PDF example 3 — Prise, 0 bouts, taker loses by 7, simple poignee, PAB by taker`() {
+        // Source: R-RO201206.pdf p.9, example 3.
+        //
+        // "Le preneur chute une Prise de 7 après avoir présenté une Poignée de 10 Atouts,
+        //  mais en menant le Petit au Bout."
+        //
+        // "chute de 7" = lost by 7 points below threshold.
+        // Threshold for 0 bouts = 56. Taker scored 56 - 7 = 49.
+        //
+        // Breakdown:
+        //   diff = 7; Prise ×1 → base = (25 + 7) × 1 = 32 per defender (taker lost)
+        //   Poignée = 20 → goes to winners (defenders, since taker lost): +20 per defender
+        //   PAB by taker → pabSign = +1: taker gains 10×1 per defender
+        //   Net per defender = 32 + 20 - 10 = 42
+        //   Taker = -(42 × 3) = -126
+        //
+        // Expected: each defender +42, taker -126.
+        val scores = pdfExample(
+            contract    = Contract.PRISE,
+            bouts       = 0,
+            points      = 49,           // 56 - 7 = 49
+            poignee     = "Alice",      // taker declared the Poignée
+            petitAuBout = "Alice"       // taker captured the Petit on the last trick
+        )
+        assertEquals(-126, scores["Alice"])
+        assertEquals(+42,  scores["Bob"])
+        assertEquals(+42,  scores["Charlie"])
+        assertEquals(+42,  scores["Dave"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    @Test
+    fun `PDF example 4 — Garde, 2 bouts, taker wins by 11, defender declared simple poignee`() {
+        // Source: R-RO201206.pdf p.9, example 4.
+        //
+        // "Le preneur gagne une Garde de 11, la Défense ayant présenté une Poignée."
+        //
+        // Threshold for 2 bouts = 41. Taker scored 41 + 11 = 52.
+        //
+        // Breakdown:
+        //   diff = 11; Garde ×2 → base = (25 + 11) × 2 = 72
+        //   Poignée = 20 → goes to taker (wins): taker +20 per defender
+        //   Net per defender = 72 + 20 = 92
+        //   Taker = 92 × 3 = +276
+        //
+        // Expected: each defender −92, taker +276.
+        val scores = pdfExample(
+            contract = Contract.GARDE,
+            bouts    = 2,
+            points   = 52,              // 41 + 11
+            poignee  = "Bob"            // a defender declared the Poignée
+        )
+        assertEquals(+276, scores["Alice"])
+        assertEquals(-92,  scores["Bob"])
+        assertEquals(-92,  scores["Charlie"])
+        assertEquals(-92,  scores["Dave"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    @Test
+    fun `PDF example 5 — Garde, 2 bouts, 87 pts, announced chelem, simple poignee, PAB`() {
+        // Source: R-RO201206.pdf p.9, example 5.
+        //
+        // "Sur une Garde, le preneur annonce et réussit le Chelem, montre une Poignée de
+        //  10 Atouts. Avec 2 Bouts, le preneur réalise 87 points."
+        //
+        // Breakdown:
+        //   diff = 87 - 41 = 46; Garde ×2 → base = (46 + 25) × 2 = 142
+        //   Poignée = 20 (taker wins → taker collects)
+        //   PAB = 10 × 2 = 20 (taker achieved)
+        //   Chelem announced & realized = +400
+        //   Total per defender = 142 + 20 + 20 + 400 = 582
+        //   Taker = 582 × 3 = +1746
+        //
+        // Expected: each defender −582, taker +1746.
+        val scores = pdfExample(
+            contract    = Contract.GARDE,
+            bouts       = 2,
+            points      = 87,
+            poignee     = "Alice",
+            petitAuBout = "Alice",
+            chelem      = Chelem.ANNOUNCED_REALIZED
+        )
+        assertEquals(+1746, scores["Alice"])
+        assertEquals(-582,  scores["Bob"])
+        assertEquals(-582,  scores["Charlie"])
+        assertEquals(-582,  scores["Dave"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    // ── 3-player end-to-end scoring ───────────────────────────────────────────
+    //
+    // In a 3-player game (R-RO201206.pdf p.11):
+    //   - Contracts and scoring formula are the same as 4 players.
+    //   - Each defender receives the same per-defender amount as in a 4-player game.
+    //   - The taker's score is multiplied by 2 (numDefenders = 2, takerMultiplier = 2).
+    //   - The total of 3 scores is zero.
+
+    @Test
+    fun `3-player — Garde win, taker gets 2x, two defenders get -1x, zero-sum`() {
+        // Garde ×2, 2 bouts, scored 56. diff = 56 - 41 = 15. base = (25+15)×2 = 80.
+        // 3 players: taker gets +2 × 80 = +160; each defender gets -80.
+        val players = listOf("Alice", "Bob", "Charlie")
+        val won        = takerWon(bouts = 2, points = 56)          // true
+        val roundScore = calculateRoundScore(Contract.GARDE, 2, 56) // 80
+        val scores = computePlayerScores(players, "Alice", null, won, roundScore)
+        assertEquals(+160, scores["Alice"])
+        assertEquals(-80,  scores["Bob"])
+        assertEquals(-80,  scores["Charlie"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    @Test
+    fun `3-player — Garde loss, taker pays 2x, two defenders gain 1x, zero-sum`() {
+        // Garde ×2, 1 bout, scored 40. diff = 51 - 40 = 11. base = (25+11)×2 = 72.
+        // 3 players, taker lost: taker gets -2 × 72 = -144; each defender gets +72.
+        val players = listOf("Alice", "Bob", "Charlie")
+        val won        = takerWon(bouts = 1, points = 40)          // false
+        val roundScore = calculateRoundScore(Contract.GARDE, 1, 40) // 72
+        val scores = computePlayerScores(players, "Alice", null, won, roundScore)
+        assertEquals(-144, scores["Alice"])
+        assertEquals(+72,  scores["Bob"])
+        assertEquals(+72,  scores["Charlie"])
+        assertEquals(0, scores.values.sum())
+    }
+
+    @Test
+    fun `3-player — full round with PAB and poignee is zero-sum`() {
+        // 3-player: Alice (taker) wins a Prise, 1 bout, 60 pts.
+        // diff = 60 - 51 = 9. base = (25+9)×1 = 34.
+        // With 2 defenders: taker = +2×34 = +68; each defender = -34.
+        // Poignée by Alice (taker wins → taker collects): +20 per defender, taker +40.
+        // PAB by Alice → pabSign=+1: taker +10×2=+20, each defender -10.
+        val players = listOf("Alice", "Bob", "Charlie")
+        val won        = takerWon(1, 60)
+        val roundScore = calculateRoundScore(Contract.PRISE, 1, 60) // 34
+        val base = computePlayerScores(players, "Alice", null, won, roundScore)
+        val det  = RoundDetails(
+            bouts = 1, points = 60, partnerName = null,
+            petitAuBout = "Alice", poignee = "Alice",
+            doublePoignee = null, chelem = Chelem.NONE
+        )
+        val result = applyBonuses(base, Contract.PRISE, det, "Alice", won, numDefenders = 2)
+        assertEquals(0, result.values.sum())
+        // Verify taker's total: +68 (base) + 40 (poignée) + 20 (PAB) = +128
+        assertEquals(+128, result["Alice"])
+        // Each defender: -34 (base) - 20 (poignée) - 10 (PAB) = -64
+        assertEquals(-64, result["Bob"])
+        assertEquals(-64, result["Charlie"])
+    }
+
+    // ── 5-player end-to-end scoring ───────────────────────────────────────────
+
+    @Test
+    fun `5-player — Garde win with partner, all three bonuses, zero-sum`() {
+        // 5-player: Alice (taker) called Bob (partner). 3 defenders.
+        // Garde ×2, 2 bouts, scored 56. diff = 15. base = (25+15)×2 = 80.
+        // Alice +2×80=+160, Bob +1×80=+80, Charlie/Dave/Eve -80 each.
+        //
+        // Bonuses (all three):
+        //   PAB by Alice (taker's camp, pabSign=+1): taker +20×3=+60, each defender -20.
+        //   Poignée simple (taker wins, pSign=+1):   taker +20×3=+60, each defender -20.
+        //   Chelem NOT_ANNOUNCED_REALIZED (+200):     taker +200×3=+600, each defender -200.
+        //   Partner (Bob): unaffected by all three bonuses.
+        val players = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
+        val won        = takerWon(2, 56)
+        val roundScore = calculateRoundScore(Contract.GARDE, 2, 56)
+        val base = computePlayerScores(players, "Alice", "Bob", won, roundScore)
+        val det  = RoundDetails(
+            bouts = 2, points = 56, partnerName = "Bob",
+            petitAuBout = "Alice", poignee = "Alice",
+            doublePoignee = null, chelem = Chelem.NOT_ANNOUNCED_REALIZED
+        )
+        val result = applyBonuses(base, Contract.GARDE, det, "Alice", won, numDefenders = 3)
+        assertEquals(0, result.values.sum())
+        // Bob (partner) must match his base score — untouched by bonuses.
+        assertEquals(base["Bob"], result["Bob"])
+    }
+
+    @Test
+    fun `5-player — taker alone (no partner), Prise win — taker gets 4x, zero-sum`() {
+        // King was in the Dog, so taker plays 1v4. partnerName = null, 5 players.
+        // computePlayerScores: numDefenders = 4, takerMultiplier = 4.
+        // Prise ×1, 3 bouts, scored 36 (exact threshold). diff = 0. base = 25.
+        // Alice +4×25=+100; each of Bob/Charlie/Dave/Eve -25.
+        val players = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
+        val won        = takerWon(3, 36)
+        val roundScore = calculateRoundScore(Contract.PRISE, 3, 36)
+        val scores = computePlayerScores(players, "Alice", null, won, roundScore)
+        assertEquals(+100, scores["Alice"])
+        assertEquals(-25,  scores["Bob"])
+        assertEquals(-25,  scores["Charlie"])
+        assertEquals(-25,  scores["Dave"])
+        assertEquals(-25,  scores["Eve"])
+        assertEquals(0, scores.values.sum())
     }
 }

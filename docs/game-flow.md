@@ -85,8 +85,11 @@ The four player-assigned bonuses are displayed in a compact grid. Each row shows
 | Announced & realized       | Caller announced and the attacking team won every trick | +400          |
 | Not announced, realized    | Attacking team won every trick without announcing | +200              |
 | Announced, not realized    | Caller announced but the attacking team failed   | −200               |
+| Defenders realized         | Defending camp won every trick without announcing (R-RO201206.pdf p.6) | −200 |
 
 The bonus is a flat amount exchanged between the taker and each defender individually — it is **not** multiplied by the contract. A positive bonus means the taker collects that amount from each defender; a negative bonus means the taker pays that amount to each defender. The partner (5-player) is not involved in the chelem bonus. The result is always zero-sum.
+
+> **Note on "Defenders realized"**: this is a rare but official scenario from the FFT rulebook (R-RO201206.pdf page 6): *"Paradoxalement, il arrive que la défense inflige un Chelem au déclarant. Dans ce cas, chaque défenseur reçoit, en plus de la marque normale, une prime de 200 points."* The financial effect (taker pays 200 to each defender) is the same as "Announced, not realized", but the cause is different — the defenders won all tricks, not the taker failing an announced slam.
 
 **Chelem player**: when a non-None chelem option is selected a second selector appears — "Who called the chelem?". Available choices are the taker and (in 5-player games) the partner if one has been selected. Once a player is chosen and the chelem is of the *announced* type, a note is shown reminding the table that **that player leads the first trick of the round**, overriding the normal turn order.
 
@@ -224,7 +227,7 @@ The bar is a direct child of the outer (non-scrollable) `Column`, which also own
 ## Data Model
 
 - `Contract` enum — four contracts with `displayName` and `multiplier`.
-- `Chelem` enum — four grand slam outcomes (`NONE`, `ANNOUNCED_REALIZED`, `ANNOUNCED_NOT_REALIZED`, `NOT_ANNOUNCED_REALIZED`).
+- `Chelem` enum — five grand slam outcomes (`NONE`, `ANNOUNCED_REALIZED`, `ANNOUNCED_NOT_REALIZED`, `NOT_ANNOUNCED_REALIZED`, `DEFENDERS_REALIZED`). The last entry covers the FFT-official defenders-chelem scenario (R-RO201206.pdf p.6).
 - `RoundDetails` data class — all scoring fields: bouts, points, `partnerName` (5-player only), player-assigned bonuses, the chelem outcome, and `chelemPlayer` (which player called/achieved the chelem — null when `chelem == NONE`).
 - `RoundResult` data class — round number, taker name, contract (`null` if skipped), details (`null` if skipped), `won` (`null` if skipped), and `playerScores` (empty map if skipped).
 - `requiredPoints(bouts)` — returns the minimum points needed to win for a given bout count.
