@@ -127,6 +127,14 @@ data class AppStrings(
     val chelemAnnouncedRealized: String,
     val chelemAnnouncedNotRealized: String,
     val chelemNotAnnouncedRealized: String,
+
+    // ── Contract enum labels ──────────────────────────────────────────────────
+    // In French (and internationally) these are always the French Tarot terms.
+    // In English, plain translations are provided for accessibility.
+    val contractPrise: String,
+    val contractGarde: String,
+    val contractGardeSans: String,
+    val contractGardeContre: String,
 )
 
 // ── English strings ───────────────────────────────────────────────────────────
@@ -203,6 +211,12 @@ val EnStrings = AppStrings(
     chelemAnnouncedRealized  = "Announced & realized",
     chelemAnnouncedNotRealized = "Announced, not realized",
     chelemNotAnnouncedRealized = "Not announced, realized",
+
+    // English translations for the four contract levels.
+    contractPrise        = "Small",
+    contractGarde        = "Guard",
+    contractGardeSans    = "Guard Without",
+    contractGardeContre  = "Guard Against",
 
     feedbackButton           = "Send Feedback",
 )
@@ -282,6 +296,12 @@ val FrStrings = AppStrings(
     chelemAnnouncedNotRealized = "Annoncé, non réalisé",
     chelemNotAnnouncedRealized = "Non annoncé, réalisé",
 
+    // French contract names — the canonical French Tarot terminology.
+    contractPrise        = "Prise",
+    contractGarde        = "Garde",
+    contractGardeSans    = "Garde Sans",
+    contractGardeContre  = "Garde Contre",
+
     feedbackButton           = "Contacter le développeur",
 )
 
@@ -294,10 +314,17 @@ fun appStrings(locale: AppLocale): AppStrings = when (locale) {
 // ── Enum localization extensions ──────────────────────────────────────────────
 
 // Returns the localized display name for a Contract.
-// The four Tarot contract names (Prise, Garde, Garde Sans, Garde Contre) are French
-// terms used internationally — they are the same in both English and French.
-@Suppress("UNUSED_PARAMETER")
-fun Contract.localizedName(locale: AppLocale): String = displayName
+// French keeps the canonical Tarot terms; English provides plain translations
+// so users unfamiliar with French Tarot can understand each contract level.
+fun Contract.localizedName(locale: AppLocale): String {
+    val strings = appStrings(locale)
+    return when (this) {
+        Contract.PRISE        -> strings.contractPrise
+        Contract.GARDE        -> strings.contractGarde
+        Contract.GARDE_SANS   -> strings.contractGardeSans
+        Contract.GARDE_CONTRE -> strings.contractGardeContre
+    }
+}
 
 // Returns the localized display name for a Chelem outcome.
 // Chelem options have meaningful translations (None/Aucun, Announced/Annoncé, etc.).
