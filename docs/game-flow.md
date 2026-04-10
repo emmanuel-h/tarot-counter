@@ -33,16 +33,19 @@ Everything is presented on **a single scrollable page**: the compact scoreboard,
 
 #### Contract selection
 
-The current taker's name is shown above a row of FilterChips — one per contract (weakest → strongest):
+The current taker's name is shown above a `SingleChoiceSegmentedButtonRow` — one segment per contract (weakest → strongest).
+Each segment displays the contract name **and its score multiplier** so players understand the score impact before committing:
 
-| Contract (FR) | Contract (EN)  | Multiplier | Description                    |
-|---------------|----------------|:----------:|-------------------------------|
-| Prise         | Small          | ×1         | Weakest contract               |
-| Garde         | Guard          | ×2         | Standard contract              |
-| Garde Sans    | Guard Without  | ×4         | Play without the dog           |
-| Garde Contre  | Guard Against  | ×6         | Play against the dog           |
+| Contract (FR) | Contract (EN)  | Button label (EN) | Description                  |
+|---------------|----------------|:-----------------:|------------------------------|
+| Prise         | Small          | Small ×1          | Weakest contract             |
+| Garde         | Guard          | Guard ×2          | Standard contract            |
+| Garde Sans    | Guard Without  | Guard Without ×4  | Play without the dog         |
+| Garde Contre  | Guard Against  | Guard Against ×6  | Play against the dog         |
 
 Contract names are localized: French uses the canonical Tarot terms; English provides plain translations for accessibility.
+The `×N` multiplier suffix is locale-neutral and always displayed in both languages.
+All four labels share a `sharedSizeState` so they always render at the same — smallest needed — font size, regardless of screen width or translation length.
 
 The three action buttons at the bottom of the screen let the taker confirm, skip, or end the game (see [Bottom action bar](#bottom-action-bar) below).
 

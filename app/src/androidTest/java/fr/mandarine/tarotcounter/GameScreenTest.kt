@@ -65,12 +65,16 @@ class GameScreenTest {
     }
 
     /**
-     * Selects [contract] then types [score] into the points field so the Confirm
+     * Selects a contract by its test tag then types [score] into the points field so the Confirm
      * button becomes enabled. Required in every test that submits a round, because
      * Confirm is now disabled until both a contract and a non-empty score are set.
+     *
+     * [contractTag] is the testTag on the SegmentedButton, e.g. "contract_GARDE".
+     * Using tags instead of display text makes tests locale-independent and robust against
+     * the multiplier suffix now shown in each button label (e.g. "Guard ×2").
      */
-    private fun selectContractAndEnterScore(contract: String = "Garde", score: String = "45") {
-        composeTestRule.onNodeWithText(contract).performClick()
+    private fun selectContractAndEnterScore(contractTag: String = "contract_GARDE", score: String = "45") {
+        composeTestRule.onNodeWithTag(contractTag).performClick()
         composeTestRule.onNodeWithTag("points_input").performTextInput(score)
     }
 
@@ -101,8 +105,25 @@ class GameScreenTest {
     @Test
     fun all_four_contract_buttons_are_displayed() {
         launchGame()
+        // Each button now shows "<localized name> ×<multiplier>" (e.g. "Guard ×2" in EN).
+        // We assert via testTag (locale-independent) and also verify the multiplier suffix
+        // is visible as text so the feature is covered end-to-end.
         Contract.entries.forEach { contract ->
-            composeTestRule.onNodeWithText(contract.displayName).assertIsDisplayed()
+            composeTestRule.onNodeWithTag("contract_${contract.name}").assertIsDisplayed()
+        }
+    }
+
+    // ── Spec: contract multiplier is visible in the button label (issue #104) ───
+
+    @Test
+    fun contract_buttons_display_multiplier_factor() {
+        // Spec (#104): the multiplier (×1, ×2, ×4, ×6) must be visible in the
+        // contract selection row so players understand the score impact at a glance.
+        launchGame()
+        listOf("×1", "×2", "×4", "×6").forEach { multiplier ->
+            composeTestRule
+                .onNodeWithText(multiplier, substring = true)
+                .assertIsDisplayed()
         }
     }
 
@@ -142,7 +163,7 @@ class GameScreenTest {
     fun confirm_button_remains_disabled_when_contract_selected_but_no_score_entered() {
         // Spec: contract alone is not enough — a score value must also be typed.
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 
@@ -163,7 +184,7 @@ class GameScreenTest {
     @Test
     fun bottom_bar_buttons_remain_visible_while_contract_form_is_open() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
         composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
         composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
         composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
@@ -174,7 +195,7 @@ class GameScreenTest {
     @Test
     fun selecting_a_contract_shows_the_round_details_form() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         // The bouts field appears in the scrollable form content.
         composeTestRule.onNodeWithText("Number of bouts (oudlers)").assertIsDisplayed()
@@ -185,16 +206,18 @@ class GameScreenTest {
     @Test
     fun details_form_shows_selected_contract_in_header() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde Sans").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE_SANS").performClick()
+        // In EN locale the label is "Guard Without ×4"; substring = true so the
+        // assertion survives future multiplier-format tweaks.
         composeTestRule
-            .onNodeWithText("Garde Sans", substring = true)
+            .onNodeWithText("Guard Without", substring = true)
             .assertIsDisplayed()
     }
 
     @Test
     fun details_form_shows_all_four_chelem_options() {
         launchGame()
-        composeTestRule.onNodeWithText("Prise").performClick()
+        composeTestRule.onNodeWithTag("contract_PRISE").performClick()
         Chelem.entries.forEach { chelem ->
             composeTestRule.onNodeWithText(chelem.displayName).assertIsDisplayed()
         }
@@ -203,7 +226,7 @@ class GameScreenTest {
     @Test
     fun details_form_shows_bouts_dropdown_with_0_through_3() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithTag("bouts_dropdown").assertIsDisplayed()
 
@@ -219,7 +242,7 @@ class GameScreenTest {
     @Test
     fun selecting_a_bout_value_from_dropdown_updates_selection() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
 
@@ -234,7 +257,7 @@ class GameScreenTest {
     @Test
     fun details_form_shows_player_names_as_bonus_options() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
         players.forEach { name ->
             assertTrue(
                 "$name should appear as a bonus-assignment option",
@@ -286,8 +309,10 @@ class GameScreenTest {
         // Enter 0 explicitly so the history row shows "0 pts".
         selectContractAndEnterScore(score = "0")
         composeTestRule.onNodeWithText("Confirm round").performClick()
+        // Round history shows the localized contract name without multiplier.
+        // In EN locale, Contract.GARDE localizes to "Guard".
         composeTestRule
-            .onNodeWithText("Garde", substring = true)
+            .onNodeWithText("Guard", substring = true)
             .assertIsDisplayed()
         composeTestRule
             .onNodeWithText("0 pts", substring = true)
@@ -365,21 +390,21 @@ class GameScreenTest {
     fun score_history_button_also_appears_in_round_details_form() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
         composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
     }
 
     @Test
     fun partner_selector_not_shown_for_3_player_game() {
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
         composeTestRule.onNodeWithText("Partner (called by taker)").assertDoesNotExist()
     }
 
     @Test
     fun partner_selector_is_shown_for_5_player_game() {
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
         composeTestRule.onNodeWithText("Partner (called by taker)").assertIsDisplayed()
     }
 
@@ -401,14 +426,14 @@ class GameScreenTest {
     @Test
     fun end_game_button_is_displayed_on_step_2() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
         composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
     }
 
     @Test
     fun tapping_end_game_on_step_2_opens_final_score_screen() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
         composeTestRule.onNodeWithText("End Game").performClick()
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
     }
@@ -446,7 +471,7 @@ class GameScreenTest {
     @Test
     fun entering_value_above_91_shows_error_message() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("92")
 
@@ -458,7 +483,7 @@ class GameScreenTest {
     @Test
     fun entering_value_above_91_disables_confirm_button() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("99")
 
@@ -468,7 +493,7 @@ class GameScreenTest {
     @Test
     fun entering_91_does_not_show_error() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("91")
 
@@ -480,7 +505,7 @@ class GameScreenTest {
     @Test
     fun entering_91_keeps_confirm_button_enabled() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("91")
 
@@ -507,7 +532,7 @@ class GameScreenTest {
     @Test
     fun won_round_shows_won_indicator() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
         composeTestRule.onAllNodesWithText("3")[0].performClick()
@@ -524,7 +549,7 @@ class GameScreenTest {
     @Test
     fun tapping_bonus_label_text_shows_tooltip() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithText("Petit").performClick()
 
@@ -536,7 +561,7 @@ class GameScreenTest {
     @Test
     fun tapping_bonus_label_shows_tooltip_title() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("contract_GARDE").performClick()
 
         composeTestRule.onNodeWithText("Petit").performClick()
 

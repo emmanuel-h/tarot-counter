@@ -281,13 +281,43 @@ fun GameScreen(
                         onClick  = { selectedContract = if (selectedContract == c) null else c },
                         // Hide the checkmark icon — the filled/outlined segment already
                         // communicates selection clearly.
-                        icon     = {}
+                        icon     = {},
+                        // Stable tag derived from the enum constant name (e.g. "contract_GARDE")
+                        // so UI tests can click a specific contract without depending on
+                        // the displayed text, which changes with locale and now includes
+                        // the multiplier suffix.
+                        modifier = Modifier.testTag("contract_${c.name}")
                     ) {
-                        AutoSizeText(
-                            text            = c.localizedName(locale),
-                            modifier        = Modifier.padding(horizontal = 1.dp),
-                            sharedSizeState = contractLabelSize
-                        )
+                        // Box draws two layers: the faded multiplier first (behind), then
+                        // the contract name on top. Compose draws Box children in declaration
+                        // order, so the first child is always below the second.
+                        Box(
+                            modifier         = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // ── Background multiplier (right-aligned, faded) ───────────────
+                            // headlineSmall (~24 sp, ≈ 32 dp) fits inside the SegmentedButton's
+                            // 40 dp minimum height so it never inflates the row.
+                            // alpha = 0.12f — visible as a background cue without competing
+                            // with the foreground label. onSurface adapts to both the light
+                            // (parchment) and dark (felt) themes automatically.
+                            Text(
+                                text     = "×${c.multiplier}",
+                                style    = MaterialTheme.typography.headlineSmall,
+                                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(end = 6.dp)
+                            )
+                            // ── Foreground contract name (centred) ────────────────────────
+                            // AutoSizeText + sharedSizeState keeps all four labels at the
+                            // same font size — the smallest needed to fit the longest label.
+                            AutoSizeText(
+                                text            = c.localizedName(locale),
+                                modifier        = Modifier.padding(horizontal = 1.dp),
+                                sharedSizeState = contractLabelSize
+                            )
+                        }
                     }
                 }
             }
