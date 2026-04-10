@@ -58,10 +58,20 @@ Tapping the active chip again collapses the form and deselects the contract.
 | Points             | Number input (0–91)         | Points scored by the selected camp. When "Defenders" is chosen the app converts to taker points on confirm (`takerPoints = 91 − defenderPoints`). Values outside 0–91 show an error and disable the Confirm button. |
 | Partner            | None or any player (5-player only) | The player called by the taker as a silent partner |
 | Petit au bout      | Checkbox per player         | Player who captured the 1 of trump on the last trick |
-| Poignée            | Checkbox per player         | Player who showed a poignée (10+ trumps) |
-| Double poignée     | Checkbox per player         | Player who showed a double poignée (13+ trumps) |
-| Triple poignée     | Checkbox per player         | Player who showed a triple poignée (15+ trumps) |
+| Poignée            | Checkbox per player         | Player who showed a simple Poignée (see thresholds below) |
+| Double poignée     | Checkbox per player         | Player who showed a double Poignée (see thresholds below) |
+| Triple poignée     | Checkbox per player         | Player who showed a triple Poignée (see thresholds below) |
 | Chelem             | Self-labelled dropdown + player selector | Grand slam outcome and who called it. Shows "Chelem" when nothing is selected, otherwise the chosen outcome's name. |
+
+**Poignée trump thresholds** vary with the number of players (official FFT rules, R-RO201206.pdf):
+
+| Players | Simple Poignée | Double Poignée | Triple Poignée |
+|---------|:--------------:|:--------------:|:--------------:|
+| 3       | 13 trumps      | 15 trumps      | 18 trumps      |
+| 4       | 10 trumps      | 13 trumps      | 15 trumps      |
+| 5       |  8 trumps      | 10 trumps      | 13 trumps      |
+
+The tooltip shown next to each Poignée label in the UI automatically displays the correct threshold for the current game's player count.
 
 The four player-assigned bonuses are displayed in a compact grid. Each row shows a **label** with an ⓘ info icon immediately next to it (not pushed to the edge), and one **checkbox per player**. Tapping anywhere on the label row (the text or the icon) opens a tooltip describing the bonus and its point value — the entire row is the tap target, not only the small icon. Ticking a checkbox assigns that bonus to that player; ticking it again clears the assignment. At most one player can hold each bonus at a time.
 
@@ -154,6 +164,8 @@ The partner (5-player) does not participate in the poignée bonus exchange. The 
 
 **Example:** 4-player game, double poignée (30 pts), declared by a defender, taker loses → taker pays 30 to each of the 3 defenders (−90 for taker, +30 for each defender).
 
+The minimum number of trumps needed to declare each type differs per player count — see the [Poignée thresholds table](#poignée-trump-thresholds) in the Inline round details section above.
+
 ## Compact Scoreboard & Round History
 
 After the first round is completed the game screen shows a persistent **compact scoreboard** at the top of the page — one column per player with their name and running total. This stays visible at all times without opening a separate screen.
@@ -220,5 +232,6 @@ The bar is a direct child of the outer (non-scrollable) `Column`, which also own
 - `calculateRoundScore(contract, bouts, points)` — returns the base round score before distribution.
 - `computePlayerScores(allPlayers, takerName, partnerName, won, roundScore)` — returns a `Map<String, Int>` of player → score for the round.
 - `petitAuBoutBonus(contract)` — returns `10 × contract.multiplier`. Direction (which camp benefits) is determined in GameScreen by comparing the achiever's name against the taker/partner.
+- `poigneeThresholds(playerCount)` — returns a `Triple<Int, Int, Int>` with the minimum trump counts for (simple, double, triple) Poignée, varying by player count (3 → 13/15/18, 4 → 10/13/15, 5 → 8/10/13). Used by `AppStrings` to show the correct threshold in each tooltip.
 - `poigneeBonus(poignee, doublePoignee, triplePoignee)` — returns the flat per-defender bonus: 20, 30, 40, or 0. Direction follows the round winner, applied in GameScreen.
 - `chelemBonus(chelem)` — returns the flat per-defender bonus value: +400, +200, −200, or 0.

@@ -455,9 +455,11 @@ fun GameScreen(
                     ),
                     bonusTooltips   = listOf(
                         strings.petitTooltipBody,
-                        strings.poigneeTooltipBody,
-                        strings.doublePoigneeTooltipBody,
-                        strings.triplePoigneeTooltipBody
+                        // Invoke with the actual player count so the tooltip shows the
+                        // correct trump threshold (8/10/13 for 5 players, 10/13/15 for 4, 13/15/18 for 3).
+                        strings.poigneeTooltipBody(displayNames.size),
+                        strings.doublePoigneeTooltipBody(displayNames.size),
+                        strings.triplePoigneeTooltipBody(displayNames.size)
                     ),
                     petitAuBout     = petitAuBout,    onPetit         = { petitAuBout   = it },
                     poignee         = poignee,         onPoignee       = { poignee       = it },

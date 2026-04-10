@@ -55,7 +55,7 @@ Scores are zero-sum. The taker receives `±(n−1) × roundScore` for 3/4-player
 Player-assigned bonuses are entered via a compact grid with one checkbox per player. Ticking a checkbox assigns that bonus; ticking it again clears it.
 
 - **Petit au bout** — player who captured the 1 of trump on the last trick
-- **Poignée / Double poignée / Triple poignée** — trump distribution bonuses (10 / 13 / 15 trumps shown)
+- **Poignée / Double poignée / Triple poignée** — trump distribution bonuses; the minimum trump count required varies by player count (3 players: 13/15/18 · 4 players: 10/13/15 · 5 players: 8/10/13) and the tooltip in the UI always shows the correct threshold for the current game
 - **Chelem** — grand slam outcome selected from a dropdown (announced+won, announced+lost, unannounced+won, or none), with an additional player selector to record who called it. When an announced chelem is selected and a player is chosen, the app reminds the table that this player leads the first trick.
 
 ## Architecture
