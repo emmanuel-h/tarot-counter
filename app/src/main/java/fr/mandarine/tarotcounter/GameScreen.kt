@@ -596,11 +596,23 @@ fun GameScreen(
         ) {
             // End Game: filled button with error container color (red) so the user
             // immediately understands that clicking this terminates the game.
+            //
+            // If no rounds have been played yet, ending the game cancels it entirely:
+            // the in-progress entry is cleared and the user is sent back to the setup
+            // screen without recording anything (issue #90).
+            // If at least one round was played, the game is saved and the Final Score
+            // screen is shown as usual.
             AppButton(
                 text     = strings.endGame,
                 onClick  = {
-                    viewModel.endGame()
-                    showFinalScore = true
+                    if (roundHistory.isEmpty()) {
+                        // Zero rounds played — cancel silently, nothing to record.
+                        viewModel.clearInProgressGame()
+                        onEndGame()
+                    } else {
+                        viewModel.endGame()
+                        showFinalScore = true
+                    }
                 },
                 modifier = Modifier.weight(1f),
                 colors   = ButtonDefaults.buttonColors(

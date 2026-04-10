@@ -573,6 +573,22 @@ class GameViewModelTest {
     }
 
     @Test
+    fun `endGame clears in-progress game even when no rounds have been played`() = runTest {
+        // Regression test for issue #90: ending a game with zero rounds must cancel
+        // the in-progress entry so it does not linger as a resumable game on the landing screen.
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.endGame()
+
+        assertEquals(
+            "clearInProgressGame must be called even when no rounds were played",
+            1, storage.clearInProgressCallCount
+        )
+    }
+
+    @Test
     fun `endGame saved game contains correct playerNames`() = runTest {
         val players = listOf("Alice", "Bob", "Charlie")
         val storage = FakeGameStorage()

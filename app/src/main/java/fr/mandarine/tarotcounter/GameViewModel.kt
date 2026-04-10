@@ -179,7 +179,9 @@ class GameViewModel internal constructor(
         saveInProgressGame(buildProgressSnapshot())
     }
 
-    // Saves the completed game to the history list (when at least one round was played).
+    // Saves the completed game to the history list when at least one round was played,
+    // or clears the in-progress entry without saving if no rounds were recorded.
+    //
     // Calling saveGame() also clears the in-progress entry via saveGame()'s implementation.
     // The caller (GameScreen) is responsible for navigating to the Final Score screen.
     fun endGame() {
@@ -193,6 +195,10 @@ class GameViewModel internal constructor(
                     finalScores = computeFinalTotals(_displayNames, roundHistory)
                 )
             )
+        } else {
+            // No rounds were played — discard the in-progress game so it does not
+            // linger as a resumable entry on the landing screen (issue #90).
+            clearInProgressGame()
         }
     }
 

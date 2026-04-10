@@ -604,4 +604,85 @@ class GameScreenTest {
         Espresso.pressBack()
         assertTrue("System back on history overlay should call onEndGame", endGameCalled)
     }
+
+    // ── Spec: end game with zero rounds cancels instead of recording (issue #90) ─
+
+    @Test
+    fun end_game_with_no_rounds_fires_onEndGame_immediately_without_showing_final_score() {
+        // Spec (issue #90): clicking "End Game" before any round is confirmed must
+        // cancel the game and navigate away — it must NOT show the Final Score screen.
+        var endGameCalled = false
+        val storage = FakeGameStorage()
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            storage
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                GameScreen(
+                    viewModel = viewModel,
+                    onEndGame = { endGameCalled = true }
+                )
+            }
+        }
+
+        // Click "End Game" without confirming any rounds.
+        composeTestRule.onNodeWithText("End Game").performClick()
+
+        // onEndGame callback must have fired (user navigates away).
+        assertTrue("End Game with zero rounds must fire onEndGame", endGameCalled)
+        // The Final Score screen must not appear — "Game Over" heading should be absent.
+        composeTestRule.onNodeWithText("Game Over").assertDoesNotExist()
+    }
+
+    @Test
+    fun end_game_with_no_rounds_clears_in_progress_game_in_storage() {
+        // Spec (issue #90): cancelling a game with zero rounds must remove the
+        // in-progress entry so it does not show up as resumable on the landing screen.
+        val storage = FakeGameStorage()
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            storage
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                GameScreen(viewModel = viewModel)
+            }
+        }
+
+        composeTestRule.onNodeWithText("End Game").performClick()
+
+        assertTrue(
+            "In-progress game must be cleared when game is cancelled with zero rounds",
+            storage.clearInProgressCallCount >= 1
+        )
+    }
+
+    @Test
+    fun end_game_with_rounds_still_shows_final_score_screen() {
+        // Guard: the fix for issue #90 must not break the normal "End Game" flow
+        // when at least one round has been played.
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            FakeGameStorage()
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                GameScreen(viewModel = viewModel)
+            }
+        }
+
+        // Confirm one round so roundHistory is non-empty.
+        selectContractAndEnterScore()
+        composeTestRule.onNodeWithText("Confirm").performClick()
+
+        // Now end the game.
+        composeTestRule.onNodeWithText("End Game").performClick()
+
+        // Final Score screen must be shown.
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+    }
 }
