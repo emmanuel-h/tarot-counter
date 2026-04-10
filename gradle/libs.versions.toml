@@ -43,4 +43,9 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 # Kotlin Serialization plugin: needed to generate JSON read/write code at compile time.
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+# PIT mutation testing plugin: introduces small code changes (mutants) and checks whether
+# our tests catch them. A surviving mutant means a test gap.
+# Note: the info.solidsoft.pitest Gradle plugin is NOT used here because it
+# conflicts with AGP 9.x (its afterEvaluate hook never fires under AGP).
+# PIT is invoked directly via a JavaExec task in app/build.gradle.kts instead.
 
