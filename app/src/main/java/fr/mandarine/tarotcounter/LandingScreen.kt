@@ -24,11 +24,13 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -123,32 +125,52 @@ fun LandingScreen(
             horizontalArrangement = Arrangement.SpaceBetween, // push groups to each edge
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
-            // ── Theme chips (left) ────────────────────────────────────────────
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = theme == AppTheme.LIGHT,
-                    onClick  = { onThemeChange(AppTheme.LIGHT) },
-                    label    = { Text("☀️") }
-                )
-                FilterChip(
-                    selected = theme == AppTheme.DARK,
-                    onClick  = { onThemeChange(AppTheme.DARK) },
-                    label    = { Text("🌙") }
-                )
+            // ── Theme toggle (left) ───────────────────────────────────────────
+            // SingleChoiceSegmentedButtonRow groups related options into one visual
+            // unit: the selected segment gets a filled background, and unselected
+            // segments have no individual border — only the outer row border remains.
+            // This is clearer than separate FilterChips, which all show an outline.
+            val themeOptions   = listOf(AppTheme.LIGHT to "☀️", AppTheme.DARK to "🌙")
+            val themeLabelSize = rememberSharedAutoSizeState()
+            SingleChoiceSegmentedButtonRow {
+                themeOptions.forEachIndexed { index, (themeOption, label) ->
+                    SegmentedButton(
+                        shape    = SegmentedButtonDefaults.itemShape(index, themeOptions.size),
+                        selected = theme == themeOption,
+                        // Calling the callback even for the already-selected option
+                        // is safe and idiomatic: the caller simply sets the same value again.
+                        onClick  = { onThemeChange(themeOption) },
+                        // Suppress the default checkmark — the filled background already
+                        // communicates which option is selected.
+                        icon     = {}
+                    ) {
+                        AutoSizeText(
+                            text            = label,
+                            modifier        = Modifier.padding(horizontal = 1.dp),
+                            sharedSizeState = themeLabelSize
+                        )
+                    }
+                }
             }
 
-            // ── Language chips (right) ────────────────────────────────────────
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = locale == AppLocale.EN,
-                    onClick  = { onLocaleChange(AppLocale.EN) },
-                    label    = { Text("🇬🇧") }
-                )
-                FilterChip(
-                    selected = locale == AppLocale.FR,
-                    onClick  = { onLocaleChange(AppLocale.FR) },
-                    label    = { Text("🇫🇷") }
-                )
+            // ── Language toggle (right) ───────────────────────────────────────
+            val localeOptions   = listOf(AppLocale.EN to "🇬🇧", AppLocale.FR to "🇫🇷")
+            val localeLabelSize = rememberSharedAutoSizeState()
+            SingleChoiceSegmentedButtonRow {
+                localeOptions.forEachIndexed { index, (localeOption, label) ->
+                    SegmentedButton(
+                        shape    = SegmentedButtonDefaults.itemShape(index, localeOptions.size),
+                        selected = locale == localeOption,
+                        onClick  = { onLocaleChange(localeOption) },
+                        icon     = {}
+                    ) {
+                        AutoSizeText(
+                            text            = label,
+                            modifier        = Modifier.padding(horizontal = 1.dp),
+                            sharedSizeState = localeLabelSize
+                        )
+                    }
+                }
             }
         }
 
@@ -195,16 +217,17 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Row places its children side by side horizontally.
-        // `spacedBy(8.dp)` adds 8dp of space between each chip.
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Loop from 3 to 5 (inclusive) to create one chip per player count.
-            for (n in 3..5) {
-                // FilterChip is a selectable chip from Material Design 3.
-                // `selected` controls whether this chip appears highlighted.
-                FilterChip(
+        // SingleChoiceSegmentedButtonRow groups the three player-count options
+        // into one visual unit so the selected count is immediately obvious.
+        // `fillMaxWidth(0.6f)` keeps the row from stretching too wide on large screens.
+        val playerCountOptions = listOf(3, 4, 5)
+        val playerLabelSize    = rememberSharedAutoSizeState()
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth(0.6f)) {
+            playerCountOptions.forEachIndexed { index, n ->
+                SegmentedButton(
+                    shape    = SegmentedButtonDefaults.itemShape(index, playerCountOptions.size),
                     selected = selectedPlayers == n,
-                    onClick = {
+                    onClick  = {
                         selectedPlayers = n
                         // Resize the name list to match the new player count.
                         // If the new count is larger, pad with empty strings.
@@ -212,8 +235,14 @@ fun LandingScreen(
                         while (playerNames.size < n) playerNames.add("")
                         while (playerNames.size > n) playerNames.removeAt(playerNames.lastIndex)
                     },
-                    label = { Text(n.toString()) } // chip label: "3", "4", or "5"
-                )
+                    icon = {} // suppress the default checkmark icon
+                ) {
+                    AutoSizeText(
+                        text            = n.toString(), // "3", "4", or "5"
+                        modifier        = Modifier.padding(horizontal = 1.dp),
+                        sharedSizeState = playerLabelSize
+                    )
+                }
             }
         }
 
