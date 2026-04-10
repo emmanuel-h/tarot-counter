@@ -127,13 +127,14 @@ If the build fails, show the error output to the user and stop.
 
 ---
 
-## Step 7 — Commit the version bump
+## Step 7 — Commit and push the version bump
 
-Stage only the build file (no secrets, no `.aab` binary):
+Stage only the build file (no secrets, no `.aab` binary), then push immediately:
 
 ```bash
 git add app/build.gradle.kts
 git commit -m "chore: bump version to ${NEW_NAME} (code ${NEW_CODE})"
+git push
 ```
 
 ---
@@ -226,7 +227,6 @@ Display the URL clearly to the user.
 Also remind the user:
 - Upload the `.aab` to **Google Play Console → Production (or Internal testing) → Create new release**.
 - The same signing keystore must be used for every future release.
-- Push the version-bump commit: `git push`.
 
 ---
 
