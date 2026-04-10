@@ -154,6 +154,15 @@ gh release create "$TAG" \
 gh release upload "$TAG" \
   "app/build/outputs/bundle/release/app-release.aab" \
   --clobber
+
+# Attach the R8 mapping file to the release.
+# This file maps obfuscated class/method names back to their original names and is
+# required to deobfuscate crash stack traces for this specific release version.
+# Play Console also uses it automatically when you upload the AAB.
+# Without archiving it here, the file would be overwritten on the next build.
+gh release upload "$TAG" \
+  "app/build/outputs/mapping/release/mapping.txt" \
+  --clobber
 ```
 
 ---

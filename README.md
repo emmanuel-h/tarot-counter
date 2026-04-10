@@ -149,6 +149,22 @@ Release builds automatically minify and shrink resources (`isMinifyEnabled = tru
 `app/proguard-rules.pro` — see [`docs/release-signing.md`](docs/release-signing.md)
 for details.
 
+### Crash Reporting
+
+TarotCounter uses Android Vitals (built into Google Play) for automatic crash
+collection — no third-party SDK is required. Two types of symbols are bundled in
+every release App Bundle to make crash reports readable:
+
+- **Native debug symbols** — `ndk { debugSymbolLevel = "FULL" }` in
+  `app/build.gradle.kts` embeds unstripped `.so` files so Play Console can
+  symbolicate native stack frames (e.g. from Jetpack Compose's native libraries).
+- **R8 mapping file** — generated automatically by R8 minification; bundled in the
+  `.aab` and also archived as a `mapping.txt` asset on each GitHub release so that
+  Kotlin/Java frames can always be deobfuscated.
+
+See [`docs/crash-reporting.md`](docs/crash-reporting.md) for the full setup,
+manual retrace instructions, and where to view crash reports in Play Console.
+
 ## Testing
 
 ```bash
@@ -200,6 +216,7 @@ TarotCounter/
 │   ├── app-name.md           # App name branding and locale-specific launcher labels
 │   ├── release-signing.md    # Release signing setup for local dev and CI
 │   ├── release-workflow.md   # /release-store skill: full publish workflow
+│   ├── crash-reporting.md    # Crash reporting: native symbols, mapping file, Android Vitals
 │   └── mutation-testing.md   # PIT mutation testing: setup, quality gate, reading reports
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
@@ -223,3 +240,4 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/app-name.md`](docs/app-name.md) — app name branding, locale-specific launcher labels, and how the system name and in-app title relate
 - [`docs/release-signing.md`](docs/release-signing.md) — how to configure release signing for local builds and CI/CD pipelines
 - [`docs/release-workflow.md`](docs/release-workflow.md) — automated release workflow via `/release-store` skill (version bump, AAB build, GitHub release)
+- [`docs/crash-reporting.md`](docs/crash-reporting.md) — crash reporting setup: native debug symbols, R8 mapping file, Android Vitals, manual retrace
