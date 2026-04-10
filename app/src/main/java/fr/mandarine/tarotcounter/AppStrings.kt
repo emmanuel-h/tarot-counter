@@ -38,7 +38,12 @@ data class AppStrings(
     // ── Game Screen ───────────────────────────────────────────────────────────
     // "Round 1" / "Manche 1" header.
     val roundHeader: (n: Int) -> String,
-    // "{Player} — choose a contract:" prompt above the contract chips.
+    // "Dealer: Alice" label shown above the attacker selector for context.
+    val dealerLabel: (dealer: String) -> String,
+    // Label for the attacker-selector row, e.g. "Attacker" / "Preneur".
+    val attackerLabel: String,
+    // "{Attacker} — choose a contract:" prompt above the contract chips.
+    // Only shown once an attacker has been selected.
     val chooseContract: (taker: String) -> String,
     val skipRound: String,
     val numberOfBouts: String,
@@ -163,6 +168,8 @@ val EnStrings = AppStrings(
     roundCount            = { n -> if (n == 1) "1 round" else "$n rounds" },
 
     roundHeader           = { n -> "Round $n" },
+    dealerLabel           = { dealer -> "Dealer: $dealer" },
+    attackerLabel         = "Attacker",
     chooseContract        = { taker -> "$taker — choose a contract:" },
     skipRound             = "Skip round",
     numberOfBouts         = "Number of bouts (oudlers)",
@@ -249,6 +256,8 @@ val FrStrings = AppStrings(
     roundCount            = { n -> if (n == 1) "1 manche" else "$n manches" },
 
     roundHeader           = { n -> "Manche $n" },
+    dealerLabel           = { dealer -> "Distributeur : $dealer" },
+    attackerLabel         = "Preneur",
     chooseContract        = { taker -> "$taker — choisissez un contrat :" },
     skipRound             = "Passer la manche",
     numberOfBouts         = "Nombre de bouts (oudlers)",

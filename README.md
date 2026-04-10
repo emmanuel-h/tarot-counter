@@ -7,7 +7,7 @@ An Android app for tracking scores in **French Tarot**, a classic French trick-t
 TarotCounter guides players through a game round by round:
 
 1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap ☀️ or 🌙 in the top-left to toggle between light and dark mode (persisted across restarts, defaults to light); tap 🇬🇧 or 🇫🇷 in the top-right to switch the app language (persisted across restarts, defaults to device language)
-2. **Contract selection** — the current taker picks their contract; a persistent **bottom action bar** always shows **End Game** (left) and **Skip round** (right) for quick access
+2. **Attacker selection + contract** — tap the player who won the bidding to set them as the **attacker** (any player can bid, not just the dealer); then pick their contract; the dealer label shows who is distributing the cards this round; a persistent **bottom action bar** always shows **End Game** (left) and **Skip round** (right) for quick access
 3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first; each history row shows a colored **●** indicator (green = won, red = lost, grey = skipped) for at-a-glance scanning
 5. **Score history table** — tap the bar-chart icon (left of the header) to see a round-by-round table of cumulative scores for every player
@@ -18,7 +18,7 @@ TarotCounter guides players through a game round by round:
 10. **Back navigation** — the Android system back button always returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
 11. **Feedback button** — a "Send Feedback" / "Contacter le développeur" button at the bottom of the setup screen opens the device's email client pre-addressed to the developer
 
-The app automatically rotates the taker each round, determines win/loss, and computes each player's score for the round.
+The app rotates the **dealer** each round and lets the user explicitly select the **attacker** (the player who won the bidding), determines win/loss, and computes each player's score for the round.
 
 ## Game Rules Summary
 

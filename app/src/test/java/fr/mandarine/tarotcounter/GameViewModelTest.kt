@@ -482,7 +482,7 @@ class GameViewModelTest {
         val vm = GameViewModel(Application(), FakeGameStorage())
         vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
 
-        vm.recordPlayed(Contract.GARDE, basicDetails())
+        vm.recordPlayed("Alice", Contract.GARDE, basicDetails())
 
         assertEquals(2, vm.currentRound)
     }
@@ -492,7 +492,7 @@ class GameViewModelTest {
         val vm = GameViewModel(Application(), FakeGameStorage())
         vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
 
-        vm.recordPlayed(Contract.GARDE, basicDetails())
+        vm.recordPlayed("Alice", Contract.GARDE, basicDetails())
 
         assertEquals(Contract.GARDE, vm.roundHistory[0].contract)
     }
@@ -503,7 +503,7 @@ class GameViewModelTest {
         val vm = GameViewModel(Application(), FakeGameStorage())
         vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
 
-        vm.recordPlayed(Contract.GARDE, basicDetails(bouts = 0, points = 0))
+        vm.recordPlayed("Alice", Contract.GARDE, basicDetails(bouts = 0, points = 0))
 
         assertEquals(false, vm.roundHistory[0].won)
     }
@@ -514,7 +514,7 @@ class GameViewModelTest {
         val vm = GameViewModel(Application(), FakeGameStorage())
         vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
 
-        vm.recordPlayed(Contract.GARDE, basicDetails(bouts = 3, points = 91))
+        vm.recordPlayed("Alice", Contract.GARDE, basicDetails(bouts = 3, points = 91))
 
         assertEquals(true, vm.roundHistory[0].won)
     }
@@ -525,7 +525,7 @@ class GameViewModelTest {
         val vm = GameViewModel(Application(), storage)
         vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
 
-        vm.recordPlayed(Contract.GARDE, basicDetails())
+        vm.recordPlayed("Alice", Contract.GARDE, basicDetails())
 
         assertEquals(1, storage.saveInProgressCallCount)
     }
@@ -536,7 +536,7 @@ class GameViewModelTest {
         val vm = GameViewModel(Application(), FakeGameStorage())
         vm.initGame(players, inProgressGame = null)
 
-        vm.recordPlayed(Contract.GARDE, basicDetails(bouts = 0, points = 0))
+        vm.recordPlayed("Alice", Contract.GARDE, basicDetails(bouts = 0, points = 0))
 
         // Every player should have a score entry (zero-sum game, so all 3 must be present).
         val scores = vm.roundHistory[0].playerScores
@@ -664,20 +664,22 @@ class GameViewModelTest {
         )
     }
 
-    // ── currentTaker ──────────────────────────────────────────────────────────
+    // ── currentDealer ─────────────────────────────────────────────────────────
+    // The dealer rotates each round. They distribute the cards but any player
+    // can bid and become the attacker.
 
     @Test
-    fun `currentTaker returns empty string when displayNames is empty`() {
+    fun `currentDealer returns empty string when displayNames is empty`() {
         val vm = GameViewModel(Application(), FakeGameStorage())
         // initGame has not been called — _displayNames is empty.
-        assertEquals("", vm.currentTaker)
+        assertEquals("", vm.currentDealer)
     }
 
     @Test
-    fun `currentTaker returns player at startingIndex for round 1`() {
+    fun `currentDealer returns player at startingIndex for round 1`() {
         val players = listOf("Alice", "Bob", "Charlie")
         val vm = GameViewModel(Application(), FakeGameStorage())
-        // Restore a game where Bob (index 1) is the first taker.
+        // Restore a game where Bob (index 1) is the first dealer.
         vm.initGame(players, InProgressGame(
             gameId        = "g1",
             playerNames   = players,
@@ -685,14 +687,14 @@ class GameViewModelTest {
             startingIndex = 1,
             rounds        = emptyList()
         ))
-        assertEquals("Bob", vm.currentTaker)
+        assertEquals("Bob", vm.currentDealer)
     }
 
     @Test
-    fun `currentTaker advances to the next player on round 2`() {
+    fun `currentDealer advances to the next player on round 2`() {
         val players = listOf("Alice", "Bob", "Charlie")
         val vm = GameViewModel(Application(), FakeGameStorage())
-        // Alice started (index 0); now it is round 2 → Bob (index 1).
+        // Alice started (index 0); now it is round 2 → Bob (index 1) deals.
         vm.initGame(players, InProgressGame(
             gameId        = "g1",
             playerNames   = players,
@@ -700,11 +702,11 @@ class GameViewModelTest {
             startingIndex = 0,
             rounds        = emptyList()
         ))
-        assertEquals("Bob", vm.currentTaker)
+        assertEquals("Bob", vm.currentDealer)
     }
 
     @Test
-    fun `currentTaker wraps back to the first player after a full cycle`() {
+    fun `currentDealer wraps back to the first player after a full cycle`() {
         val players = listOf("Alice", "Bob", "Charlie")
         val vm = GameViewModel(Application(), FakeGameStorage())
         // startingIndex=0, 3 players → round 4 wraps to index 0 (Alice again).
@@ -716,7 +718,7 @@ class GameViewModelTest {
             startingIndex = 0,
             rounds        = emptyList()
         ))
-        assertEquals("Alice", vm.currentTaker)
+        assertEquals("Alice", vm.currentDealer)
     }
 
     // ── initGame — startingIndex, gameId, displayNames ───────────────────────
@@ -776,10 +778,12 @@ class GameViewModelTest {
     // ── recordPlayed — takerName stored in history ────────────────────────────
 
     @Test
-    fun `recordPlayed stores the currentTaker as takerName in the round result`() = runTest {
+    fun `recordPlayed stores the explicitly provided takerName in the round result`() = runTest {
+        // Bug fix (issue #124): points must go to the attacker (whoever won the bid),
+        // NOT to the dealer. The takerName is now an explicit parameter.
         val players = listOf("Alice", "Bob", "Charlie")
         val vm = GameViewModel(Application(), FakeGameStorage())
-        // Charlie (index 2) is the taker for round 1.
+        // Charlie is the dealer (index 2), but Bob won the bidding.
         vm.initGame(players, InProgressGame(
             gameId        = "g1",
             playerNames   = players,
@@ -788,9 +792,30 @@ class GameViewModelTest {
             rounds        = emptyList()
         ))
 
-        vm.recordPlayed(Contract.GARDE, basicDetails())
+        // Bob won the auction — pass Bob as the attacker explicitly.
+        vm.recordPlayed("Bob", Contract.GARDE, basicDetails())
 
-        assertEquals("Charlie", vm.roundHistory[0].takerName)
+        assertEquals("Bob", vm.roundHistory[0].takerName)
+    }
+
+    @Test
+    fun `recordPlayed attacker can differ from the current dealer`() = runTest {
+        // Core regression test for issue #124: the attacker is independent of the dealer.
+        val players = listOf("Alice", "Bob", "Charlie")
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        // Alice is the first dealer (index 0, round 1).
+        vm.initGame(players, inProgressGame = null)
+        // The dealer is Alice, but Charlie won the bidding.
+        vm.recordPlayed("Charlie", Contract.PRISE, basicDetails(bouts = 0, points = 0))
+
+        val result = vm.roundHistory[0]
+        // takerName must be Charlie (the attacker), not Alice (the dealer).
+        assertEquals("Charlie", result.takerName)
+        // Charlie (the loser with 0 pts, 0 bouts) must pay — not Alice.
+        assertTrue(
+            "Attacker Charlie must have a negative score when they lost",
+            (result.playerScores["Charlie"] ?: 0) < 0
+        )
     }
 
     // ── recordPlayed — 5-player game (numDefenders = 3) ──────────────────────
@@ -821,7 +846,7 @@ class GameViewModelTest {
             doublePoignee = null,
             chelem        = Chelem.NONE
         )
-        vm.recordPlayed(Contract.GARDE, details)
+        vm.recordPlayed("Alice", Contract.GARDE, details)
 
         val scores = vm.roundHistory[0].playerScores
         assertEquals(+136, scores["Alice"])
@@ -856,7 +881,7 @@ class GameViewModelTest {
             gameId = "g1", playerNames = players,
             currentRound = 1, startingIndex = 0, rounds = emptyList()
         ))
-        vm.recordPlayed(Contract.GARDE, RoundDetails(
+        vm.recordPlayed("Alice", Contract.GARDE, RoundDetails(
             bouts         = 2,
             points        = 50,
             partnerName   = null,
@@ -904,7 +929,7 @@ class GameViewModelTest {
         val vm = GameViewModel(Application(), storage)
         vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
 
-        vm.recordPlayed(Contract.PRISE, basicDetails())
+        vm.recordPlayed("Alice", Contract.PRISE, basicDetails())
 
         assertEquals(1, storage.lastSavedInProgress?.rounds?.size)
     }
@@ -915,7 +940,7 @@ class GameViewModelTest {
         val vm = GameViewModel(Application(), storage)
         vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
 
-        vm.recordPlayed(Contract.PRISE, basicDetails())
+        vm.recordPlayed("Alice", Contract.PRISE, basicDetails())
 
         assertEquals(2, storage.lastSavedInProgress?.currentRound)
     }

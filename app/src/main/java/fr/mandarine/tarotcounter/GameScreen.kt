@@ -80,10 +80,17 @@ fun GameScreen(
     // Read game session state from the ViewModel.
     // These are Compose snapshot values — recomposition is triggered automatically
     // when the ViewModel mutates them (e.g. after recordPlayed() advances currentRound).
-    val currentRound  = viewModel.currentRound
-    val roundHistory  = viewModel.roundHistory
-    val displayNames  = viewModel.displayNames
-    val currentTaker  = viewModel.currentTaker
+    val currentRound   = viewModel.currentRound
+    val roundHistory   = viewModel.roundHistory
+    val displayNames   = viewModel.displayNames
+    // The dealer rotates each round — they deal the cards but are not necessarily the attacker.
+    val currentDealer  = viewModel.currentDealer
+
+    // The player who won the bidding and took the contract (the attacker).
+    // null = no attacker selected yet.
+    // Any player can be the attacker, regardless of who is dealing this round.
+    // This resets to null at the start of each new round (see LaunchedEffect below).
+    var selectedAttacker by remember { mutableStateOf<String?>(null) }
 
     // The contract selected by tapping one of the contract chips.
     // null = no contract selected yet (details form is hidden).
@@ -114,6 +121,14 @@ fun GameScreen(
     var chelem           by remember { mutableStateOf(Chelem.NONE) }
     // The player who called/achieved the chelem; reset to null when chelem reverts to NONE.
     var chelemPlayer     by remember { mutableStateOf<String?>(null) }
+
+    // Reset the attacker selection each time the round counter advances.
+    // LaunchedEffect re-runs whenever its key (currentRound) changes value.
+    // Note: this runs AFTER the composition is committed, but because the assignment
+    // is non-suspending the UI reflects the reset on the very next recomposition.
+    LaunchedEffect(currentRound) {
+        selectedAttacker = null
+    }
 
     // Reset every form field whenever the selected contract changes (including to null).
     // LaunchedEffect re-runs on each new key value — the assignments are non-suspending
@@ -252,16 +267,70 @@ fun GameScreen(
             HorizontalDivider()
             Spacer(Modifier.height(12.dp))
 
-            // ── Contract selection ────────────────────────────────────────────
-            // SingleChoiceSegmentedButtonRow is the Material 3 standard for picking
-            // one option from a fixed set. Tapping the already-selected segment
-            // deselects it (collapses the details form).
+            // ── Dealer info (context) ────────────────────────────────────────
+            // Shows who is dealing this round. The dealer distributes the cards
+            // but does not automatically become the attacker.
             Text(
-                text = strings.chooseContract(currentTaker),
+                text  = strings.dealerLabel(currentDealer),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(Modifier.height(8.dp))
+
+            // ── Attacker selector ────────────────────────────────────────────
+            // The attacker is the player who wins the bidding — any player can bid,
+            // regardless of who is dealing. The user taps a player's name to select
+            // them as the attacker for this round. Tapping again deselects.
+            Text(
+                text  = strings.attackerLabel,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.align(Alignment.Start)
             )
             Spacer(Modifier.height(8.dp))
+
+            // Shared font size so all player-name segments shrink together.
+            // Keyed on locale so labels re-measure when the language changes.
+            val attackerLabelSize = rememberSharedAutoSizeState(locale)
+
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                displayNames.forEachIndexed { index, name ->
+                    SegmentedButton(
+                        shape    = SegmentedButtonDefaults.itemShape(index, displayNames.size),
+                        selected = selectedAttacker == name,
+                        onClick  = {
+                            // Tapping the already-selected attacker deselects them.
+                            selectedAttacker = if (selectedAttacker == name) null else name
+                            // Deselect the contract too — changing the attacker invalidates
+                            // the current contract choice (a different player may pick differently).
+                            selectedContract = null
+                        },
+                        icon     = {}
+                    ) {
+                        AutoSizeText(
+                            text            = name,
+                            modifier        = Modifier.padding(horizontal = 1.dp),
+                            sharedSizeState = attackerLabelSize
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+
+            // ── Contract selection ────────────────────────────────────────────
+            // Only shown once an attacker has been selected — the attacker's name
+            // appears in the label so the user can confirm who is playing.
+            // SingleChoiceSegmentedButtonRow is the Material 3 standard for picking
+            // one option from a fixed set. Tapping the already-selected segment
+            // deselects it (collapses the details form).
+            if (selectedAttacker != null) {
+            Text(
+                text = strings.chooseContract(selectedAttacker!!),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(Modifier.height(8.dp))
+            } // end attacker-required guard
 
             // Shared font size — all 4 segments shrink together so they always display
             // at the same size (the smallest needed across the longest label).
@@ -429,9 +498,12 @@ fun GameScreen(
                 Spacer(Modifier.height(12.dp))
 
                 // ── Partner selection (5-player only) ─────────────────────────
-                // In a 5-player game the taker calls a silent partner before the round.
+                // In a 5-player game the attacker calls a silent partner before the round.
                 if (displayNames.size == 5) {
-                    val partnerOptions = displayNames.filter { it != currentTaker }
+                    // The attacker cannot be their own partner, so exclude them.
+                    // Fall back to an empty list if no attacker is selected yet
+                    // (the partner selector is only reachable once an attacker is chosen).
+                    val partnerOptions = displayNames.filter { it != selectedAttacker }
                     PlayerChipSelector(
                         label          = strings.partnerCalledByTaker,
                         noneLabel      = strings.noneOption,
@@ -534,7 +606,8 @@ fun GameScreen(
                 if (chelem != Chelem.NONE) {
                     Spacer(Modifier.height(8.dp))
                     val chelemCandidates = buildList {
-                        add(currentTaker)
+                        // The selected attacker can always call chelem.
+                        selectedAttacker?.let { add(it) }
                         // In a 5-player game the partner can also call chelem.
                         if (displayNames.size == 5) selectedPartner?.let { add(it) }
                     }
@@ -630,21 +703,23 @@ fun GameScreen(
                 modifier = Modifier.weight(1f)
             )
             // Confirm: primary filled button — the main action.
-            // Disabled until a contract is selected, a score has been entered,
-            // and the points value is valid (≤ 91).
+            // Disabled until an attacker is selected, a contract is selected,
+            // a score has been entered, and the points value is valid (≤ 91).
             AppButton(
                 text     = strings.confirmRound,
-                enabled  = selectedContract != null && pointsText.isNotBlank() && !pointsError,
+                enabled  = selectedAttacker != null && selectedContract != null && pointsText.isNotBlank() && !pointsError,
                 modifier = Modifier.weight(1f),
                 onClick  = {
-                    // Guard: selectedContract is already checked by `enabled`, but Kotlin
-                    // requires a smart-cast-safe reference for use inside the lambda.
+                    // Guards: both are checked by `enabled`, but Kotlin requires
+                    // smart-cast-safe references for use inside the lambda.
+                    val attacker = selectedAttacker ?: return@AppButton
                     val contract = selectedContract ?: return@AppButton
                     // Parse the typed points; default to 0 if empty, clamp to 0–91.
                     val enteredPoints = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0
                     // When the user entered defenders' points, convert to taker's points.
                     val points = if (defenderMode) 91 - enteredPoints else enteredPoints
                     viewModel.recordPlayed(
+                        attacker,
                         contract,
                         RoundDetails(
                             bouts         = bouts,
