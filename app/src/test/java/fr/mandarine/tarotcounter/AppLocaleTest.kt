@@ -162,6 +162,16 @@ class AppLocaleTest {
         }
     }
 
+    @Test
+    fun contract_localizedName_returns_the_contract_displayName() {
+        // localizedName delegates to Contract.displayName — must not return an empty string
+        // or any other value. PIT would mutate the return to "" which this test catches.
+        assertEquals("Prise",         Contract.PRISE.localizedName(AppLocale.EN))
+        assertEquals("Garde",         Contract.GARDE.localizedName(AppLocale.EN))
+        assertEquals("Garde Sans",    Contract.GARDE_SANS.localizedName(AppLocale.EN))
+        assertEquals("Garde Contre",  Contract.GARDE_CONTRE.localizedName(AppLocale.EN))
+    }
+
     // ── Round history string builders ─────────────────────────────────────────
 
     @Test

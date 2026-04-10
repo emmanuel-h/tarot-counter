@@ -221,13 +221,17 @@ afterEvaluate {
                 // Auto-generated Android resources & build info
                 "fr.mandarine.tarotcounter.BuildConfig," +
                 "fr.mandarine.tarotcounter.R," +
-                // Compose screen composables (only exercised by instrumented tests)
-                "fr.mandarine.tarotcounter.GameScreenKt," +
-                "fr.mandarine.tarotcounter.LandingScreenKt," +
-                "fr.mandarine.tarotcounter.FinalScoreScreenKt," +
-                "fr.mandarine.tarotcounter.ScoreHistoryScreenKt," +
-                "fr.mandarine.tarotcounter.UiComponentsKt," +
-                "fr.mandarine.tarotcounter.ScreenHeaderKt," +
+                // Compose screen composables (only exercised by instrumented tests).
+                // The trailing * is required to also exclude anonymous lambda classes
+                // that Kotlin generates for composable lambdas (e.g. GameScreenKt$GameScreen$2$1).
+                "fr.mandarine.tarotcounter.GameScreenKt*," +
+                "fr.mandarine.tarotcounter.LandingScreenKt*," +
+                "fr.mandarine.tarotcounter.FinalScoreScreenKt*," +
+                "fr.mandarine.tarotcounter.ScoreHistoryScreenKt*," +
+                "fr.mandarine.tarotcounter.UiComponentsKt*," +
+                "fr.mandarine.tarotcounter.ScreenHeaderKt*," +
+                // BonusRow is a composable compiled to its own class (lives in UiComponents.kt)
+                "fr.mandarine.tarotcounter.BonusRow*," +
                 // Compose compiler-generated singletons
                 "fr.mandarine.tarotcounter.ComposableSingletons*," +
                 // Android Activity and DataStore storage (can't run on JVM)
@@ -238,9 +242,18 @@ afterEvaluate {
                 "fr.mandarine.tarotcounter.*\$serializer," +
                 // Material theme declarations — pure style constants, no logic
                 "fr.mandarine.tarotcounter.ui.theme.*," +
-                // Test classes and test helpers must not be mutated
-                "fr.mandarine.tarotcounter.*Test," +
-                "fr.mandarine.tarotcounter.FakeGameStorage"
+                // AppStrings is a pure data-holder (a data class with 60+ val fields and
+                // lambda fields).  The generated equals / hashCode / copy / componentN
+                // methods are never called by unit tests and produce 45 no-coverage mutants.
+                // The logic inside the lambda fields (roundsPlayed, playerFallback, …) is
+                // tested through AppLocaleTest via appStrings(locale).field(…) calls.
+                "fr.mandarine.tarotcounter.AppStrings," +
+                // Test classes and test helpers must not be mutated.
+                // The trailing * after Test is required to also exclude the anonymous
+                // inner classes that Kotlin generates for coroutine / lambda bodies
+                // inside test methods (e.g. GameViewModelTest$someMethod$1).
+                "fr.mandarine.tarotcounter.*Test*," +
+                "fr.mandarine.tarotcounter.FakeGameStorage*"
             )
         }
     }
