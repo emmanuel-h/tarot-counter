@@ -47,6 +47,12 @@ Make the changes. Follow project conventions:
 - Composable behaviour → Compose UI test in `src/androidTest/`
 - Run `./gradlew testDebugUnitTest` and fix any failures
 
+## 6b. Mutation testing
+- Run `./gradlew pitest` to validate that the new tests actually catch bugs
+- The build fails if the mutation score drops below 80 % — surviving mutants must be covered by new tests
+- Only unit-testable production classes are analysed (composables, DataStore I/O, and generated code are excluded — see `docs/mutation-testing.md`)
+- If the score is below 80 %: open `app/build/reports/pitest/index.html`, find surviving mutants, write targeted assertions, and re-run until the gate passes
+
 ## 7. Update documentation
 **This step is mandatory — never skip it.**
 - Add or update files in `docs/` describing the feature

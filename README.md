@@ -158,6 +158,9 @@ for details.
 # Instrumented tests (requires connected device or emulator)
 ./gradlew connectedAndroidTest
 
+# Mutation tests (PIT) — report: app/build/reports/pitest/index.html
+./gradlew pitest
+
 # Lint
 ./gradlew lint
 ```
@@ -196,7 +199,8 @@ TarotCounter/
 │   ├── theme.md              # Colour palette rationale and dynamic-colour policy
 │   ├── app-name.md           # App name branding and locale-specific launcher labels
 │   ├── release-signing.md    # Release signing setup for local dev and CI
-│   └── release-workflow.md   # /release-store skill: full publish workflow
+│   ├── release-workflow.md   # /release-store skill: full publish workflow
+│   └── mutation-testing.md   # PIT mutation testing: setup, quality gate, reading reports
 ├── gradle/
 │   └── libs.versions.toml  # Dependency version catalog
 ├── CLAUDE.md               # AI assistant instructions
