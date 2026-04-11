@@ -82,6 +82,8 @@ data class AppStrings(
     val doublePoigneeTooltipBody: (playerCount: Int) -> String,
     val triplePoigneeTooltipBody: (playerCount: Int) -> String,
     val chelemTooltipBody: String,
+    // Label shown inside the points text field so users know the field's purpose and valid range.
+    val pointsLabel: String,
     // Error shown below the points text field when the entered value exceeds 91.
     val pointsOutOfRange: String,
     // Confirmation dialog for "Skip round".
@@ -195,6 +197,7 @@ val EnStrings = AppStrings(
     doublePoigneeTooltipBody = { n -> "${poigneeThresholds(n).second} trumps shown before play.\nBonus: 30 pts per player." },
     triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} trumps shown before play.\nBonus: 40 pts per player." },
     chelemTooltipBody     = "All tricks won by the same team.\n\nAnnounced & realized: +400 pts\nNot announced, realized: +200 pts\nAnnounced, not realized: −200 pts\nDefenders realized: −200 pts (taker pays each defender)",
+    pointsLabel           = "Points (0-91)",
     pointsOutOfRange      = "Must be between 0 and 91",
     skipRoundConfirmTitle = "Skip this round?",
     skipRoundConfirmBody  = "No contract will be recorded for this round.",
@@ -283,6 +286,7 @@ val FrStrings = AppStrings(
     doublePoigneeTooltipBody = { n -> "${poigneeThresholds(n).second} atouts déclarés avant le jeu.\nBonus : 30 pts par joueur." },
     triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} atouts déclarés avant le jeu.\nBonus : 40 pts par joueur." },
     chelemTooltipBody     = "Tous les plis remportés par la même équipe.\n\nAnnoncé et réalisé : +400 pts\nNon annoncé, réalisé : +200 pts\nAnnoncé, non réalisé : −200 pts\nDéfense réalise : −200 pts (le preneur paye chaque défenseur)",
+    pointsLabel           = "Points (0-91)",
     pointsOutOfRange      = "Doit être entre 0 et 91",
     skipRoundConfirmTitle = "Passer ce tour ?",
     skipRoundConfirmBody  = "Aucun contrat ne sera enregistré pour ce tour.",

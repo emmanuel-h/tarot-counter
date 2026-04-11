@@ -482,6 +482,21 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Round 1").assertIsDisplayed()
     }
 
+    // ── Spec: points field label (issue #114) ────────────────────────────────
+
+    @Test
+    fun points_input_shows_label_with_range() {
+        // The label "Points (0-91)" must be visible on the field so users know
+        // what values to enter without needing an external hint.
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        composeTestRule
+            .onNodeWithText(EnStrings.pointsLabel)
+            .assertIsDisplayed()
+    }
+
     // ── Spec: points field validation (issue #8) ──────────────────────────────
 
     @Test
