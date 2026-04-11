@@ -477,9 +477,9 @@ fun GameScreen(
                             keyboardActions = KeyboardActions(
                                 onDone = { keyboardController?.hide() }
                             ),
-                            // Show the valid range as a placeholder so the user knows
-                            // what values are accepted without a separate hint.
-                            placeholder     = { Text("0-91") },
+                            // Floating label names the field and shows the valid range
+                            // so users always know what to enter without needing a tooltip.
+                            label           = { Text(strings.pointsLabel) },
                             isError         = pointsError,
                             supportingText  = if (pointsError) ({
                                 Text(
