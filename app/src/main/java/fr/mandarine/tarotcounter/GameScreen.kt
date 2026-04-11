@@ -20,6 +20,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
@@ -426,42 +428,16 @@ fun GameScreen(
                         }
                     }
 
-                    // Right half: points entry — camp toggle stacked above text field
+                    // Right half: points entry with an inline camp toggle
                     Column(modifier = Modifier.weight(1f)) {
-                        // ── Camp toggle ──────────────────────────────────────────
-                        // The two segments let the user pick which camp's points to type.
-                        // Selecting "Defenders" is a convenience; taker points are derived
-                        // on confirm as: takerPoints = 91 − defenderPoints.
-                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                            SegmentedButton(
-                                selected = !defenderMode,
-                                onClick  = {
-                                    defenderMode = false
-                                    pointsText   = ""  // clear field when switching camps
-                                },
-                                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                                icon  = {}
-                            ) {
-                                AutoSizeText(
-                                    strings.attackerMode,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                )
-                            }
-                            SegmentedButton(
-                                selected = defenderMode,
-                                onClick  = {
-                                    defenderMode = true
-                                    pointsText   = ""  // clear field when switching camps
-                                },
-                                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                                icon  = {}
-                            ) {
-                                AutoSizeText(
-                                    strings.defenderMode,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                )
-                            }
-                        }
+                        // ── Points field with trailing camp toggle ───────────────
+                        // The floating label tells the user which camp's points to enter.
+                        // The trailing icon (person = attacker, group = defenders) lets
+                        // them switch camp without leaving the keyboard.
+                        // Tapping it clears the current value so there is no confusion
+                        // about which camp the displayed number belongs to.
+                        // When the user enters defender points, the app converts on
+                        // confirm: takerPoints = 91 − defenderPoints.
                         OutlinedTextField(
                             value = pointsText,
                             onValueChange = { input ->
@@ -477,9 +453,43 @@ fun GameScreen(
                             keyboardActions = KeyboardActions(
                                 onDone = { keyboardController?.hide() }
                             ),
-                            // Floating label names the field and shows the valid range
-                            // so users always know what to enter without needing a tooltip.
-                            label           = { Text(strings.pointsLabel) },
+                            // Dynamic label: shows which camp the user is entering points for.
+                            // The range (0-91) is always visible so users know the valid bounds.
+                            label = {
+                                Text(
+                                    if (defenderMode) strings.defenderPointsLabel
+                                    else strings.attackerPointsLabel
+                                )
+                            },
+                            // Trailing icon acts as the camp toggle.
+                            // The icon represents the CURRENT mode (person = attacker,
+                            // group = defenders), and the content description describes
+                            // what the NEXT tap will switch to, following Material
+                            // accessibility guidelines for toggle controls.
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = {
+                                        // Clear first so no stale value carries over
+                                        // to the new camp's context.
+                                        pointsText   = ""
+                                        defenderMode = !defenderMode
+                                    },
+                                    modifier = Modifier.testTag("camp_toggle")
+                                ) {
+                                    Icon(
+                                        imageVector = if (defenderMode)
+                                            Icons.Default.Group   // defenders: multiple people
+                                        else
+                                            Icons.Default.Person, // attacker: single taker
+                                        // Content description names the NEXT mode so screen
+                                        // readers announce the action, not the current state.
+                                        contentDescription = if (defenderMode)
+                                            strings.attackerPointsLabel
+                                        else
+                                            strings.defenderPointsLabel
+                                    )
+                                }
+                            },
                             isError         = pointsError,
                             supportingText  = if (pointsError) ({
                                 Text(
