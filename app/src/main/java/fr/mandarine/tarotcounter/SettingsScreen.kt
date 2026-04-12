@@ -25,6 +25,10 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -56,8 +60,18 @@ fun SettingsScreen(
     val theme   = LocalAppTheme.current
     val strings = appStrings(locale)
 
+    // Controls whether the rules dialog is currently shown.
+    // `by` delegation lets us read/write `showRules` directly (no .value needed).
+    var showRules by remember { mutableStateOf(false) }
+
     // Context is needed to launch an external Intent (open the email client).
     val context = LocalContext.current
+
+    // Show the rules dialog on top of the settings screen when the user taps the button.
+    // The dialog is dismissed by calling `onDismissRequest` (tap outside) or "Close" button.
+    if (showRules) {
+        RulesDialog(onDismiss = { showRules = false })
+    }
 
     // Box fills the whole screen and centers content horizontally so it looks good
     // on both phones and wide tablets without stretching across the full width.
@@ -151,6 +165,19 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── Rules section ─────────────────────────────────────────────────
+            // A full-width outlined button that opens the rules dialog.
+            // AppOutlinedButton shrinks the label automatically so it fits on any width.
+            AppOutlinedButton(
+                text     = strings.rulesButton,
+                onClick  = { showRules = true },
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider()
