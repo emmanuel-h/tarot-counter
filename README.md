@@ -52,10 +52,10 @@ Scores are zero-sum. The taker receives `±(n−1) × roundScore` for 3/4-player
 
 ### Bonuses Tracked per Round
 
-Player-assigned bonuses are entered via a compact grid with one checkbox per player. Ticking a checkbox assigns that bonus; ticking it again clears it.
+Player-assigned bonuses are entered via a compact grid with one checkbox per player.
 
-- **Petit au bout** — player who captured the 1 of trump on the last trick
-- **Poignée / Double poignée / Triple poignée** — trump distribution bonuses; the minimum trump count required varies by player count (3 players: 13/15/18 · 4 players: 10/13/15 · 5 players: 8/10/13) and the tooltip in the UI always shows the correct threshold for the current game
+- **Petit au bout** — single-select: the one player who captured the 1 of trump on the last trick
+- **Poignée / Double poignée / Triple poignée** — multi-select: any number of players can each independently show their own trump hand. Each declaration contributes its own bonus to the winning camp. The minimum trump count varies by player count (3 players: 13/15/18 · 4 players: 10/13/15 · 5 players: 8/10/13) and the tooltip in the UI always shows the correct threshold for the current game. **Atout validation**: if the total declared trump thresholds exceed the 22 trumps in the deck, an error is shown and the Confirm button is disabled.
 - **Chelem** — grand slam outcome selected from a dropdown (announced+won, announced+lost, unannounced+won, defenders realized, or none), with an additional player selector to record who called it. When an announced chelem is selected and a player is chosen, the app reminds the table that this player leads the first trick. The "Defenders realized" option covers the FFT-official scenario where the defending camp wins every trick without having announced it (+200 to each defender, per R-RO201206.pdf p.6).
 
 ## Architecture

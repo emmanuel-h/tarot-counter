@@ -127,9 +127,12 @@ fun GameScreen(
     var defenderMode     by remember { mutableStateOf(false) }
     var selectedPartner  by remember { mutableStateOf<String?>(null) }
     var petitAuBout      by remember { mutableStateOf<String?>(null) }
-    var poignee          by remember { mutableStateOf<String?>(null) }
-    var doublePoignee    by remember { mutableStateOf<String?>(null) }
-    var triplePoignee    by remember { mutableStateOf<String?>(null) }
+    // Multi-player poignée declarations (issue #149): any number of players can each
+    // show their own trump hand. We store selected players in a Set so toggling an
+    // already-selected player is a simple `- name` operation.
+    var poignees         by remember { mutableStateOf(emptySet<String>()) }
+    var doublePoignees   by remember { mutableStateOf(emptySet<String>()) }
+    var triplePoignees   by remember { mutableStateOf(emptySet<String>()) }
     var chelem           by remember { mutableStateOf(Chelem.NONE) }
     // The player who called/achieved the chelem; reset to null when chelem reverts to NONE.
     var chelemPlayer     by remember { mutableStateOf<String?>(null) }
@@ -206,9 +209,9 @@ fun GameScreen(
         defenderMode    = false
         selectedPartner = null
         petitAuBout     = null
-        poignee         = null
-        doublePoignee   = null
-        triplePoignee   = null
+        poignees        = emptySet()
+        doublePoignees  = emptySet()
+        triplePoignees  = emptySet()
         chelem          = Chelem.NONE
         chelemPlayer    = null
     }
@@ -236,9 +239,12 @@ fun GameScreen(
         defenderMode     = false
         selectedPartner  = details?.partnerName
         petitAuBout      = details?.petitAuBout
-        poignee          = details?.poignee
-        doublePoignee    = details?.doublePoignee
-        triplePoignee    = details?.triplePoignee
+        // `effectivePoignees` returns the new list fields when non-empty, or falls
+        // back to the legacy single-player nullable field — so undo works for both
+        // old saved rounds (legacy format) and new rounds (multi-player format).
+        poignees         = details?.effectivePoignees?.toSet()       ?: emptySet()
+        doublePoignees   = details?.effectiveDoublePoignees?.toSet() ?: emptySet()
+        triplePoignees   = details?.effectiveTriplePoignees?.toSet() ?: emptySet()
         chelem           = details?.chelem        ?: Chelem.NONE
         chelemPlayer     = details?.chelemPlayer
         // Skipped round: contract is null, so selectedContract didn't change →
@@ -251,6 +257,22 @@ fun GameScreen(
     // Derived error flag — true when pointsText parses to an int > 91.
     // Declared here so the Confirm button in the bottom bar can read it.
     val pointsError = pointsText.toIntOrNull()?.let { it > 91 } == true
+
+    // Total declared atouts = sum of the minimum trump thresholds for every poignée
+    // declaration across all players. Only meaningful when a contract is selected
+    // (i.e. the bonus grid is visible). Returns 0 when no contract is chosen so that
+    // the Confirm button is not affected before the form is even shown.
+    val totalDeclaredAtouts = if (selectedContract != null) {
+        totalAtoutsAnnounced(
+            poignees.toList(),
+            doublePoignees.toList(),
+            triplePoignees.toList(),
+            displayNames.size
+        )
+    } else 0
+    // True when the combined trump declarations exceed the 22 available in the deck.
+    // Prevents physically impossible combinations (e.g. triple + simple = 25 > 22).
+    val atoutError = totalDeclaredAtouts > TOTAL_ATOUTS_IN_DECK
 
     // Used to hide the software keyboard when the user taps "Confirm".
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -772,6 +794,9 @@ fun GameScreen(
                 }
 
                 // ── Player-assigned bonuses (compact grid) ─────────────────────
+                // Petit au bout stays single-select (only one player captures the
+                // Petit on the last trick). The three Poignée rows are now multi-select:
+                // any number of players can each show their own trump hand (issue #149).
                 CompactBonusGrid(
                     playerNames     = displayNames,
                     bonusLabels     = listOf(
@@ -788,11 +813,34 @@ fun GameScreen(
                         strings.doublePoigneeTooltipBody(displayNames.size),
                         strings.triplePoigneeTooltipBody(displayNames.size)
                     ),
-                    petitAuBout     = petitAuBout,    onPetit         = { petitAuBout   = it },
-                    poignee         = poignee,         onPoignee       = { poignee       = it },
-                    doublePoignee   = doublePoignee,   onDoublePoignee = { doublePoignee = it },
-                    triplePoignee   = triplePoignee,   onTriplePoignee = { triplePoignee = it }
+                    petitAuBout     = petitAuBout,   onPetit         = { petitAuBout = it },
+                    // Each poignée callback receives (playerName, isNowChecked).
+                    // Adding a player: `poignees + name`; removing: `poignees - name`.
+                    poignees        = poignees,       onPoignee       = { name, checked ->
+                        poignees = if (checked) poignees + name else poignees - name
+                    },
+                    doublePoignees  = doublePoignees, onDoublePoignee = { name, checked ->
+                        doublePoignees = if (checked) doublePoignees + name else doublePoignees - name
+                    },
+                    triplePoignees  = triplePoignees, onTriplePoignee = { name, checked ->
+                        triplePoignees = if (checked) triplePoignees + name else triplePoignees - name
+                    }
                 )
+
+                // ── Atout count validation error ──────────────────────────────
+                // Shown when the combined minimum trump thresholds across all
+                // declared poignées exceed the 22 trumps in the deck.
+                if (atoutError) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text     = strings.atoutCountError(totalDeclaredAtouts, TOTAL_ATOUTS_IN_DECK),
+                        style    = MaterialTheme.typography.bodySmall,
+                        color    = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("atout_count_error")
+                    )
+                }
 
                 Spacer(Modifier.height(12.dp))
                 HorizontalDivider()
@@ -949,7 +997,7 @@ fun GameScreen(
             // a score has been entered, and the points value is valid (≤ 91).
             AppButton(
                 text     = strings.confirmRound,
-                enabled  = selectedAttacker != null && selectedContract != null && pointsText.isNotBlank() && !pointsError,
+                enabled  = selectedAttacker != null && selectedContract != null && pointsText.isNotBlank() && !pointsError && !atoutError,
                 modifier = Modifier.weight(1f),
                 onClick  = {
                     // Guards: both are checked by `enabled`, but Kotlin requires
@@ -964,15 +1012,18 @@ fun GameScreen(
                         attacker,
                         contract,
                         RoundDetails(
-                            bouts         = bouts,
-                            points        = points,
-                            partnerName   = if (displayNames.size == 5) selectedPartner else null,
-                            petitAuBout   = petitAuBout,
-                            poignee       = poignee,
-                            doublePoignee = doublePoignee,
-                            triplePoignee = triplePoignee,
-                            chelem        = chelem,
-                            chelemPlayer  = if (chelem == Chelem.NONE) null else chelemPlayer
+                            bouts          = bouts,
+                            points         = points,
+                            partnerName    = if (displayNames.size == 5) selectedPartner else null,
+                            petitAuBout    = petitAuBout,
+                            // Always write to the new multi-player list fields.
+                            // Leave the legacy nullable fields null so they are not
+                            // double-counted by `effectivePoignees` in old code paths.
+                            poignees       = poignees.toList(),
+                            doublePoignees = doublePoignees.toList(),
+                            triplePoignees = triplePoignees.toList(),
+                            chelem         = chelem,
+                            chelemPlayer   = if (chelem == Chelem.NONE) null else chelemPlayer
                         )
                     )
                     // Deselect contract → LaunchedEffect resets all form fields.

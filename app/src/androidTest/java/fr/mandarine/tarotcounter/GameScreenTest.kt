@@ -658,6 +658,71 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
     }
 
+    // ── Spec: atout count validation (issue #149) ────────────────────────────
+
+    @Test
+    fun declaring_too_many_atouts_shows_error_message() {
+        // 3-player game: thresholds are simple=13, double=15, triple=18.
+        // Selecting triple (18) + simple (13) = 31 > 22 → error must appear.
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
+        selectAttacker("Alice")
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // The bonus grid has 4 rows × 3 players = 12 toggleable checkboxes.
+        // Row order in traversal: Petit (0-2), Poignée (3-5), Double (6-8), Triple (9-11).
+        // Tick Alice's triple-poignée box (index 9).
+        val boxes = composeTestRule.onAllNodes(
+            androidx.compose.ui.test.hasClickAction() and
+            androidx.compose.ui.test.isToggleable()
+        )
+        boxes[9].performClick()  // Alice — triple
+        boxes[3].performClick()  // Alice — simple  (13 + 18 = 31 > 22)
+
+        // Error message must be visible.
+        composeTestRule
+            .onNodeWithTag("atout_count_error")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun declaring_too_many_atouts_disables_confirm_button() {
+        // 3-player game: triple (18) + simple (13) = 31 > 22 → Confirm disabled.
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
+        selectAttacker("Alice")
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("points_input").performTextInput("50")
+
+        val boxes = composeTestRule.onAllNodes(
+            androidx.compose.ui.test.hasClickAction() and
+            androidx.compose.ui.test.isToggleable()
+        )
+        boxes[9].performClick()  // Alice — triple (18)
+        boxes[3].performClick()  // Alice — simple (13)  → total 31
+
+        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    @Test
+    fun valid_multi_player_atout_count_does_not_show_error() {
+        // 4-player game: Alice simple (10) + Bob simple (10) = 20 ≤ 22 → no error.
+        launchGame()   // uses default 3-player list "Alice", "Bob", "Charlie"
+        selectAttacker("Alice")
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // 3-player row layout: rows × 3 columns.
+        // Poignée row starts at index 3. Alice = index 3, Bob = index 4.
+        val boxes = composeTestRule.onAllNodes(
+            androidx.compose.ui.test.hasClickAction() and
+            androidx.compose.ui.test.isToggleable()
+        )
+        boxes[3].performClick()  // Alice — simple (3-player threshold = 13)
+        // Total = 13 ≤ 22 — no error.
+
+        composeTestRule
+            .onNodeWithTag("atout_count_error")
+            .assertDoesNotExist()
+    }
+
     // ── Spec: bonus label cell is fully tappable (issue #36) ─────────────────
 
     @Test

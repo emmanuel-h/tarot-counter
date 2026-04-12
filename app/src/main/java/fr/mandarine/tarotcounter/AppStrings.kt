@@ -96,6 +96,10 @@ data class AppStrings(
     val chelemTooltipBody: String,
     // Error shown below the points text field when the entered value exceeds 91.
     val pointsOutOfRange: String,
+    // Error shown below the bonus grid when the total declared atouts across all
+    // poignée declarations exceed the 22 trumps that exist in the deck.
+    // `total` is the sum of minimum trump thresholds; `max` is TOTAL_ATOUTS_IN_DECK.
+    val atoutCountError: (total: Int, max: Int) -> String,
     // Accessibility label for the "undo previous round" icon button in the game header.
     val undoPreviousRound: String,
     // Confirmation dialog for "Undo previous round".
@@ -257,6 +261,7 @@ val EnStrings = AppStrings(
     triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} trumps shown before play.\nBonus: 40 pts per player." },
     chelemTooltipBody     = "All tricks won by the same team.\n\nAnnounced & realized: +400 pts\nNot announced, realized: +200 pts\nAnnounced, not realized: −200 pts\nDefenders realized: −200 pts (taker pays each defender)",
     pointsOutOfRange      = "Must be between 0 and 91",
+    atoutCountError       = { total, max -> "Too many trumps declared ($total / $max). Reduce your declarations." },
     undoPreviousRound     = "Undo previous round",
     undoConfirmTitle      = "Undo previous round?",
     undoConfirmBody       = "Are you sure to go back and modify the last round?",
@@ -378,6 +383,7 @@ val FrStrings = AppStrings(
     triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} atouts déclarés avant le jeu.\nBonus : 40 pts par joueur." },
     chelemTooltipBody     = "Tous les plis remportés par la même équipe.\n\nAnnoncé et réalisé : +400 pts\nNon annoncé, réalisé : +200 pts\nAnnoncé, non réalisé : −200 pts\nDéfense réalise : −200 pts (le preneur paye chaque défenseur)",
     pointsOutOfRange      = "Doit être entre 0 et 91",
+    atoutCountError       = { total, max -> "Trop d'atouts déclarés ($total / $max). Réduisez vos déclarations." },
     undoPreviousRound     = "Revenir à la manche précédente",
     undoConfirmTitle      = "Revenir à la manche précédente ?",
     undoConfirmBody       = "Êtes-vous sûr de vouloir modifier les données de la manche précédente ?.",

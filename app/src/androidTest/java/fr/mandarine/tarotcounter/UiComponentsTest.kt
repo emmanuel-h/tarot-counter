@@ -133,12 +133,17 @@ class UiComponentsTest {
     private val bonusLabels  = listOf("Petit au bout", "Poignée", "Double poignée", "Triple poignée")
     private val bonusTips    = listOf("tip1", "tip2", "tip3", "tip4")
 
-    /** Launches CompactBonusGrid with mutable state that tests can inspect. */
+    /**
+     * Launches [CompactBonusGrid] with mutable state that tests can inspect.
+     *
+     * The petit-au-bout row stays single-select (String?).
+     * The three poignée rows are now multi-select (Set<String>) as per issue #149.
+     */
     private fun launchBonusGrid(
-        petitAuBout: String?     = null, onPetit: (String?) -> Unit      = {},
-        poignee: String?         = null, onPoignee: (String?) -> Unit     = {},
-        doublePoignee: String?   = null, onDoublePoignee: (String?) -> Unit = {},
-        triplePoignee: String?   = null, onTriplePoignee: (String?) -> Unit = {}
+        petitAuBout: String?          = null,      onPetit: (String?) -> Unit           = {},
+        poignees: Set<String>         = emptySet(), onPoignee: (String, Boolean) -> Unit = { _, _ -> },
+        doublePoignees: Set<String>   = emptySet(), onDoublePoignee: (String, Boolean) -> Unit = { _, _ -> },
+        triplePoignees: Set<String>   = emptySet(), onTriplePoignee: (String, Boolean) -> Unit = { _, _ -> }
     ) {
         composeTestRule.setContent {
             TarotCounterTheme {
@@ -146,10 +151,10 @@ class UiComponentsTest {
                     playerNames     = bonusPlayers,
                     bonusLabels     = bonusLabels,
                     bonusTooltips   = bonusTips,
-                    petitAuBout     = petitAuBout,   onPetit          = onPetit,
-                    poignee         = poignee,        onPoignee        = onPoignee,
-                    doublePoignee   = doublePoignee,  onDoublePoignee  = onDoublePoignee,
-                    triplePoignee   = triplePoignee,  onTriplePoignee  = onTriplePoignee
+                    petitAuBout     = petitAuBout,      onPetit          = onPetit,
+                    poignees        = poignees,          onPoignee        = onPoignee,
+                    doublePoignees  = doublePoignees,    onDoublePoignee  = onDoublePoignee,
+                    triplePoignees  = triplePoignees,    onTriplePoignee  = onTriplePoignee
                 )
             }
         }
@@ -229,10 +234,10 @@ class UiComponentsTest {
                     playerNames     = fivePlayers,
                     bonusLabels     = bonusLabels,
                     bonusTooltips   = bonusTips,
-                    petitAuBout     = null, onPetit          = {},
-                    poignee         = null, onPoignee        = {},
-                    doublePoignee   = null, onDoublePoignee  = {},
-                    triplePoignee   = null, onTriplePoignee  = {}
+                    petitAuBout     = null,        onPetit          = {},
+                    poignees        = emptySet(),  onPoignee        = { _, _ -> },
+                    doublePoignees  = emptySet(),  onDoublePoignee  = { _, _ -> },
+                    triplePoignees  = emptySet(),  onTriplePoignee  = { _, _ -> }
                 )
             }
         }
@@ -248,6 +253,78 @@ class UiComponentsTest {
                     .isNotEmpty()
             )
         }
+    }
+
+    // ── Multi-select poignée rows (issue #149) ───────────────────────────────
+
+    @Test
+    fun bonusGrid_poignee_row_ticking_unchecked_box_calls_onToggle_with_true() {
+        // The poignée row (row index 1) is multi-select. Ticking Alice's checkbox
+        // (currently unchecked) should call onPoignee("Alice", true).
+        var toggledName: String? = null
+        var toggledChecked: Boolean? = null
+        launchBonusGrid(
+            poignees  = emptySet(),
+            onPoignee = { name, checked -> toggledName = name; toggledChecked = checked }
+        )
+
+        // The toggleable nodes are laid out in row-major order:
+        //   index 0 = Petit row / Alice, index 1 = Petit row / Bob,
+        //   index 2 = Poignée row / Alice, index 3 = Poignée row / Bob, …
+        // The Poignée row is the second data row, so Alice's box is at index 2.
+        composeTestRule
+            .onAllNodes(
+                androidx.compose.ui.test.hasClickAction() and
+                androidx.compose.ui.test.isToggleable()
+            )[2]
+            .performClick()
+
+        assertEquals("Alice", toggledName)
+        assertEquals(true, toggledChecked)
+    }
+
+    @Test
+    fun bonusGrid_poignee_row_ticking_checked_box_calls_onToggle_with_false() {
+        // Alice is already in the poignees set — ticking her box should call
+        // onPoignee("Alice", false) to remove her.
+        var toggledName: String? = null
+        var toggledChecked: Boolean? = null
+        launchBonusGrid(
+            poignees  = setOf("Alice"),
+            onPoignee = { name, checked -> toggledName = name; toggledChecked = checked }
+        )
+
+        // Alice's checked box in the Poignée row is at index 2 in traversal order.
+        composeTestRule
+            .onAllNodes(
+                androidx.compose.ui.test.hasClickAction() and
+                androidx.compose.ui.test.isToggleable()
+            )[2]
+            .performClick()
+
+        assertEquals("Alice", toggledName)
+        assertEquals(false, toggledChecked)
+    }
+
+    @Test
+    fun bonusGrid_poignee_allows_multiple_players_checked_simultaneously() {
+        // Both Alice and Bob are in the poignees set — both checkboxes must appear checked.
+        launchBonusGrid(poignees = setOf("Alice", "Bob"))
+
+        // Collect all toggleable nodes and count how many in the Poignée row are checked.
+        val checkedNodes = composeTestRule
+            .onAllNodes(
+                androidx.compose.ui.test.hasClickAction() and
+                androidx.compose.ui.test.isToggleable() and
+                androidx.compose.ui.test.isOn()
+            )
+            .fetchSemanticsNodes()
+
+        // Both Alice and Bob should be checked (2 checked nodes in the grid when both are selected).
+        assertTrue(
+            "Both poignée checkboxes should be checked when both players are in the set",
+            checkedNodes.size >= 2
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────

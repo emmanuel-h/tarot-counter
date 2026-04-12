@@ -83,7 +83,12 @@ Tapping the active chip again collapses the form and deselects the contract.
 
 The tooltip shown next to each Poignée label in the UI automatically displays the correct threshold for the current game's player count.
 
-The four player-assigned bonuses are displayed in a compact grid. Each row shows a **label** with an ⓘ info icon immediately next to it (not pushed to the edge), and one **checkbox per player**. Tapping anywhere on the label row (the text or the icon) opens a tooltip describing the bonus and its point value — the entire row is the tap target, not only the small icon. Ticking a checkbox assigns that bonus to that player; ticking it again clears the assignment. At most one player can hold each bonus at a time.
+The four player-assigned bonuses are displayed in a compact grid. Each row shows a **label** with an ⓘ info icon immediately next to it (not pushed to the edge), and one **checkbox per player**. Tapping anywhere on the label row (the text or the icon) opens a tooltip describing the bonus and its point value — the entire row is the tap target, not only the small icon.
+
+- **Petit au bout** row — single-select: at most one player can capture the Petit on the last trick.
+- **Poignée / Double poignée / Triple poignée** rows — multi-select (issue #149): any number of players can each independently show their own trump hand. Each declaration contributes its own bonus to the winning camp. Ticking a checked box removes that player; ticking an unchecked box adds them.
+
+**Atout count validation**: the total of minimum trump thresholds across all declared poignées must not exceed the 22 atout cards in the deck. If the combined declarations are impossible (e.g. triple [15] + simple [10] = 25 > 22 for a 4-player game), a red error message is shown below the grid and the **Confirm** button is disabled until the over-declaration is corrected.
 
 **Partner selection** is only shown in 5-player games. The taker secretly calls a partner; their identity affects score distribution at the end of the round.
 
@@ -226,7 +231,7 @@ The bar is a direct child of the outer (non-scrollable) `Column`, which also own
 - **`recordPlayed(takerName, contract, details)`** — accepts an explicit `takerName` parameter (the attacker) rather than deriving it from the dealer rotation. This ensures scores are always attributed to the player who won the bidding.
 - `Contract` enum — four contracts with `displayName` and `multiplier`.
 - `Chelem` enum — five grand slam outcomes (`NONE`, `ANNOUNCED_REALIZED`, `ANNOUNCED_NOT_REALIZED`, `NOT_ANNOUNCED_REALIZED`, `DEFENDERS_REALIZED`). The last entry covers the FFT-official defenders-chelem scenario (R-RO201206.pdf p.6).
-- `RoundDetails` data class — all scoring fields: bouts, points, `partnerName` (5-player only), player-assigned bonuses, the chelem outcome, and `chelemPlayer` (which player called/achieved the chelem — null when `chelem == NONE`).
+- `RoundDetails` data class — all scoring fields: bouts, points, `partnerName` (5-player only), player-assigned bonuses, the chelem outcome, and `chelemPlayer` (which player called/achieved the chelem — null when `chelem == NONE`). Since issue #149 the three Poignée fields are `List<String>` (`poignees`, `doublePoignees`, `triplePoignees`). Legacy nullable single-player fields are kept for backward-compat deserialization of old saved games; `effectivePoignees` / `effectiveDoublePoignees` / `effectiveTriplePoignees` computed properties merge both formats transparently.
 - `RoundResult` data class — round number, taker name, contract (`null` if skipped), details (`null` if skipped), `won` (`null` if skipped), and `playerScores` (empty map if skipped).
 - `requiredPoints(bouts)` — returns the minimum points needed to win for a given bout count.
 - `takerWon(bouts, points)` — returns `true` if points ≥ `requiredPoints(bouts)`.
@@ -234,5 +239,7 @@ The bar is a direct child of the outer (non-scrollable) `Column`, which also own
 - `computePlayerScores(allPlayers, takerName, partnerName, won, roundScore)` — returns a `Map<String, Int>` of player → score for the round.
 - `petitAuBoutBonus(contract)` — returns `10 × contract.multiplier`. Direction (which camp benefits) is determined in GameScreen by comparing the achiever's name against the taker/partner.
 - `poigneeThresholds(playerCount)` — returns a `Triple<Int, Int, Int>` with the minimum trump counts for (simple, double, triple) Poignée, varying by player count (3 → 13/15/18, 4 → 10/13/15, 5 → 8/10/13). Used by `AppStrings` to show the correct threshold in each tooltip.
-- `poigneeBonus(poignee, doublePoignee, triplePoignee)` — returns the flat per-defender bonus: 20, 30, 40, or 0. Direction follows the round winner, applied in GameScreen.
+- `poigneeBonus(poignee, doublePoignee, triplePoignee)` — legacy single-player helper, returns 20 / 30 / 40 / 0. Kept for backward compat and unit tests.
+- `totalPoigneeBonus(poignees, doublePoignees, triplePoignees)` — multi-player replacement (issue #149): sums `size×20 + size×30 + size×40` across all declarants. Used by `applyBonuses`.
+- `totalAtoutsAnnounced(poignees, doublePoignees, triplePoignees, playerCount)` — returns the combined minimum trump thresholds claimed. Used to validate that declarations do not exceed `TOTAL_ATOUTS_IN_DECK` (22).
 - `chelemBonus(chelem)` — returns the flat per-defender bonus value: +400, +200, −200, or 0.
