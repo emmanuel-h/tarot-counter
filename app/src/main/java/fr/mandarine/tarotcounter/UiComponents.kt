@@ -78,12 +78,11 @@ import kotlinx.coroutines.launch
 
 /** Sword pointing upward — used to indicate "attacker (taker)" mode.
  *
- * Deliberately simple shape (24 × 24 viewport):
- *  • Blade   : 2 units wide (x 11–13), tapers to a sharp point at the top (y 1).
- *  • Guard   : 14 units wide (x 5–19), 2 units tall — the dominant horizontal
- *              element that makes the silhouette read instantly as a sword.
- *  • Handle  : 2 units wide, same as blade.
- *  • Pommel  : 6 units wide (x 9–15), 2 units tall — anchors the bottom.
+ * Shape (24 × 24 viewport):
+ *  • Blade  : 2 units wide (x 11–13), tapers to a sharp point at the top (y 1).
+ *             Long blade — runs from y 1 down to y 17, dominating the icon.
+ *  • Guard  : 14 units wide (x 5–19), 2 units tall at y 17–19.
+ *  • Handle : 2 units wide, runs to the bottom edge (y 23). No pommel.
  */
 val SwordIcon: ImageVector by lazy {
     ImageVector.Builder(
@@ -95,20 +94,16 @@ val SwordIcon: ImageVector by lazy {
     ).path(fill = SolidColor(Color.Black)) {
         moveTo(12f, 1f)      // blade tip
         lineTo(13f, 4f)      // blade widens to 2 units on the right
-        lineTo(13f, 13f)     // blade right edge down to crossguard
-        lineTo(19f, 13f)     // crossguard extends right (14 units total)
-        lineTo(19f, 15f)     // crossguard bottom-right
-        lineTo(13f, 15f)     // back to handle right
-        lineTo(13f, 21f)     // handle bottom-right
-        lineTo(15f, 21f)     // pommel right
-        lineTo(15f, 23f)     // pommel bottom-right
-        lineTo(9f,  23f)     // pommel bottom-left
-        lineTo(9f,  21f)     // pommel top-left
-        lineTo(11f, 21f)     // handle bottom-left
-        lineTo(11f, 15f)     // handle top-left
-        lineTo(5f,  15f)     // crossguard bottom-left
-        lineTo(5f,  13f)     // crossguard top-left
-        lineTo(11f, 13f)     // blade left edge at crossguard
+        lineTo(13f, 17f)     // blade right edge down to crossguard
+        lineTo(19f, 17f)     // crossguard extends right (14 units total)
+        lineTo(19f, 19f)     // crossguard bottom-right
+        lineTo(13f, 19f)     // back to handle right
+        lineTo(13f, 23f)     // handle bottom-right (reaches viewport edge)
+        lineTo(11f, 23f)     // handle bottom-left
+        lineTo(11f, 19f)     // handle top-left
+        lineTo(5f,  19f)     // crossguard bottom-left
+        lineTo(5f,  17f)     // crossguard top-left
+        lineTo(11f, 17f)     // blade left edge at crossguard
         lineTo(11f, 4f)      // blade left edge up
         close()              // back to tip (12, 1)
     }.build()
