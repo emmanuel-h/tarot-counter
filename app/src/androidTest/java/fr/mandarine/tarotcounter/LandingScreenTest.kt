@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -14,6 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,9 +42,13 @@ class LandingScreenTest {
     /**
      * Launches LandingScreen inside our app theme (same as production).
      * [onNavigateToSettings] captures whether the settings gear was tapped.
+     *
+     * The [onStartGame] lambda now receives both the raw name list **and** the chosen
+     * dealer index (null = random). Existing tests that only care about names use the
+     * default no-op `{ _, _ -> }`.
      */
     private fun launch(
-        onStartGame: (List<String>) -> Unit = {},
+        onStartGame: (List<String>, Int?) -> Unit = { _, _ -> },
         onNavigateToSettings: () -> Unit = {}
     ) {
         composeTestRule.setContent {
@@ -189,7 +195,7 @@ class LandingScreenTest {
     @Test
     fun start_game_callback_receives_three_names_by_default() {
         var capturedNames: List<String>? = null
-        launch(onStartGame = { capturedNames = it })
+        launch(onStartGame = { names, _ -> capturedNames = names })
 
         composeTestRule.onNodeWithText("Start Game").performClick()
 
@@ -201,7 +207,7 @@ class LandingScreenTest {
     @Test
     fun start_game_callback_receives_five_names_when_chip_5_selected() {
         var capturedNames: List<String>? = null
-        launch(onStartGame = { capturedNames = it })
+        launch(onStartGame = { names, _ -> capturedNames = names })
 
         composeTestRule.onNodeWithText("5").performClick()
         composeTestRule.onNodeWithText("Start Game").performClick()
@@ -329,6 +335,74 @@ class LandingScreenTest {
         // The winner result text should appear (e.g. "Alice +150") inside the card.
         // We use a substring check via containsText to stay locale-agnostic.
         composeTestRule.onNodeWithText("Alice", substring = true).assertIsDisplayed()
+    }
+
+    // ── Spec: dealer selection section (issue #128) ───────────────────────────
+
+    @Test
+    fun dealer_selection_section_heading_is_displayed() {
+        launch()
+        composeTestRule.onNodeWithText("First Dealer").assertIsDisplayed()
+    }
+
+    @Test
+    fun random_option_is_displayed_and_selected_by_default() {
+        launch()
+        // The "Random" segment must be visible when the screen opens.
+        composeTestRule.onNodeWithText("Random").assertIsDisplayed()
+    }
+
+    @Test
+    fun choose_option_is_displayed() {
+        launch()
+        composeTestRule.onNodeWithText("Choose").assertIsDisplayed()
+    }
+
+    @Test
+    fun start_game_callback_receives_null_dealer_index_when_random_is_selected() {
+        // Default mode is Random — the dealer index passed to onStartGame must be null.
+        var capturedDealerIndex: Int? = -1  // sentinel: will be overwritten by the callback
+        launch(onStartGame = { _, dealerIndex -> capturedDealerIndex = dealerIndex })
+
+        composeTestRule.onNodeWithText("Start Game").performClick()
+
+        assertNull(
+            "Dealer index must be null when Random mode is selected",
+            capturedDealerIndex
+        )
+    }
+
+    @Test
+    fun start_game_callback_receives_non_null_dealer_index_when_choose_is_selected() {
+        // When the user picks "Choose", the callback must receive a non-null index.
+        var capturedDealerIndex: Int? = -1
+        launch(onStartGame = { _, dealerIndex -> capturedDealerIndex = dealerIndex })
+
+        composeTestRule.onNodeWithText("Choose").performClick()
+        composeTestRule.onNodeWithText("Start Game").performClick()
+
+        assertNotNull(
+            "Dealer index must be non-null when Choose mode is selected",
+            capturedDealerIndex
+        )
+    }
+
+    @Test
+    fun start_game_callback_receives_correct_index_when_second_player_chosen_as_dealer() {
+        // Tap "Choose", then tap Player 2. The callback must report index 1.
+        var capturedDealerIndex: Int? = -1
+        launch(onStartGame = { _, dealerIndex -> capturedDealerIndex = dealerIndex })
+
+        composeTestRule.onNodeWithText("Choose").performClick()
+        // There are multiple "Player 2" nodes (name field label + dealer chip).
+        // useUnmergedTree = false is fine here; the first match is the dealer chip.
+        composeTestRule.onAllNodesWithText("Player 2")[0].performClick()
+        composeTestRule.onNodeWithText("Start Game").performClick()
+
+        assertEquals(
+            "Index 1 expected when Player 2 (index 1) is chosen as dealer",
+            1, capturedDealerIndex
+        )
     }
 
 }

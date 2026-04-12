@@ -96,12 +96,18 @@ class MainActivity : ComponentActivity() {
                                 inProgressGame = inProgressGame,
                                 // Start a fresh game: resolve display names (blank entries become
                                 // "Player N" / "Joueur N"), then initialize the ViewModel session.
-                                onStartGame = { rawNames ->
+                                // `dealerIndex` is the user's chosen first-dealer index, or null
+                                // to let the app pick randomly (the default behaviour).
+                                onStartGame = { rawNames, dealerIndex ->
                                     val appStrings = appStrings(currentLocale)
                                     val resolvedNames = rawNames.mapIndexed { i, name ->
                                         name.ifBlank { appStrings.playerFallback(i + 1) }
                                     }
-                                    gameViewModel.initGame(resolvedNames, inProgressGame = null)
+                                    gameViewModel.initGame(
+                                        displayNames          = resolvedNames,
+                                        inProgressGame        = null,
+                                        startingIndexOverride = dealerIndex
+                                    )
                                     gameViewModel.clearInProgressGame()
                                     currentScreen = Screen.GAME
                                 },

@@ -6,7 +6,7 @@ An Android app for tracking scores in **French Tarot**, a classic French trick-t
 
 TarotCounter guides players through a game round by round:
 
-1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap the **⚙ gear icon** (top-right) to open the Settings page
+1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; choose the **first dealer** (random or pick a specific player); a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap the **⚙ gear icon** (top-right) to open the Settings page
 2. **Attacker selection + contract** — tap the player who won the bidding to set them as the **attacker** (any player can bid, not just the dealer); then pick their contract; the dealer label shows who is distributing the cards this round; a persistent **bottom action bar** always shows **End Game** (left) and **Skip round** (right) for quick access
 3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first; each history row shows a colored **●** indicator (green = won, red = lost, grey = skipped) for at-a-glance scanning

@@ -721,6 +721,60 @@ class GameViewModelTest {
         assertEquals("Alice", vm.currentDealer)
     }
 
+    // ── initGame — startingIndexOverride ─────────────────────────────────────
+
+    @Test
+    fun `initGame with startingIndexOverride uses that index for a fresh game`() {
+        // When the user manually picks a dealer on the setup screen, the chosen index
+        // must be used as the starting index for the new game.
+        val players = listOf("Alice", "Bob", "Charlie")
+        val vm = GameViewModel(Application(), FakeGameStorage())
+
+        vm.initGame(players, inProgressGame = null, startingIndexOverride = 2)
+
+        assertEquals(
+            "startingIndexOverride should set the starting index when no inProgressGame is given",
+            2, vm.startingIndex
+        )
+    }
+
+    @Test
+    fun `initGame startingIndexOverride is ignored when inProgressGame is provided`() {
+        // When resuming a saved game the stored index takes precedence; the UI cannot
+        // override it because the dealer rotation must continue from where it left off.
+        val players = listOf("Alice", "Bob", "Charlie")
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        val saved = InProgressGame(
+            gameId        = "g1",
+            playerNames   = players,
+            currentRound  = 3,
+            startingIndex = 1,   // saved: Bob (index 1) was the first dealer
+            rounds        = emptyList()
+        )
+
+        // Pass override = 2 (Charlie), but it must be ignored in favour of the saved 1 (Bob).
+        vm.initGame(players, saved, startingIndexOverride = 2)
+
+        assertEquals(
+            "Saved startingIndex must take precedence over startingIndexOverride",
+            1, vm.startingIndex
+        )
+    }
+
+    @Test
+    fun `initGame with null startingIndexOverride picks a random index`() {
+        // Without an override, any valid index in 0..players.lastIndex is acceptable.
+        val players = listOf("Alice", "Bob", "Charlie")
+        val vm = GameViewModel(Application(), FakeGameStorage())
+
+        vm.initGame(players, inProgressGame = null, startingIndexOverride = null)
+
+        assertTrue(
+            "Random starting index must be in range [0, players.size)",
+            vm.startingIndex in 0 until players.size
+        )
+    }
+
     // ── initGame — startingIndex, gameId, displayNames ───────────────────────
 
     @Test

@@ -127,14 +127,26 @@ class GameViewModel internal constructor(
 
     // Initializes (or restores) a game session.
     //
-    // displayNames : resolved player names — blank entries must have been replaced
-    //               by the caller (e.g. "Player 1") before passing them in.
-    // inProgressGame : non-null when resuming a saved game; null for a fresh start.
-    fun initGame(displayNames: List<String>, inProgressGame: InProgressGame?) {
+    // displayNames         : resolved player names — blank entries must have been replaced
+    //                        by the caller (e.g. "Player 1") before passing them in.
+    // inProgressGame       : non-null when resuming a saved game; null for a fresh start.
+    // startingIndexOverride: optional index of the player chosen to deal first (0-based).
+    //                        Only used for a fresh start (inProgressGame == null).
+    //                        Null means the first dealer is picked randomly (legacy behaviour).
+    fun initGame(
+        displayNames: List<String>,
+        inProgressGame: InProgressGame?,
+        startingIndexOverride: Int? = null
+    ) {
         _displayNames  = displayNames
         _gameId        = inProgressGame?.gameId?.ifBlank { UUID.randomUUID().toString() }
                             ?: UUID.randomUUID().toString()
-        _startingIndex = inProgressGame?.startingIndex ?: displayNames.indices.random()
+        // Priority: restored index > explicit choice > random.
+        // `inProgressGame?.startingIndex` is non-null when resuming, so the override
+        // is correctly ignored in that case.
+        _startingIndex = inProgressGame?.startingIndex
+            ?: startingIndexOverride
+            ?: displayNames.indices.random()
         currentRound   = inProgressGame?.currentRound ?: 1
         roundHistory.clear()
         inProgressGame?.rounds?.let { roundHistory.addAll(it) }

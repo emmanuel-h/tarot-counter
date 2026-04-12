@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,7 +55,10 @@ import java.util.Locale as JavaLocale
 //   - a "Resume Game" card (if there is an unfinished game saved from a previous session)
 //   - a "Past Games" list at the bottom (if any games have been completed)
 //
-// onStartGame:          lambda called when the user presses "Start Game" with a list of names.
+// onStartGame:          lambda called when the user presses "Start Game".
+//                         names      : raw names entered by the user (blank = use fallback).
+//                         dealerIndex: index of the chosen first dealer in `names`, or null
+//                                      to let the app pick a random dealer.
 // onResumeGame:         lambda called when the user taps "Resume" — passes the saved state back
 //                       to MainActivity so GameScreen can be initialized from it.
 // onNavigateToSettings: lambda called when the user taps the gear icon to open the Settings page.
@@ -65,7 +69,7 @@ fun LandingScreen(
     modifier: Modifier = Modifier,
     inProgressGame: InProgressGame? = null,
     pastGames: List<SavedGame> = emptyList(),
-    onStartGame: (List<String>) -> Unit = {},
+    onStartGame: (names: List<String>, dealerIndex: Int?) -> Unit = { _, _ -> },
     onResumeGame: (InProgressGame) -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
@@ -80,6 +84,16 @@ fun LandingScreen(
     // `mutableStateListOf` creates an observable list: any change triggers a UI redraw.
     // Initialized with 3 empty strings matching the default player count.
     val playerNames = remember { mutableStateListOf("", "", "") }
+
+    // Dealer selection state — declared early so the player-count onClick handlers can
+    // reference them when resetting the chosen dealer after a player-count change.
+    //
+    // `useRandomDealer` toggles between random (true, default) and manual (false).
+    // `selectedDealerIndex` is the index into resolvedNames of the manually chosen dealer;
+    //   defaults to 0 (first player) so there is always a valid selection when switching
+    //   to manual mode.
+    var useRandomDealer by remember { mutableStateOf(true) }
+    var selectedDealerIndex by remember { mutableIntStateOf(0) }
 
     // Box fills the whole screen and centers its child horizontally.
     // This ensures the content Column is centered on wide screens (e.g. tablets in landscape)
@@ -186,6 +200,10 @@ fun LandingScreen(
                         // If smaller, drop the extra entries from the end.
                         while (playerNames.size < n) playerNames.add("")
                         while (playerNames.size > n) playerNames.removeAt(playerNames.lastIndex)
+                        // Reset the manual dealer choice so it is never out of range
+                        // after the player list shrinks (e.g. picked index 4 with 5
+                        // players, then switched back to 3).
+                        selectedDealerIndex = 0
                     },
                     icon = {} // suppress the default checkmark icon
                 ) {
@@ -244,12 +262,85 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // ── Dealer selection ──────────────────────────────────────────────────
+        // By default the app picks a random first dealer (matching the original
+        // behaviour). The user can switch to "Choose" and pick a specific player.
+
+        Text(
+            text  = strings.dealerSelectionLabel,
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // A two-segment toggle: "Random" (left) vs "Choose" (right).
+        // `rememberSharedAutoSizeState(locale)` resets the shared font size when
+        // the language changes so both labels are measured fresh.
+        val dealerModeSize = rememberSharedAutoSizeState(locale)
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth(0.6f)) {
+            SegmentedButton(
+                shape    = SegmentedButtonDefaults.itemShape(0, 2),
+                selected = useRandomDealer,
+                onClick  = { useRandomDealer = true },
+                icon     = {} // suppress the default checkmark
+            ) {
+                AutoSizeText(
+                    text            = strings.randomDealer,
+                    modifier        = Modifier.padding(horizontal = 1.dp),
+                    sharedSizeState = dealerModeSize
+                )
+            }
+            SegmentedButton(
+                shape    = SegmentedButtonDefaults.itemShape(1, 2),
+                selected = !useRandomDealer,
+                onClick  = { useRandomDealer = false },
+                icon     = {}
+            ) {
+                AutoSizeText(
+                    text            = strings.chooseDealer,
+                    modifier        = Modifier.padding(horizontal = 1.dp),
+                    sharedSizeState = dealerModeSize
+                )
+            }
+        }
+
+        // When "Choose" is selected, show one segment per player so the user can
+        // tap the name of the person who will deal first.
+        if (!useRandomDealer) {
+            Spacer(modifier = Modifier.height(12.dp))
+            // Shared state ensures all player-name labels display at the same size —
+            // the smallest size needed to fit the longest name.
+            val dealerNameSize = rememberSharedAutoSizeState(locale)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                resolvedNames.forEachIndexed { index, name ->
+                    SegmentedButton(
+                        shape    = SegmentedButtonDefaults.itemShape(index, resolvedNames.size),
+                        selected = selectedDealerIndex == index,
+                        onClick  = { selectedDealerIndex = index },
+                        icon     = {}
+                    ) {
+                        AutoSizeText(
+                            text            = name,
+                            modifier        = Modifier.padding(horizontal = 1.dp),
+                            sharedSizeState = dealerNameSize
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // "Start Game" button placed BELOW the name fields so the visual flow naturally
         // guides the user: enter names first, then press Start.
         // `enabled = !hasDuplicates` prevents starting a game when names clash.
         AppButton(
             text     = strings.startGame,
-            onClick  = { onStartGame(playerNames.toList()) },
+            // Pass `null` for random mode or the chosen index for manual mode.
+            onClick  = {
+                val dealerIndex = if (useRandomDealer) null else selectedDealerIndex
+                onStartGame(playerNames.toList(), dealerIndex)
+            },
             enabled  = !hasDuplicates,
             modifier = Modifier.fillMaxWidth(0.8f)
         )

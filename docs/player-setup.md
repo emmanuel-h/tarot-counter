@@ -9,17 +9,18 @@ The landing screen lets users configure a game before it starts. It currently ha
 
 ## Layout
 
-The screen uses a scrollable `Column`. The layout order follows the natural user flow — configure players, enter names, then start:
+The screen uses a scrollable `Column`. The layout order follows the natural user flow — configure players, enter names, choose a dealer, then start:
 
 1. Language switcher (flag toggle, top-right)
 2. Card-suit decorative header (`♠ ♥ ♦ ♣`, in primary color)
 3. App title
 4. Player count chips (3 / 4 / 5)
 5. Player name fields
-6. **Start Game button** ← below the name fields
-7. Resume Game card (if an unfinished game is saved)
-8. Past Games list (if any completed games exist)
-9. **Feedback button** ← right-aligned, below Past Games
+6. **First Dealer section** ← new (issue #128)
+7. **Start Game button** ← below the dealer section
+8. Resume Game card (if an unfinished game is saved)
+9. Past Games list (if any completed games exist)
+10. **Feedback button** ← right-aligned, below Past Games
 
 ## Visual design
 
@@ -97,6 +98,46 @@ val hasDuplicates = duplicateFlags.any { it }
 ```
 
 Because `resolvedNames`, `lowerNames`, `duplicateFlags`, and `hasDuplicates` are plain `val`s computed inside the composable, Compose recalculates them automatically on every recomposition (i.e. every keystroke). No `remember` or `LaunchedEffect` is needed.
+
+## First Dealer selection
+
+The "First Dealer" section sits between the player name fields and the Start Game button. It lets the user control who distributes the cards for the very first round.
+
+### Two modes
+
+| Mode | Behavior |
+|---|---|
+| **Random** (default) | The app picks a random player from the list; the choice is invisible to users. |
+| **Choose** | A `SingleChoiceSegmentedButtonRow` with one segment per player appears so the user can tap a name. Defaults to the first player (index 0). |
+
+### State
+
+```kotlin
+var useRandomDealer by remember { mutableStateOf(true) }
+var selectedDealerIndex by remember { mutableIntStateOf(0) }
+```
+
+`selectedDealerIndex` is reset to 0 whenever the player count changes (inside the player-count button `onClick`) to prevent an out-of-range index after the player list shrinks.
+
+### Callback
+
+The `onStartGame` callback now carries a second parameter:
+
+```kotlin
+onStartGame: (names: List<String>, dealerIndex: Int?) -> Unit
+```
+
+`dealerIndex` is `null` when Random mode is active, and the chosen 0-based index when Choose mode is active.
+
+### ViewModel integration
+
+`GameViewModel.initGame()` accepts an optional `startingIndexOverride: Int? = null`. When `inProgressGame == null` (fresh start), it resolves the starting index as:
+
+```
+inProgressGame?.startingIndex ?: startingIndexOverride ?: displayNames.indices.random()
+```
+
+Restoring a saved game always uses the stored index; the override applies only to new games.
 
 ## Feedback button
 
