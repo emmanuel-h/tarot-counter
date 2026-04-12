@@ -364,15 +364,15 @@ class AppLocaleTest {
     fun en_attackerPointsLabel_and_defenderPointsLabel_differ() {
         val strings = appStrings(AppLocale.EN)
         assertNotEquals(strings.attackerPointsLabel, strings.defenderPointsLabel)
-        assertEquals("Attacker's pts (0-91)", strings.attackerPointsLabel)
-        assertEquals("Defenders' pts (0-91)", strings.defenderPointsLabel)
+        assertEquals("Attacker (0-91)", strings.attackerPointsLabel)
+        assertEquals("Defenders (0-91)", strings.defenderPointsLabel)
     }
 
     @Test
     fun fr_attackerPointsLabel_and_defenderPointsLabel_differ() {
         val strings = appStrings(AppLocale.FR)
         assertNotEquals(strings.attackerPointsLabel, strings.defenderPointsLabel)
-        assertEquals("Pts attaquant (0-91)", strings.attackerPointsLabel)
-        assertEquals("Pts défenseurs (0-91)", strings.defenderPointsLabel)
+        assertEquals("Attaquant (0-91)", strings.attackerPointsLabel)
+        assertEquals("Défenseurs (0-91)", strings.defenderPointsLabel)
     }
 }

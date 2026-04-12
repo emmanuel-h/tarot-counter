@@ -177,10 +177,10 @@ val EnStrings = AppStrings(
     chooseContract        = { taker -> "$taker — choose a contract:" },
     skipRound             = "Skip round",
     numberOfBouts         = "Number of bouts (oudlers)",
-    // Label shown on the points field and used as the toggle icon's content description.
-    // The range (0-91) is always included so users know the valid input bounds at a glance.
-    attackerPointsLabel   = "Attacker's pts (0-91)",
-    defenderPointsLabel   = "Defenders' pts (0-91)",
+    // Floating label on the points field; short enough to fit on one line in a
+    // half-width field that also has a trailing toggle icon.
+    attackerPointsLabel   = "Attacker (0-91)",
+    defenderPointsLabel   = "Defenders (0-91)",
     partnerCalledByTaker  = "Partner (called by taker)",
     confirmRound          = "Confirm round",
     scores                = "Scores",
@@ -267,8 +267,8 @@ val FrStrings = AppStrings(
     chooseContract        = { taker -> "$taker — choisissez un contrat :" },
     skipRound             = "Passer la manche",
     numberOfBouts         = "Nombre de bouts (oudlers)",
-    attackerPointsLabel   = "Pts attaquant (0-91)",
-    defenderPointsLabel   = "Pts défenseurs (0-91)",
+    attackerPointsLabel   = "Attaquant (0-91)",
+    defenderPointsLabel   = "Défenseurs (0-91)",
     partnerCalledByTaker  = "Appelé (par le preneur)",
     confirmRound          = "Valider la manche",
     scores                = "Scores",

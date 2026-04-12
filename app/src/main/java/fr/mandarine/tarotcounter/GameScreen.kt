@@ -20,8 +20,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
@@ -454,16 +452,19 @@ fun GameScreen(
                                 onDone = { keyboardController?.hide() }
                             ),
                             // Dynamic label: shows which camp the user is entering points for.
-                            // The range (0-91) is always visible so users know the valid bounds.
+                            // maxLines = 1 prevents the floating label from wrapping inside
+                            // the narrow half-width field that also carries a trailing icon.
                             label = {
                                 Text(
-                                    if (defenderMode) strings.defenderPointsLabel
-                                    else strings.attackerPointsLabel
+                                    text     = if (defenderMode) strings.defenderPointsLabel
+                                               else strings.attackerPointsLabel,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
                             },
                             // Trailing icon acts as the camp toggle.
-                            // The icon represents the CURRENT mode (person = attacker,
-                            // group = defenders), and the content description describes
+                            // The icon represents the CURRENT mode (sword = attacker,
+                            // shield = defenders), and the content description describes
                             // what the NEXT tap will switch to, following Material
                             // accessibility guidelines for toggle controls.
                             trailingIcon = {
@@ -478,9 +479,9 @@ fun GameScreen(
                                 ) {
                                     Icon(
                                         imageVector = if (defenderMode)
-                                            Icons.Default.Group   // defenders: multiple people
+                                            ShieldIcon  // defenders hold the shield
                                         else
-                                            Icons.Default.Person, // attacker: single taker
+                                            SwordIcon,  // attacker wields the sword
                                         // Content description names the NEXT mode so screen
                                         // readers announce the action, not the current state.
                                         contentDescription = if (defenderMode)
