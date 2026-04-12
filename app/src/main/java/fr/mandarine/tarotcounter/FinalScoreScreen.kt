@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -237,9 +235,9 @@ fun FinalScoreScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── Score table ───────────────────────────────────────────────────────
-        // Scrolls horizontally (5 players) and vertically (many rounds).
-        // Winner column(s) receive a `secondaryContainer` tint so they stand out
-        // without competing visually with the winner card above.
+        // The table uses weighted columns (ScoreTableRow) so it always fills the
+        // available width without horizontal scrolling, regardless of player count
+        // (issue #129). Winner column(s) receive a secondaryContainer tint.
         if (roundHistory.isEmpty()) {
             // No rounds were played — show a simple notice instead of an empty table.
             Text(
@@ -248,17 +246,7 @@ fun FinalScoreScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            // Box lets us overlay a scroll-hint arrow when the table is wider than
-            // the screen. The Icon anchors to Alignment.TopEnd so it is immediately
-            // visible when the user arrives at this screen and disappears once they
-            // scroll the table to the right.
-            val hScrollState = rememberScrollState()
-            Box {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(hScrollState)
-                ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 // Header row: localized "Round" label + one header per player name.
                 // No score values for the header row — labels use the default colour.
                 ScoreTableRow(
@@ -279,20 +267,6 @@ fun FinalScoreScreen(
                     )
                 }
             }   // end Column
-
-                // Arrow hint: visible when the table extends beyond the right screen edge.
-                if (hScrollState.canScrollForward) {
-                    Icon(
-                        imageVector        = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier           = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(16.dp)
-                    )
-                }
-            }   // end Box
         }
 
         Spacer(modifier = Modifier.height(32.dp))

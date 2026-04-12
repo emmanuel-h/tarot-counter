@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
@@ -564,12 +563,17 @@ fun scoreColor(total: Int): Color =
 // to eliminate duplication: any bug fix or visual change now applies everywhere.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Width for the "Round" / "Manche" column — short, as round numbers are at most two digits.
-internal val SCORE_TABLE_ROUND_COL_WIDTH: Dp = 64.dp
+// Relative weight for the "Round" / "Manche" column.
+// Smaller than a player column because round numbers are at most two digits.
+// Using weight (rather than a fixed dp width) makes the table responsive:
+// all columns together always fill exactly the available screen width, so
+// 4- and 5-player games never require horizontal scrolling (issue #129).
+internal const val SCORE_TABLE_ROUND_COL_WEIGHT: Float = 0.8f
 
-// Width for each player column — wide enough for score strings like "+1000"
-// and player names up to about 8 characters.
-internal val SCORE_TABLE_PLAYER_COL_WIDTH: Dp = 80.dp
+// Relative weight for each player column.
+// All player columns share the same weight, so they are evenly distributed
+// across the remaining width after the round column has taken its share.
+internal const val SCORE_TABLE_PLAYER_COL_WEIGHT: Float = 1f
 
 /**
  * A single horizontal row in a score table.
@@ -577,8 +581,14 @@ internal val SCORE_TABLE_PLAYER_COL_WIDTH: Dp = 80.dp
  * Replaces the near-identical `ScoreTableRow` (ScoreHistoryScreen) and
  * `FinalScoreTableRow` (FinalScoreScreen) that existed before issue #75.
  *
- * The first column (index 0) uses [SCORE_TABLE_ROUND_COL_WIDTH]; all others use
- * [SCORE_TABLE_PLAYER_COL_WIDTH].
+ * Each cell uses [Modifier.weight] so the row always fills the available width,
+ * regardless of how many players are in the game (issue #129).
+ * The first column (index 0) uses [SCORE_TABLE_ROUND_COL_WEIGHT]; all others
+ * use [SCORE_TABLE_PLAYER_COL_WEIGHT].
+ *
+ * Long player names are automatically shrunk via [AutoSizeText] so they never
+ * overflow their cell. All cells in the same row share a [rememberSharedAutoSizeState]
+ * so they all display at the same — smallest-needed — font size.
  *
  * @param cells               Text content for each cell in left-to-right order.
  * @param isHeader            If true, renders all text in bold (header row).
@@ -596,11 +606,20 @@ fun ScoreTableRow(
     scoreValues: List<Int?>? = null,
     winnerColumnIndices: Set<Int> = emptySet()
 ) {
-    Row {
+    // One shared state per row: all AutoSizeText instances in this row will shrink
+    // together so every cell displays at the same font size. Keyed on the cell
+    // contents so a data change (new round added) resets the shared size to maximum.
+    val rowSizeState = rememberSharedAutoSizeState(*cells.toTypedArray())
+
+    // RowScope is the implicit receiver here, so Modifier.weight() is available
+    // inside forEachIndexed without any extra ceremony.
+    Row(modifier = Modifier.fillMaxWidth()) {
         cells.forEachIndexed { index, text ->
-            // First column ("Round") is narrower; all player columns are wider.
-            val cellWidth = if (index == 0) SCORE_TABLE_ROUND_COL_WIDTH
-                            else           SCORE_TABLE_PLAYER_COL_WIDTH
+            // Round column is slightly narrower than player columns (0.8 vs 1.0).
+            // weight() distributes the Row's full width among all children
+            // proportionally, so the table always fits without horizontal scrolling.
+            val colWeight = if (index == 0) SCORE_TABLE_ROUND_COL_WEIGHT
+                            else            SCORE_TABLE_PLAYER_COL_WEIGHT
 
             val isWinnerColumn = index in winnerColumnIndices
 
@@ -625,23 +644,32 @@ fun ScoreTableRow(
 
             Box(
                 modifier = Modifier
-                    .width(cellWidth)
+                    .weight(colWeight)          // proportional width — fills screen
                     .then(bgModifier)
                     .padding(vertical = 8.dp, horizontal = 4.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = text,
-                    // Bold for header rows and for every cell in a winner column.
-                    style = if (isHeader || isWinnerColumn) {
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                    } else {
-                        MaterialTheme.typography.bodyMedium
-                    },
-                    color = textColor,
-                    textAlign = TextAlign.Center,
-                    // Prevent long names from wrapping and making rows uneven.
-                    maxLines = 1
+                // AutoSizeText shrinks the font until the text fits its cell.
+                // The shared state ensures every cell in this row uses the same size,
+                // which keeps the row visually consistent (no cell looks different).
+                // `textAlign = TextAlign.Center` is baked into the style so the text
+                // stays centred after the font is scaled down.
+                val cellStyle = if (isHeader || isWinnerColumn) {
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        textAlign  = TextAlign.Center,
+                        color      = textColor
+                    )
+                } else {
+                    MaterialTheme.typography.bodyMedium.copy(
+                        textAlign = TextAlign.Center,
+                        color     = textColor
+                    )
+                }
+                AutoSizeText(
+                    text            = text,
+                    style           = cellStyle,
+                    sharedSizeState = rowSizeState
                 )
             }
         }
