@@ -38,6 +38,15 @@ state is held in a `var showRules by remember { mutableStateOf(false) }` local v
 Both the theme and language choices survive app restarts — they are stored with DataStore
 (see `docs/game-persistence.md`) and restored in `MainActivity` via `collectAsState()`.
 
+On **first startup**, before the user has saved any preference, the language is auto-detected
+from the device's system locale (`Locale.getDefault().language`):
+
+- System locale is French → `AppLocale.FR`
+- Any other system locale → `AppLocale.EN`
+
+This fallback logic lives in `MainActivity` and only applies while `savedLocale` is `null`
+(i.e. the DataStore has not yet returned a value, or no preference has ever been saved).
+
 ## Architecture
 
 `SettingsScreen` is a stateless composable that:
