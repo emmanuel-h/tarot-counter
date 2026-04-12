@@ -951,4 +951,33 @@ class GameScreenTest {
         // (no attacker selected yet for the new round).
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
+
+    // ── Spec: compact scoreboard — player name truncation (issue #118) ─────────
+
+    @Test
+    fun scoreboard_shows_all_five_player_names_after_a_round() {
+        // Regression: with 5 players, each Column in CompactScoreboard must carry
+        // Modifier.weight(1f) so the Row's width is divided equally and
+        // TextOverflow.Ellipsis has a finite width to truncate against.
+        // Without the weight the columns expand freely and names never clip —
+        // meaning they can overflow their neighbour and become unreadable.
+        val fivePlayers = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
+        launchGame(playerNames = fivePlayers)
+        selectContractAndEnterScore(attacker = "Alice")
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        // After the first round the "Scores" card must be visible and every
+        // player name must appear somewhere in the composition (possibly truncated
+        // to "Ali…" but still present as a semantics node).
+        composeTestRule.onNodeWithText("Scores").assertIsDisplayed()
+        fivePlayers.forEach { name ->
+            assertTrue(
+                "Player '$name' should appear in the compact scoreboard after round 1",
+                composeTestRule
+                    .onAllNodesWithText(name, substring = true)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            )
+        }
+    }
 }

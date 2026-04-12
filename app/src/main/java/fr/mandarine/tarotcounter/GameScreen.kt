@@ -845,18 +845,26 @@ private fun CompactScoreboard(
             for (name in displayNames) {
                 val total = totals[name] ?: 0
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // weight(1f) divides the row width equally across all players.
+                // Without this, each Column is unconstrained and the Text can grow
+                // as wide as it wants, preventing TextOverflow.Ellipsis from firing.
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
-                        text     = name,
-                        style    = MaterialTheme.typography.labelMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        text      = name,
+                        style     = MaterialTheme.typography.labelMedium,
+                        maxLines  = 1,
+                        overflow  = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                     )
                     Text(
-                        text  = total.withSign(),
-                        style = MaterialTheme.typography.titleMedium,
+                        text      = total.withSign(),
+                        style     = MaterialTheme.typography.titleMedium,
                         // Green for positive/zero scores, red for negative.
-                        color = scoreColor(total)
+                        color     = scoreColor(total),
+                        textAlign = TextAlign.Center
                     )
                 }
             }
