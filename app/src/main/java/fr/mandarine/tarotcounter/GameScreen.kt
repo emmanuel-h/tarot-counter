@@ -323,45 +323,49 @@ fun GameScreen(
             // SingleChoiceSegmentedButtonRow is the Material 3 standard for picking
             // one option from a fixed set. Tapping the already-selected segment
             // deselects it (collapses the details form).
-            if (selectedAttacker != null) {
-            Text(
-                text = strings.chooseContract(selectedAttacker!!),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(Modifier.height(8.dp))
-            } // end attacker-required guard
 
-            // Shared font size — all 4 segments shrink together so they always display
-            // at the same size (the smallest needed across the longest label).
-            // Keyed on locale so labels re-measure whenever the language changes.
+            // rememberSharedAutoSizeState must be called unconditionally (Compose rule:
+            // remember calls must not be placed inside if/when/loop branches).
+            // The value is only *used* inside the if-block below.
             val contractLabelSize = rememberSharedAutoSizeState(locale)
 
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                Contract.entries.forEachIndexed { index, c ->
-                    SegmentedButton(
-                        // shape draws the correct rounded corners: round on the outer ends,
-                        // straight on the inner edges between segments.
-                        shape    = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = Contract.entries.size
-                        ),
-                        selected = selectedContract == c,
-                        onClick  = { selectedContract = if (selectedContract == c) null else c },
-                        // Hide the checkmark icon — the filled/outlined segment already
-                        // communicates selection clearly.
-                        icon     = {}
-                    ) {
-                        AutoSizeText(
-                            text            = c.localizedName(locale),
-                            modifier        = Modifier.padding(horizontal = 1.dp),
-                            sharedSizeState = contractLabelSize
-                        )
+            if (selectedAttacker != null) {
+                Text(
+                    text = strings.chooseContract(selectedAttacker!!),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+                Spacer(Modifier.height(8.dp))
+
+                // Shared font size — all 4 segments shrink together so they always display
+                // at the same size (the smallest needed across the longest label).
+                // Keyed on locale so labels re-measure whenever the language changes.
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    Contract.entries.forEachIndexed { index, c ->
+                        SegmentedButton(
+                            // shape draws the correct rounded corners: round on the outer ends,
+                            // straight on the inner edges between segments.
+                            shape    = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = Contract.entries.size
+                            ),
+                            selected = selectedContract == c,
+                            onClick  = { selectedContract = if (selectedContract == c) null else c },
+                            // Hide the checkmark icon — the filled/outlined segment already
+                            // communicates selection clearly.
+                            icon     = {}
+                        ) {
+                            AutoSizeText(
+                                text            = c.localizedName(locale),
+                                modifier        = Modifier.padding(horizontal = 1.dp),
+                                sharedSizeState = contractLabelSize
+                            )
+                        }
                     }
                 }
-            }
 
-            Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(8.dp))
+            } // end attacker-required guard
 
             // ── Inline round details ──────────────────────────────────────────
             // The form state (bouts, pointsText, etc.) is declared at the top of

@@ -123,8 +123,19 @@ class GameScreenTest {
     // ── Spec: Step 1 — four contract buttons ─────────────────────────────────
 
     @Test
-    fun all_four_contract_buttons_are_displayed() {
+    fun contract_buttons_hidden_before_attacker_is_selected() {
+        // Issue #131: contract buttons must not appear until the attacker is chosen.
         launchGame()
+        Contract.entries.forEach { contract ->
+            composeTestRule.onNodeWithText(contract.displayName).assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun all_four_contract_buttons_are_displayed() {
+        // Contract buttons only appear after the attacker is selected (issue #131).
+        launchGame()
+        selectAttacker()
         Contract.entries.forEach { contract ->
             composeTestRule.onNodeWithText(contract.displayName).assertIsDisplayed()
         }
@@ -132,7 +143,9 @@ class GameScreenTest {
 
     @Test
     fun pousse_button_does_not_exist() {
+        // Even after selecting an attacker, "Pousse" must never appear.
         launchGame()
+        selectAttacker()
         composeTestRule.onNodeWithText("Pousse").assertDoesNotExist()
     }
 
@@ -165,7 +178,10 @@ class GameScreenTest {
     @Test
     fun confirm_button_remains_disabled_when_contract_selected_but_no_score_entered() {
         // Spec: contract alone is not enough — a score value must also be typed.
+        // An attacker must be selected first because contract buttons are hidden until then
+        // (issue #131).
         launchGame()
+        selectAttacker()
         composeTestRule.onNodeWithText("Garde").performClick()
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }

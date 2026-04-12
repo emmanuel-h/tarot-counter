@@ -42,6 +42,8 @@ A segmented-button row listing every player's name is shown above the contract c
 
 #### Contract selection
 
+The contract selector is **only shown after an attacker has been selected** (issue #131). This avoids presenting irrelevant information before the bidding winner is known.
+
 Once an attacker is selected, a prompt shows their name above a row of SegmentedButtons — one per contract (weakest → strongest):
 
 | Contract (FR) | Contract (EN)  | Multiplier | Description                    |
