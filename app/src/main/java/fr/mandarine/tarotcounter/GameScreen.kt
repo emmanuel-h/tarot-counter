@@ -20,7 +20,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
@@ -106,6 +108,9 @@ fun GameScreen(
     // Controls whether the final score screen overlay is shown.
     var showFinalScore by remember { mutableStateOf(false) }
 
+    // Controls whether the "undo previous round" confirmation dialog is visible.
+    var showUndoConfirm by remember { mutableStateOf(false) }
+
     // ── Hoisted form state ────────────────────────────────────────────────────
     // These variables are declared here (rather than inside the form block) so
     // the pinned bottom-bar Confirm button can read and submit them without
@@ -186,6 +191,36 @@ fun GameScreen(
         return
     }
 
+    // ── Undo confirmation dialog ──────────────────────────────────────────────
+    // AlertDialog is a Material 3 modal overlay; it does NOT replace the whole screen
+    // (unlike the FinalScore/ScoreHistory overlays above), so the game content remains
+    // visible behind the dimmed backdrop. The user must explicitly confirm or cancel.
+    if (showUndoConfirm) {
+        AlertDialog(
+            onDismissRequest = { showUndoConfirm = false },
+            title = { Text(strings.undoConfirmTitle) },
+            text  = { Text(strings.undoConfirmBody) },
+            confirmButton = {
+                // Confirming removes the last round and resets form state so the user
+                // immediately sees the restored round ready for re-entry.
+                AppTextButton(
+                    text    = strings.undoPreviousRound,
+                    onClick = {
+                        showUndoConfirm  = false
+                        viewModel.undoLastRound()
+                        // Reset in-progress form selections so the restored round
+                        // starts fresh (the user will re-enter attacker and contract).
+                        selectedAttacker = null
+                        selectedContract = null
+                    }
+                )
+            },
+            dismissButton = {
+                AppTextButton(text = strings.cancel, onClick = { showUndoConfirm = false })
+            }
+        )
+    }
+
     // ── Single-page game layout ───────────────────────────────────────────────
     // Everything lives in one scrollable column so the user always sees the scoreboard,
     // the contract chips, and — when a contract is selected — the details form,
@@ -240,13 +275,18 @@ fun GameScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // History button — always visible and always enabled so the user can
-                    // open the score table at any point, even before the first round is played
-                    // (the table shows only the header row with player names in that case).
+                    // Previous (undo) button — top-left; only shown once at least one round
+                    // has been recorded. Before any round is played there is nothing to undo.
+                    if (roundHistory.isNotEmpty()) {
+                        UndoPreviousRoundButton(onClick = { showUndoConfirm = true })
+                    } else {
+                        // Invisible placeholder keeps the round number centred when no
+                        // previous round exists yet.
+                        Spacer(Modifier.size(48.dp))
+                    }
+                    // History button — top-right; always visible so the user can review
+                    // scores at any point (even before the first round, where only headers show).
                     HistoryButton(onClick = { showScoreHistory = true })
-                    // Right-side placeholder mirrors the history button so the
-                    // round number stays centred; End Game is in the bottom bar.
-                    Spacer(Modifier.size(48.dp))
                 }
             }
 
@@ -877,6 +917,24 @@ private fun CompactScoreboard(
 
 // An icon-only button with a bar-chart icon for opening the score history overlay.
 // OutlinedIconButton is used instead of plain IconButton so a visible border is drawn
+// ── UndoPreviousRoundButton ───────────────────────────────────────────────────
+
+// Icon button placed in the top-left corner of the game header.
+// It is only rendered when at least one round has been recorded (the caller checks
+// roundHistory.isNotEmpty() before including it), so it is always tappable when shown.
+// Tapping opens a confirmation dialog rather than performing the undo immediately,
+// preventing accidental data loss.
+@Composable
+fun UndoPreviousRoundButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val strings = appStrings(LocalAppLocale.current)
+    OutlinedIconButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            imageVector        = Icons.AutoMirrored.Filled.Undo,
+            contentDescription = strings.undoPreviousRound
+        )
+    }
+}
+
 // around the icon, making it clearer to the user that this is a tappable element.
 // Always enabled — tapping before the first round opens the table with only headers.
 // The contentDescription ensures screen readers announce the button's purpose.

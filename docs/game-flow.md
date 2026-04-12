@@ -197,11 +197,13 @@ The full round-by-round detail log is available on the **Score History screen** 
 
 #### Header
 
-The game screen header has two zones:
+The game screen header has three zones:
 
-| Left | Center | Right (placeholder) |
-|------|--------|---------------------|
-| **History** icon button (bar-chart icon) — opens the full score history overlay. Only shown after at least one round has been recorded. A 48 dp spacer is shown instead when no rounds exist yet. | **Round N** — the current round number, always centred. | 48 dp spacer that mirrors the History button to keep the round number perfectly centred. |
+| Left | Center | Right |
+|------|--------|-------|
+| **Previous** (undo) icon button — only shown after at least one round has been recorded. A 48 dp spacer is shown instead before the first round, keeping the round number centred. | **Round N** — the current round number, always centred. | **History** icon button (bar-chart icon) — opens the full score history overlay. Always visible. |
+
+**Previous (undo) button** — located top-left. Tapping it opens a confirmation dialog before removing the last round. The confirmation prevents accidental data loss. Once confirmed, `GameViewModel.undoLastRound()` removes the last `RoundResult` from `roundHistory`, decrements `currentRound`, and persists the updated in-progress snapshot so a resume after a crash stays consistent.
 
 The **History** icon button opens a full scrollable score table overlay (with running cumulative totals) for detailed review.
 
@@ -219,6 +221,7 @@ The bar is a direct child of the outer (non-scrollable) `Column`, which also own
 
 ## Data Model
 
+- **`undoLastRound()`** — removes the last `RoundResult` from `roundHistory`, decrements `currentRound`, and saves the rolled-back snapshot to DataStore. No-op if `roundHistory` is empty.
 - **`currentDealer: String`** (read-only property on `GameViewModel`) — the name of the player who deals cards this round, computed by `(startingIndex + currentRound − 1) % playerCount`. This is separate from the attacker, which is chosen by the user each round.
 - **`recordPlayed(takerName, contract, details)`** — accepts an explicit `takerName` parameter (the attacker) rather than deriving it from the dealer rotation. This ensures scores are always attributed to the player who won the bidding.
 - `Contract` enum — four contracts with `displayName` and `multiplier`.
