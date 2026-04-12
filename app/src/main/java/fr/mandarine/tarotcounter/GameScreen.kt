@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -378,16 +379,30 @@ fun GameScreen(
 
                 // ── Bouts + Points side by side ───────────────────────────────
                 // Placing these in a Row cuts vertical space compared to stacking them.
-                // Alignment.Bottom keeps the dropdown and text field on the same baseline.
+                //
+                // IntrinsicSize.Min sets the Row's height to the tallest column's natural
+                // height (i.e. the height of its content without any expansion). This is
+                // needed so fillMaxHeight() inside each Column has a concrete ceiling to
+                // fill up to.
+                //
+                // Both Columns use fillMaxHeight() so they stretch to that shared height.
+                // A weight(1f) Spacer between the label and the field then pushes the
+                // field to the bottom of each Column, keeping both fields vertically
+                // aligned even when one label wraps to more lines than the other
+                // (e.g. "Nombre de bouts (oudlers)" in French wraps but "Points" does not).
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.Bottom
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min),  // height = tallest column's natural height
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    // No verticalAlignment — each Column manages alignment internally
                 ) {
                     // Left half: bouts dropdown (ExposedDropdownMenuBox)
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                         FormLabel(strings.numberOfBouts)
-                        Spacer(Modifier.height(8.dp))
+                        // Flexible spacer: grows to fill remaining Column height,
+                        // pushing the dropdown flush with the bottom of the Row.
+                        Spacer(Modifier.weight(1f))
 
                         var boutsExpanded by remember { mutableStateOf(false) }
 
@@ -429,11 +444,13 @@ fun GameScreen(
                     }
 
                     // Right half: points entry with an inline camp toggle
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                         // Section header mirrors the "Number of bouts (oudlers)" label
                         // on the left so both halves of the Row look structurally identical.
                         FormLabel(strings.pointsHeader)
-                        Spacer(Modifier.height(8.dp))
+                        // Flexible spacer (mirrors the one in the left Column) so the
+                        // text field always aligns with the bouts dropdown below.
+                        Spacer(Modifier.weight(1f))
                         // ── Points field with trailing camp toggle ───────────────
                         // The floating label tells the user which camp's points to enter.
                         // The trailing icon (person = attacker, group = defenders) lets
