@@ -452,14 +452,13 @@ fun GameScreen(
                                 onDone = { keyboardController?.hide() }
                             ),
                             // Dynamic label: shows which camp the user is entering points for.
-                            // maxLines = 1 prevents the floating label from wrapping inside
-                            // the narrow half-width field that also carries a trailing icon.
+                            // AutoSizeText shrinks the label font until the full string fits
+                            // on one line — this handles narrow screens and large system fonts
+                            // without truncating or wrapping.
                             label = {
-                                Text(
-                                    text     = if (defenderMode) strings.defenderPointsLabel
-                                               else strings.attackerPointsLabel,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                AutoSizeText(
+                                    text = if (defenderMode) strings.defenderPointsLabel
+                                           else strings.attackerPointsLabel
                                 )
                             },
                             // Trailing icon acts as the camp toggle.
