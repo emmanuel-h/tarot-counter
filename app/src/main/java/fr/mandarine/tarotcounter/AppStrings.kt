@@ -319,7 +319,7 @@ val FrStrings = AppStrings(
     playerFallback        = { i -> "Joueur $i" },
     nameAlreadyUsed       = "Nom déjà utilisé",
     startGame             = "Démarrer",
-    dealerSelectionLabel  = "Premier distributeur",
+    dealerSelectionLabel  = "Premier donneur",
     randomDealer          = "Aléatoire",
     chooseDealer          = "Choisir",
     pastGames             = "Parties précédentes",
@@ -333,7 +333,7 @@ val FrStrings = AppStrings(
     roundCount            = { n -> if (n == 1) "1 manche" else "$n manches" },
 
     roundHeader           = { n -> "Manche $n" },
-    dealerLabel           = { dealer -> "Distributeur : $dealer" },
+    dealerLabel           = { dealer -> "Donneur : $dealer" },
     attackerLabel         = "Preneur",
     chooseContract        = { taker -> "$taker — choisissez un contrat :" },
     skipRound             = "Passer",
