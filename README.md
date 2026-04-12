@@ -6,7 +6,7 @@ An Android app for tracking scores in **French Tarot**, a classic French trick-t
 
 TarotCounter guides players through a game round by round:
 
-1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap ☀️ or 🌙 in the top-left to toggle between light and dark mode (persisted across restarts, defaults to light); tap 🇬🇧 or 🇫🇷 in the top-right to switch the app language (persisted across restarts, defaults to device language)
+1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap the **⚙ gear icon** (top-right) to open the Settings page
 2. **Attacker selection + contract** — tap the player who won the bidding to set them as the **attacker** (any player can bid, not just the dealer); then pick their contract; the dealer label shows who is distributing the cards this round; a persistent **bottom action bar** always shows **End Game** (left) and **Skip round** (right) for quick access
 3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
 4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first; each history row shows a colored **●** indicator (green = won, red = lost, grey = skipped) for at-a-glance scanning
@@ -16,7 +16,7 @@ TarotCounter guides players through a game round by round:
 8. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
 9. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results with a trophy icon next to the winner's name
 10. **Back navigation** — the Android system back button always returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
-11. **Feedback button** — a "Send Feedback" / "Contacter le développeur" button at the bottom of the setup screen opens the device's email client pre-addressed to the developer
+11. **Settings page** — a dedicated settings page (reachable via the ⚙ gear icon on the setup screen) consolidates theme toggle (☀️ / 🌙), language toggle (🇬🇧 / 🇫🇷), and a feedback button that opens the device's email client pre-addressed to the developer; both theme and language are persisted across restarts
 
 The app rotates the **dealer** each round and lets the user explicitly select the **attacker** (the player who won the bidding), determines win/loss, and computes each player's score for the round.
 
@@ -74,6 +74,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── LandingScreen.kt       # Player setup UI + Past Games list
 ├── GameScreen.kt          # Round management, taker rotation, details form, history, End Game button
 ├── ScreenHeader.kt        # Shared back-arrow header composable
+├── SettingsScreen.kt      # Settings page: theme, language, feedback
 ├── ScoreHistoryScreen.kt  # Round-by-round cumulative score table
 ├── FinalScoreScreen.kt    # End-of-game results: winner card + full score table
 ├── UiComponents.kt        # Shared UI: AppButton, AppOutlinedButton, AppTextButton, AutoSizeText
@@ -189,7 +190,8 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `TakerRotationTest.kt` | Taker rotation formula for 3–5 players |
 | `AppLocaleTest.kt` | i18n string bundles: locale-specific strings, lambda formatters, enum localized names |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
-| `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, duplicate validation, theme toggle chips, feedback button |
+| `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, duplicate validation, settings gear icon |
+| `SettingsScreenTest.kt` | Settings page: back navigation, theme toggle, language toggle, feedback button, section labels |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history table: column headers, cumulative totals, back navigation |
 | `FinalScoreScreenTest.kt` | Final score screen: winner card, tie detection, score table, New Game navigation |
@@ -208,6 +210,7 @@ TarotCounter/
 │   ├── ui-components.md      # Shared UI components: AppButton, AutoSizeText guideline
 │   ├── game-flow.md          # Game mechanics specification
 │   ├── player-setup.md       # Setup screen behaviour
+│   ├── settings.md           # Settings page: theme, language, feedback
 │   ├── score-history.md      # Score history table
 │   ├── final-score.md        # Final score screen: winner card, End Game flow
 │   ├── game-persistence.md   # How completed games are saved and displayed
@@ -231,6 +234,7 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/ui-components.md`](docs/ui-components.md) — shared UI building blocks: `AppButton`, `AutoSizeText`, and the button convention
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
+- [`docs/settings.md`](docs/settings.md) — settings page: theme toggle, language toggle, feedback button, navigation wiring
 - [`docs/score-history.md`](docs/score-history.md) — score history table: layout, navigation, scrolling
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen

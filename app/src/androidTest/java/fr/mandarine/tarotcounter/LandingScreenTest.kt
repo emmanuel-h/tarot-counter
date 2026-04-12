@@ -28,6 +28,7 @@ import org.junit.runner.RunWith
  *   - Choose 3–5 players via filter chips.
  *   - Enter optional names for each player.
  *   - Tap Start Game to lock in names and navigate to the game screen.
+ *   - Tap the gear icon to navigate to the Settings page.
  */
 @RunWith(AndroidJUnit4::class)
 class LandingScreenTest {
@@ -38,17 +39,17 @@ class LandingScreenTest {
 
     /**
      * Launches LandingScreen inside our app theme (same as production).
-     * [onThemeChange] captures the AppTheme passed to the callback when a chip is tapped.
+     * [onNavigateToSettings] captures whether the settings gear was tapped.
      */
     private fun launch(
         onStartGame: (List<String>) -> Unit = {},
-        onThemeChange: (AppTheme) -> Unit = {}
+        onNavigateToSettings: () -> Unit = {}
     ) {
         composeTestRule.setContent {
             TarotCounterTheme {
                 LandingScreen(
-                    onStartGame   = onStartGame,
-                    onThemeChange = onThemeChange
+                    onStartGame          = onStartGame,
+                    onNavigateToSettings = onNavigateToSettings
                 )
             }
         }
@@ -82,14 +83,23 @@ class LandingScreenTest {
         composeTestRule.onNodeWithText("Tarot Counter").assertIsDisplayed()
     }
 
-    // ── Spec: language switcher is shown ──────────────────────────────────────
+    // ── Spec: settings gear icon is shown ────────────────────────────────────
 
     @Test
-    fun language_switcher_shows_both_flags() {
+    fun settings_gear_icon_is_displayed() {
         launch()
-        // Both flag emoji chips must be present on the landing screen.
-        composeTestRule.onNodeWithText("🇬🇧").assertIsDisplayed()
-        composeTestRule.onNodeWithText("🇫🇷").assertIsDisplayed()
+        // The gear icon has contentDescription = strings.settings = "Settings".
+        composeTestRule.onNodeWithContentDescription("Settings").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_settings_icon_calls_onNavigateToSettings() {
+        var called = false
+        launch(onNavigateToSettings = { called = true })
+
+        composeTestRule.onNodeWithContentDescription("Settings").performClick()
+
+        assert(called) { "Expected onNavigateToSettings to be called when gear icon is tapped" }
     }
 
     // ── Spec: player-count chips 3, 4, 5 ─────────────────────────────────────
@@ -311,69 +321,6 @@ class LandingScreenTest {
         composeTestRule.onNodeWithText("Past Games").assertIsDisplayed()
     }
 
-    // ── Spec: theme toggle chips are shown ────────────────────────────────────
-
-    @Test
-    fun theme_toggle_shows_both_sun_and_moon_chips() {
-        launch()
-        // Both emoji chips must be present in the header row.
-        composeTestRule.onNodeWithText("☀️").assertIsDisplayed()
-        composeTestRule.onNodeWithText("🌙").assertIsDisplayed()
-    }
-
-    @Test
-    fun tapping_moon_chip_calls_onThemeChange_with_DARK() {
-        var capturedTheme: AppTheme? = null
-        launch(onThemeChange = { capturedTheme = it })
-
-        composeTestRule.onNodeWithText("🌙").performClick()
-
-        assertEquals(AppTheme.DARK, capturedTheme)
-    }
-
-    @Test
-    fun tapping_sun_chip_calls_onThemeChange_with_LIGHT() {
-        var capturedTheme: AppTheme? = null
-        launch(onThemeChange = { capturedTheme = it })
-
-        composeTestRule.onNodeWithText("☀️").performClick()
-
-        assertEquals(AppTheme.LIGHT, capturedTheme)
-    }
-
-    // ── Spec: segmented button selection state (issue #101) ──────────────────
-    // The theme and language toggles now use SingleChoiceSegmentedButtonRow.
-    // Compose exposes the selected state via the `Selected` semantics property,
-    // which we can assert with `assertIsSelected()` / `assertIsNotSelected()`.
-
-    @Test
-    fun tapping_locale_fr_calls_onLocaleChange_with_FR() {
-        var capturedLocale: AppLocale? = null
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                LandingScreen(onLocaleChange = { capturedLocale = it })
-            }
-        }
-
-        composeTestRule.onNodeWithText("🇫🇷").performClick()
-
-        assertEquals(AppLocale.FR, capturedLocale)
-    }
-
-    @Test
-    fun tapping_locale_en_calls_onLocaleChange_with_EN() {
-        var capturedLocale: AppLocale? = null
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                LandingScreen(onLocaleChange = { capturedLocale = it })
-            }
-        }
-
-        composeTestRule.onNodeWithText("🇬🇧").performClick()
-
-        assertEquals(AppLocale.EN, capturedLocale)
-    }
-
     // ── Spec: past game card shows winner name (issue #5) ─────────────────────
 
     @Test
@@ -384,35 +331,4 @@ class LandingScreenTest {
         composeTestRule.onNodeWithText("Alice", substring = true).assertIsDisplayed()
     }
 
-    // ── Spec: feedback button (issue #72) ─────────────────────────────────────
-
-    @Test
-    fun feedback_button_is_displayed() {
-        launch()
-        composeTestRule.onNodeWithText("Send Feedback").assertIsDisplayed()
-    }
-
-    @Test
-    fun feedback_button_is_below_start_game_button() {
-        launch()
-        val startBounds    = composeTestRule.onNodeWithText("Start Game").getBoundsInRoot()
-        val feedbackBounds = composeTestRule.onNodeWithText("Send Feedback").getBoundsInRoot()
-
-        assert(feedbackBounds.top >= startBounds.bottom) {
-            "Expected Send Feedback button (top=${feedbackBounds.top}) to be below " +
-                "Start Game button (bottom=${startBounds.bottom})"
-        }
-    }
-
-    @Test
-    fun feedback_button_is_below_past_games_section() {
-        launchWithPastGames()
-        val feedbackBounds  = composeTestRule.onNodeWithText("Send Feedback").getBoundsInRoot()
-        val pastGamesBounds = composeTestRule.onNodeWithText("Past Games").getBoundsInRoot()
-
-        assert(feedbackBounds.top >= pastGamesBounds.bottom) {
-            "Expected Send Feedback button (top=${feedbackBounds.top}) to be below " +
-                "Past Games heading (bottom=${pastGamesBounds.bottom})"
-        }
-    }
 }

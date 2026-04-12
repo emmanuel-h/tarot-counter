@@ -132,7 +132,17 @@ data class AppStrings(
     // Confirm action label — distinct from `cancel` which already exists.
     val backConfirmLeave: String,
 
-    // ── Feedback button (Landing Screen) ─────────────────────────────────────
+    // ── Settings ──────────────────────────────────────────────────────────────
+    // Accessibility label for the gear icon button on the landing screen.
+    val settings: String,
+    // Title shown at the top of the settings page.
+    val settingsTitle: String,
+    // Section heading for the theme toggle row on the settings page.
+    val themeLabel: String,
+    // Section heading for the language toggle row on the settings page.
+    val languageLabel: String,
+
+    // ── Feedback button (Settings Screen) ────────────────────────────────────
     // Label for the button that opens the user's email client to contact the developer.
     val feedbackButton: String,
 
@@ -242,6 +252,10 @@ val EnStrings = AppStrings(
     contractGardeSans    = "Guard Without",
     contractGardeContre  = "Guard Against",
 
+    settings                 = "Settings",
+    settingsTitle            = "Settings",
+    themeLabel               = "Theme",
+    languageLabel            = "Language",
     feedbackButton           = "Send Feedback",
 )
 
@@ -331,6 +345,10 @@ val FrStrings = AppStrings(
     contractGardeSans    = "Garde Sans",
     contractGardeContre  = "Garde Contre",
 
+    settings                 = "Paramètres",
+    settingsTitle            = "Paramètres",
+    themeLabel               = "Thème",
+    languageLabel            = "Langue",
     feedbackButton           = "Contacter le développeur",
 )
 

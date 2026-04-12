@@ -1,7 +1,5 @@
 package fr.mandarine.tarotcounter
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,19 +18,19 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,7 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -53,18 +50,16 @@ import java.util.Locale as JavaLocale
 
 // LandingScreen lets the user configure how many players there are and enter their names.
 // It also shows:
-//   - a theme toggle (☀️ / 🌙) in the top-left corner
-//   - a language switcher (🇬🇧 / 🇫🇷) in the top-right corner
+//   - a gear icon button (top-right) that navigates to the Settings page
 //   - a "Resume Game" card (if there is an unfinished game saved from a previous session)
 //   - a "Past Games" list at the bottom (if any games have been completed)
 //
-// onStartGame:     lambda called when the user presses "Start Game" with a list of names.
-// onResumeGame:    lambda called when the user taps "Resume" — passes the saved state back
-//                  to MainActivity so GameScreen can be initialized from it.
-// onLocaleChange:  lambda called when the user taps a flag to switch language.
-// onThemeChange:   lambda called when the user taps ☀️ or 🌙 to switch the theme.
-// inProgressGame:  a game that was interrupted mid-session, or null if there is none.
-// pastGames:       list of completed games; defaults to empty for the @Preview below.
+// onStartGame:          lambda called when the user presses "Start Game" with a list of names.
+// onResumeGame:         lambda called when the user taps "Resume" — passes the saved state back
+//                       to MainActivity so GameScreen can be initialized from it.
+// onNavigateToSettings: lambda called when the user taps the gear icon to open the Settings page.
+// inProgressGame:       a game that was interrupted mid-session, or null if there is none.
+// pastGames:            list of completed games; defaults to empty for the @Preview below.
 @Composable
 fun LandingScreen(
     modifier: Modifier = Modifier,
@@ -72,17 +67,11 @@ fun LandingScreen(
     pastGames: List<SavedGame> = emptyList(),
     onStartGame: (List<String>) -> Unit = {},
     onResumeGame: (InProgressGame) -> Unit = {},
-    onLocaleChange: (AppLocale) -> Unit = {},
-    onThemeChange: (AppTheme) -> Unit = {}
+    onNavigateToSettings: () -> Unit = {}
 ) {
-    // Read the active locale and theme from the composition tree.
+    // Read the active locale from the composition tree.
     val locale  = LocalAppLocale.current
-    val theme   = LocalAppTheme.current
     val strings = appStrings(locale)
-
-    // Context is needed to fire an Android Intent (e.g. open the email client).
-    // LocalContext.current gives us the nearest Activity/Context in the Compose tree.
-    val context = LocalContext.current
 
     // `remember` keeps a value alive across recompositions (UI redraws).
     // `mutableIntStateOf` creates an integer that, when changed, triggers a redraw.
@@ -117,60 +106,23 @@ fun LandingScreen(
         verticalArrangement = Arrangement.Top
     ) {
 
-        // ── Header row: theme toggle (left) + language switcher (right) ──────────
-        // Both sets of chips use Material3 FilterChip — the selected chip gets a
-        // filled background; the unselected one has only an outlined border.
+        // ── Header row: settings gear icon (right-aligned) ───────────────────
+        // A single gear IconButton in the top-right corner replaces the scattered
+        // theme and language toggles that previously lived here. All preferences
+        // have been consolidated into the Settings page for a cleaner header.
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween, // push groups to each edge
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            horizontalArrangement = Arrangement.End, // push the icon to the right edge
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // ── Theme toggle (left) ───────────────────────────────────────────
-            // SingleChoiceSegmentedButtonRow groups related options into one visual
-            // unit: the selected segment gets a filled background, and unselected
-            // segments have no individual border — only the outer row border remains.
-            // This is clearer than separate FilterChips, which all show an outline.
-            val themeOptions   = listOf(AppTheme.LIGHT to "☀️", AppTheme.DARK to "🌙")
-            val themeLabelSize = rememberSharedAutoSizeState()
-            SingleChoiceSegmentedButtonRow {
-                themeOptions.forEachIndexed { index, (themeOption, label) ->
-                    SegmentedButton(
-                        shape    = SegmentedButtonDefaults.itemShape(index, themeOptions.size),
-                        selected = theme == themeOption,
-                        // Calling the callback even for the already-selected option
-                        // is safe and idiomatic: the caller simply sets the same value again.
-                        onClick  = { onThemeChange(themeOption) },
-                        // Suppress the default checkmark — the filled background already
-                        // communicates which option is selected.
-                        icon     = {}
-                    ) {
-                        AutoSizeText(
-                            text            = label,
-                            modifier        = Modifier.padding(horizontal = 1.dp),
-                            sharedSizeState = themeLabelSize
-                        )
-                    }
-                }
-            }
-
-            // ── Language toggle (right) ───────────────────────────────────────
-            val localeOptions   = listOf(AppLocale.EN to "🇬🇧", AppLocale.FR to "🇫🇷")
-            val localeLabelSize = rememberSharedAutoSizeState()
-            SingleChoiceSegmentedButtonRow {
-                localeOptions.forEachIndexed { index, (localeOption, label) ->
-                    SegmentedButton(
-                        shape    = SegmentedButtonDefaults.itemShape(index, localeOptions.size),
-                        selected = locale == localeOption,
-                        onClick  = { onLocaleChange(localeOption) },
-                        icon     = {}
-                    ) {
-                        AutoSizeText(
-                            text            = label,
-                            modifier        = Modifier.padding(horizontal = 1.dp),
-                            sharedSizeState = localeLabelSize
-                        )
-                    }
-                }
+            // IconButton provides the standard 48 dp touch target around the icon.
+            // contentDescription is read aloud by screen-readers (accessibility).
+            IconButton(onClick = onNavigateToSettings) {
+                Icon(
+                    imageVector        = Icons.Default.Settings,
+                    contentDescription = strings.settings,
+                    tint               = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
 
@@ -327,40 +279,6 @@ fun LandingScreen(
             }
         }
 
-        // ── Feedback button ───────────────────────────────────────────────────
-        // Always at the very bottom of the scrollable column, below Past Games.
-        // Right-aligned so it doesn't compete with the centred "Start Game" CTA.
-        // TextButton (no fill, no border) keeps it subtle; the envelope icon makes
-        // its purpose instantly recognisable without reading the label.
-        // We use TextButton directly here (rather than AppTextButton) because we need
-        // to place an Icon alongside AutoSizeText inside the button content slot.
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End // push the button to the right edge
-        ) {
-            TextButton(
-                onClick = {
-                    // ACTION_SENDTO + "mailto:" URI opens the default email app.
-                    // Using SENDTO (rather than ACTION_SEND) ensures only email clients
-                    // respond to this intent — messaging apps are excluded.
-                    val intent = Intent(
-                        Intent.ACTION_SENDTO,
-                        Uri.parse("mailto:mandarinetech.dev@gmail.com")
-                    )
-                    context.startActivity(Intent.createChooser(intent, null))
-                }
-            ) {
-                // Icon on the left, label on the right, with 4 dp gap between them.
-                Icon(
-                    imageVector        = Icons.Default.Email,
-                    contentDescription = null, // label next to it already describes the action
-                    modifier           = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                AutoSizeText(text = strings.feedbackButton)
-            }
-        }
     }   // end Column
     }   // end Box
 }
