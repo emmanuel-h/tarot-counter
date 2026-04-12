@@ -3,6 +3,7 @@ package fr.mandarine.tarotcounter
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -247,5 +248,155 @@ class ScoreHistoryScreenTest {
             .onNodeWithContentDescription("Back to game")
             .performClick()
         assertTrue("onBack callback should have been called", backCalled)
+    }
+
+    // ── Spec: view mode toggle ────────────────────────────────────────────────
+
+    @Test
+    fun view_toggle_is_displayed() {
+        // The segmented toggle ("Table" / "List") must appear on the history screen.
+        launchHistory()
+        composeTestRule.onNodeWithTag("history_view_toggle").assertIsDisplayed()
+    }
+
+    @Test
+    fun default_view_is_table() {
+        // On first open the TABLE segment must be selected — shown by the Round column header.
+        launchHistory()
+        composeTestRule.onNodeWithText("Table").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Round").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_list_tab_switches_to_list_view() {
+        // After tapping the List segment the "Round" table column header disappears
+        // (because the list view does not use a table header row).
+        val history = listOf(
+            RoundResult(
+                roundNumber = 1, takerName = "Alice",
+                contract = null, details = null, won = null
+            )
+        )
+        launchHistory(roundHistory = history)
+        composeTestRule.onNodeWithTag("toggle_list").performClick()
+        // The round column header is part of the TABLE view only — it must be gone.
+        composeTestRule.onNodeWithText("Round").assertDoesNotExist()
+    }
+
+    @Test
+    fun tapping_table_tab_after_list_restores_table() {
+        // TABLE → LIST → TABLE round-trip: the round column header must reappear.
+        val history = listOf(
+            RoundResult(
+                roundNumber = 1, takerName = "Alice",
+                contract = null, details = null, won = null
+            )
+        )
+        launchHistory(roundHistory = history)
+        composeTestRule.onNodeWithTag("toggle_list").performClick()
+        composeTestRule.onNodeWithTag("toggle_table").performClick()
+        composeTestRule.onNodeWithText("Round").assertIsDisplayed()
+    }
+
+    // ── Spec: LIST view — round indicators (issue #136) ──────────────────────
+
+    /** Helper: launch the history screen in LIST view. */
+    private fun launchHistoryInListMode(roundHistory: List<RoundResult> = emptyList()) {
+        launchHistory(roundHistory = roundHistory)
+        composeTestRule.onNodeWithTag("toggle_list").performClick()
+    }
+
+    @Test
+    fun list_view_empty_state_shows_no_rounds_played() {
+        // Empty history in list view shows the "No rounds played" notice.
+        launchHistoryInListMode()
+        composeTestRule.onNodeWithText("No rounds played").assertIsDisplayed()
+    }
+
+    @Test
+    fun list_view_skipped_round_shows_skipped_indicator() {
+        val history = listOf(
+            RoundResult(
+                roundNumber = 1, takerName = "Alice",
+                contract = null, details = null, won = null
+            )
+        )
+        launchHistoryInListMode(roundHistory = history)
+        composeTestRule.onNodeWithTag("round_indicator_skipped").assertIsDisplayed()
+    }
+
+    @Test
+    fun list_view_won_round_shows_won_indicator() {
+        val history = listOf(
+            RoundResult(
+                roundNumber  = 1, takerName = "Alice",
+                contract     = Contract.GARDE, details = null, won = true,
+                playerScores = mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)
+            )
+        )
+        launchHistoryInListMode(roundHistory = history)
+        composeTestRule.onNodeWithTag("round_indicator_won").assertIsDisplayed()
+    }
+
+    @Test
+    fun list_view_lost_round_shows_lost_indicator() {
+        val history = listOf(
+            RoundResult(
+                roundNumber  = 1, takerName = "Alice",
+                contract     = Contract.PRISE, details = null, won = false,
+                playerScores = mapOf("Alice" to -25, "Bob" to 12, "Charlie" to 13)
+            )
+        )
+        launchHistoryInListMode(roundHistory = history)
+        composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
+    }
+
+    @Test
+    fun list_view_shows_skipped_text_for_skipped_round() {
+        val history = listOf(
+            RoundResult(
+                roundNumber = 1, takerName = "Alice",
+                contract = null, details = null, won = null
+            )
+        )
+        launchHistoryInListMode(roundHistory = history)
+        composeTestRule.onNodeWithText("Skipped", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun list_view_shows_multiple_round_indicators() {
+        val history = listOf(
+            RoundResult(
+                roundNumber = 1, takerName = "Alice",
+                contract = null, details = null, won = null
+            ),
+            RoundResult(
+                roundNumber  = 2, takerName = "Bob",
+                contract     = Contract.PRISE, details = null, won = false,
+                playerScores = mapOf("Alice" to 10, "Bob" to -20, "Charlie" to 10)
+            )
+        )
+        launchHistoryInListMode(roundHistory = history)
+        composeTestRule.onNodeWithTag("round_indicator_skipped").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
+    }
+
+    @Test
+    fun list_view_is_newest_round_first() {
+        // With two rounds, the most recent round (round 2) must appear in the list.
+        val history = listOf(
+            RoundResult(
+                roundNumber = 1, takerName = "Alice",
+                contract = null, details = null, won = null
+            ),
+            RoundResult(
+                roundNumber = 2, takerName = "Bob",
+                contract = null, details = null, won = null
+            )
+        )
+        launchHistoryInListMode(roundHistory = history)
+        // Both round numbers must be visible (newest first ordering).
+        composeTestRule.onNodeWithText("Round 2", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Round 1", substring = true).assertIsDisplayed()
     }
 }

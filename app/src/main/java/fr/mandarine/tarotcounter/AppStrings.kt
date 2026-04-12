@@ -130,6 +130,10 @@ data class AppStrings(
     val scoreHistory: String,
     // "Round" / "Manche" column header in the score table.
     val roundColumn: String,
+    // Labels for the two-mode view toggle on the history screen.
+    // TABLE = the cumulative score table; LIST = the round-by-round detail list.
+    val historyViewTable: String,
+    val historyViewList: String,
 
     // ── Back-navigation confirmation dialog (Final Score screen) ──────────────
     // Shown when the user presses the system back button on the Final Score screen.
@@ -269,6 +273,8 @@ val EnStrings = AppStrings(
 
     scoreHistory          = "Score history",
     roundColumn           = "Round",
+    historyViewTable      = "Table",
+    historyViewList       = "List",
 
     backConfirmTitle      = "Leave the game?",
     backConfirmBody       = "The game results won't be saved if you leave now.",
@@ -385,6 +391,8 @@ val FrStrings = AppStrings(
 
     scoreHistory          = "Historique des scores",
     roundColumn           = "Manche",
+    historyViewTable      = "Tableau",
+    historyViewList       = "Liste",
 
     backConfirmTitle      = "Quitter la partie ?",
     backConfirmBody       = "Les résultats ne seront pas sauvegardés si vous quittez maintenant.",

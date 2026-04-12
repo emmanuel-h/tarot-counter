@@ -9,8 +9,8 @@ TarotCounter guides players through a game round by round:
 1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; choose the **first dealer** (random or pick a specific player); a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap the **⚙ gear icon** (top-right) to open the Settings page
 2. **Attacker selection + contract** — tap the player who won the bidding to set them as the **attacker** (any player can bid, not just the dealer); then pick their contract; the dealer label shows who is distributing the cards this round; a persistent **bottom action bar** always shows **End Game** (left) and **Skip round** (right) for quick access
 3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
-4. **Scoreboard & history** — live cumulative scores per player and a log of all rounds, newest first; each history row shows a colored **●** indicator (green = won, red = lost, grey = skipped) for at-a-glance scanning
-5. **Score history table** — tap the bar-chart icon (left of the header) to see a round-by-round table of cumulative scores for every player
+4. **Compact scoreboard** — after the first round, a persistent card at the top shows each player's running total at a glance
+5. **Score history screen** — tap the bar-chart icon (always visible in the header) to open the history screen; a **segmented toggle** switches between two views: **Table** (cumulative scores per round, one row per player) and **List** (round-by-round detail log, newest first, with a coloured **●** indicator per row: green = won, red = lost, grey = skipped)
 6. **End Game / Final Score** — tap **End Game** in the bottom bar at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted in gold/amber), and three action buttons on one line: **Main Menu** (return to the landing screen), **New Game** (go to setup), and **Back to Game** (resume the current game)
 7. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (CompactScoreboard, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
 8. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
@@ -75,7 +75,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── GameScreen.kt          # Round management, taker rotation, details form, history, End Game button
 ├── ScreenHeader.kt        # Shared back-arrow header composable
 ├── SettingsScreen.kt      # Settings page: theme, language, feedback
-├── ScoreHistoryScreen.kt  # Round-by-round cumulative score table
+├── ScoreHistoryScreen.kt  # Score history: table view + list view with toggle
 ├── FinalScoreScreen.kt    # End-of-game results: winner card + full score table
 ├── UiComponents.kt        # Shared UI: AppButton, AppOutlinedButton, AppTextButton, AutoSizeText
 └── ui/theme/              # Material 3 theme, colors, typography
@@ -193,7 +193,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, duplicate validation, settings gear icon |
 | `SettingsScreenTest.kt` | Settings page: back navigation, theme toggle, language toggle, feedback button, section labels |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
-| `ScoreHistoryScreenTest.kt` | Score history table: column headers, cumulative totals, back navigation |
+| `ScoreHistoryScreenTest.kt` | Score history screen: table view, list view, toggle, round indicators, back navigation |
 | `FinalScoreScreenTest.kt` | Final score screen: winner card, tie detection, score table, New Game navigation |
 
 ## Project Structure
@@ -235,7 +235,7 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
 - [`docs/settings.md`](docs/settings.md) — settings page: theme toggle, language toggle, feedback button, navigation wiring
-- [`docs/score-history.md`](docs/score-history.md) — score history table: layout, navigation, scrolling
+- [`docs/score-history.md`](docs/score-history.md) — score history screen: table view, list view, toggle, navigation
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen
 - [`docs/score-color.md`](docs/score-color.md) — score colour-coding convention: `scoreColor()` helper, where it is used, winner column

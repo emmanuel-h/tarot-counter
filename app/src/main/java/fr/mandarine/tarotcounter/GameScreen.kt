@@ -710,24 +710,6 @@ fun GameScreen(
             }
             // end inline round details
 
-            // ── Round history (newest-first) ──────────────────────────────────
-            if (roundHistory.isNotEmpty()) {
-                Spacer(Modifier.height(24.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(12.dp))
-
-                val reversedHistory = roundHistory.reversed()
-                reversedHistory.forEachIndexed { index, round ->
-                    RoundHistoryRow(round = round, locale = locale, strings = strings)
-                    if (index < reversedHistory.lastIndex) {
-                        HorizontalDivider(
-                            modifier  = Modifier.padding(vertical = 4.dp),
-                            thickness = 0.5.dp,
-                            color     = MaterialTheme.colorScheme.outlineVariant
-                        )
-                    }
-                }
-            }
         }  // end inner scrollable Column
 
         // ── Bottom action bar ─────────────────────────────────────────────────
@@ -906,7 +888,7 @@ fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 // The `testTag` on the dot lets UI tests assert the correct outcome without
 // reading color values directly.
 @Composable
-private fun RoundHistoryRow(
+internal fun RoundHistoryRow(
     round:   RoundResult,
     locale:  AppLocale,
     strings: AppStrings

@@ -330,50 +330,6 @@ class GameScreenTest {
         composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
     }
 
-    @Test
-    fun skipped_round_shows_Skipped_in_history() {
-        launchGame()
-        composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule
-            .onNodeWithText("Skipped", substring = true)
-            .assertIsDisplayed()
-    }
-
-    @Test
-    fun played_round_shows_contract_and_score_in_history() {
-        launchGame()
-        // Enter 0 explicitly so the history row shows "0 pts".
-        selectContractAndEnterScore(score = "0")
-        composeTestRule.onNodeWithText("Confirm round").performClick()
-        composeTestRule
-            .onNodeWithText("Garde", substring = true)
-            .assertIsDisplayed()
-        composeTestRule
-            .onNodeWithText("0 pts", substring = true)
-            .assertIsDisplayed()
-    }
-
-    @Test
-    fun played_round_shows_Lost_in_history_when_taker_did_not_reach_threshold() {
-        // 0 bouts, 10 points → needs 56 to win → Lost.
-        launchGame()
-        selectContractAndEnterScore(score = "10")
-        composeTestRule.onNodeWithText("Confirm round").performClick()
-        composeTestRule
-            .onNodeWithText("Lost", substring = true)
-            .assertIsDisplayed()
-    }
-
-    @Test
-    fun history_is_newest_round_first() {
-        launchGame()
-        composeTestRule.onNodeWithText("Skip round").performClick() // round 1 skipped
-        composeTestRule.onNodeWithText("Skip round").performClick() // round 2 skipped
-
-        composeTestRule.onNodeWithText("Round 1", substring = true).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Round 2", substring = true).assertIsDisplayed()
-    }
-
     // ── Spec: scoreboard shown after a played round ────────────────────────────
 
     @Test
@@ -648,8 +604,8 @@ class GameScreenTest {
 
         composeTestRule.onNodeWithText("Confirm round").performClick()
 
-        // The round must be recorded as won.
-        composeTestRule.onNodeWithTag("round_indicator_won").assertIsDisplayed()
+        // The round was recorded successfully — the header advances to Round 2.
+        composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
     }
 
     // ── Spec: points field validation (issue #8) ──────────────────────────────
@@ -701,40 +657,6 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Confirm round").assertIsEnabled()
     }
 
-    // ── Spec: styled round history rows (issue #6) ────────────────────────────
-
-    @Test
-    fun skipped_round_shows_skipped_indicator() {
-        launchGame()
-        composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule.onNodeWithTag("round_indicator_skipped").assertIsDisplayed()
-    }
-
-    @Test
-    fun lost_round_shows_lost_indicator() {
-        launchGame()
-        selectContractAndEnterScore(score = "10") // 10 pts, 0 bouts → Lost
-        composeTestRule.onNodeWithText("Confirm round").performClick()
-        composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
-    }
-
-    @Test
-    fun won_round_shows_won_indicator() {
-        launchGame()
-        // Select an attacker (required since issue #124) before picking the contract.
-        selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
-
-        composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
-        composeTestRule.onAllNodesWithText("3")[0].performClick()
-
-        composeTestRule.onNodeWithTag("points_input").performTextInput("91")
-
-        composeTestRule.onNodeWithText("Confirm round").performClick()
-
-        composeTestRule.onNodeWithTag("round_indicator_won").assertIsDisplayed()
-    }
-
     // ── Spec: bonus label cell is fully tappable (issue #36) ─────────────────
 
     @Test
@@ -765,17 +687,6 @@ class GameScreenTest {
                     nodes.size >= 1
                 )
             }
-    }
-
-    @Test
-    fun multiple_rounds_show_correct_indicators() {
-        launchGame()
-        composeTestRule.onNodeWithText("Skip round").performClick()  // round 1 → skipped
-        selectContractAndEnterScore(score = "10")                    // round 2 → lost
-        composeTestRule.onNodeWithText("Confirm round").performClick()
-
-        composeTestRule.onNodeWithTag("round_indicator_skipped").assertIsDisplayed()
-        composeTestRule.onNodeWithTag("round_indicator_lost").assertIsDisplayed()
     }
 
     // ── Spec: system back-button on game screen (issue #38) ───────────────────

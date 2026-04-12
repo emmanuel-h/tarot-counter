@@ -2,13 +2,20 @@
 
 ## Purpose
 
-The score history screen shows the **evolution of cumulative scores** across all completed rounds in a single table view. It is accessed from the game screen once at least one round has been recorded.
+The score history screen shows the full history of a game in one of two display modes:
+
+- **Table view** (default) — cumulative score table, one row per completed round.
+- **List view** — round-by-round detail list, newest round first (previously shown at the bottom of the game screen).
+
+Users can switch between the two modes at any time using the segmented toggle at the top of the screen.
 
 ## How to Access
 
-A bar-chart icon button (⬛) appears to the right of the "Scores" heading on the game screen after the first round completes. Tapping it opens the score history table. Tapping the back arrow returns to the game without losing any state.
+A bar-chart icon button (⬛) is always visible in the top-left corner of the game screen. Tapping it opens the score history screen. Tapping the back arrow returns to the game without losing any state.
 
-## Table Layout
+## View Modes
+
+### Table view (default)
 
 ```
 | Round | Alice | Bob  | Charlie |
@@ -20,15 +27,40 @@ A bar-chart icon button (⬛) appears to the right of the "Scores" heading on th
 
 - **Rows** — one per completed round, oldest first (top = round 1).
 - **Columns** — one per player, in setup order, plus a "Round" column on the left.
-- **Cell values** — the player's **running total** after that round (not the per-round delta). Positive values are prefixed with `+` for quick readability. Positive scores appear in green (`primary`) and negative scores in red (`error`) — see `ScoreColor.kt`.
-- **Skipped rounds** — appear as a row where all scores are unchanged from the previous row (since skipped rounds contribute 0 points to everyone).
+- **Cell values** — the player's **running total** after that round (not the per-round delta). Positive values are prefixed with `+`. Positive scores appear in green (`primary`) and negative in red (`error`) — see `ScoreColor.kt`.
+- **Skipped rounds** — appear as rows where all scores are unchanged from the previous row.
+
+### List view
+
+```
+●  Round 2: Bob — Prise · 0 bouts · 50 pts — Lost (-31)
+●  Round 1: Alice — Garde · 2 bouts · 56 pts — Won (+80)
+```
+
+Rounds are displayed **newest first**. Each row begins with a coloured **●** indicator:
+
+| Colour       | Outcome |
+|--------------|---------|
+| Green (primary) | Won  |
+| Red (error)  | Lost    |
+| Grey (muted) | Skipped |
+
+The `RoundHistoryRow` composable (in `GameScreen.kt`) handles this layout — it was moved here from the bottom of the game screen as part of issue #136.
+
+## Toggle
+
+The view toggle is a `SingleChoiceSegmentedButtonRow` with two segments:
+
+| Segment label (EN) | Segment label (FR) | View shown |
+|--------------------|--------------------|------------|
+| Table              | Tableau            | Cumulative score table |
+| List               | Liste              | Round-by-round detail list |
+
+The toggle defaults to **Table** every time the screen is opened (state is not persisted across sessions).
 
 ## Scrolling
 
-- **Horizontal scroll** — for 5-player games where the table is wider than the screen (applied to the inner table Column).
-- **Vertical scroll** — for long games with many rounds (applied to the outer Column so the full page, including the header, scrolls together).
-
-The two scroll directions are intentionally separated: the outer Column owns vertical scrolling, and the inner table Column owns horizontal scrolling. This prevents scroll gesture conflicts.
+Both views scroll vertically as part of the outer `Column`. For table view specifically, all columns share the available width equally via `weight(1f)` so there is no horizontal scroll (issue #129).
 
 ## Navigation
 
