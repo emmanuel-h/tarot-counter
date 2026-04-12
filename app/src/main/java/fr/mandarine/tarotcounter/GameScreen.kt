@@ -129,18 +129,73 @@ fun GameScreen(
     // The player who called/achieved the chelem; reset to null when chelem reverts to NONE.
     var chelemPlayer     by remember { mutableStateOf<String?>(null) }
 
-    // Reset the attacker selection each time the round counter advances.
+    // ── Undo-restoration state ────────────────────────────────────────────────
+    //
+    // When the user confirms "undo", we capture the last RoundResult before
+    // removing it, then restore all form fields so only the wrong value needs
+    // to be corrected.
+    //
+    // The challenge: two existing LaunchedEffects would normally erase those
+    // values immediately after restoration —
+    //   • LaunchedEffect(currentRound) resets selectedAttacker on every round
+    //     change, including an undo (which decrements currentRound).
+    //   • LaunchedEffect(selectedContract) resets every bonus/score field
+    //     whenever selectedContract changes — including when we write the
+    //     restored contract.
+    //
+    // We coordinate them with two helpers:
+    //
+    //   • previousRound: tracks the previous currentRound value.
+    //     LaunchedEffect(currentRound) checks whether the counter *increased*
+    //     (normal forward advance → reset attacker) or *decreased* (undo →
+    //     keep it; restoredRound will supply the correct value).
+    //
+    //   • restoredRound: holds the RoundResult being restored.
+    //     LaunchedEffect(selectedContract) skips its wipe-and-clear if this
+    //     is non-null, then clears the sentinel so it behaves normally again.
+    //     LaunchedEffect(restoredRound) applies all field values.
+    //     If the restored contract is null (skipped round), selectedContract
+    //     doesn't change so LaunchedEffect(selectedContract) never fires;
+    //     LaunchedEffect(restoredRound) clears the sentinel itself in that case.
+
+    // Remembers the round counter from the previous composition so we can
+    // distinguish a forward advance from an undo (backward move).
+    var previousRound by remember { mutableIntStateOf(currentRound) }
+
+    // Non-null only during the two-frame undo restoration window (see above).
+    var restoredRound by remember { mutableStateOf<RoundResult?>(null) }
+
+    // Reset the attacker selection when a new round starts (forward advance only).
     // LaunchedEffect re-runs whenever its key (currentRound) changes value.
-    // Note: this runs AFTER the composition is committed, but because the assignment
-    // is non-suspending the UI reflects the reset on the very next recomposition.
+    // Note: this runs AFTER the composition is committed, but because the
+    // assignment is non-suspending the UI reflects the change on the next
+    // recomposition.
     LaunchedEffect(currentRound) {
-        selectedAttacker = null
+        if (currentRound > previousRound) {
+            // Normal forward advance — a new round started; clear the attacker.
+            selectedAttacker = null
+        }
+        // If currentRound decreased (undo), leave the attacker alone.
+        // LaunchedEffect(restoredRound) will write the correct value.
+        previousRound = currentRound
     }
 
     // Reset every form field whenever the selected contract changes (including to null).
     // LaunchedEffect re-runs on each new key value — the assignments are non-suspending
     // so the reset happens effectively in the same frame.
+    //
+    // Exception: skip the wipe when restoredRound is non-null. That means
+    // LaunchedEffect(restoredRound) just changed selectedContract as part of
+    // a restoration — the restored values must not be discarded. After skipping,
+    // the sentinel is cleared so subsequent contract changes behave normally.
+    // If selectedContract didn't actually change (null → null, skipped round),
+    // this effect never fires; LaunchedEffect(restoredRound) clears the sentinel
+    // itself in that case.
     LaunchedEffect(selectedContract) {
+        if (restoredRound != null) {
+            restoredRound = null  // sentinel consumed — next contract change resets normally
+            return@LaunchedEffect
+        }
         bouts           = 0
         pointsText      = ""
         defenderMode    = false
@@ -151,6 +206,41 @@ fun GameScreen(
         triplePoignee   = null
         chelem          = Chelem.NONE
         chelemPlayer    = null
+    }
+
+    // Applies all form fields from the captured round after an undo.
+    // Declared after the other two LaunchedEffects so it runs in the same
+    // composition pass but later in the tree; it fires once per undo action.
+    //
+    // Setting selectedContract here triggers LaunchedEffect(selectedContract)
+    // in the *next* recomposition — the sentinel (restoredRound) is left non-null
+    // until then so that LaunchedEffect(selectedContract) knows to skip the wipe.
+    // Exception: if the restored contract is null (skipped round), selectedContract
+    // won't actually change, so LaunchedEffect(selectedContract) never fires; we
+    // clear the sentinel here instead.
+    LaunchedEffect(restoredRound) {
+        val round = restoredRound ?: return@LaunchedEffect
+        val details = round.details
+        selectedAttacker = round.takerName
+        selectedContract = round.contract
+        bouts            = details?.bouts         ?: 0
+        // RoundDetails always stores taker points (already converted from
+        // defenders' mode on confirm), so we restore as attacker points with
+        // defenderMode = false to avoid double-conversion on the next confirm.
+        pointsText       = details?.points?.toString() ?: ""
+        defenderMode     = false
+        selectedPartner  = details?.partnerName
+        petitAuBout      = details?.petitAuBout
+        poignee          = details?.poignee
+        doublePoignee    = details?.doublePoignee
+        triplePoignee    = details?.triplePoignee
+        chelem           = details?.chelem        ?: Chelem.NONE
+        chelemPlayer     = details?.chelemPlayer
+        // Skipped round: contract is null, so selectedContract didn't change →
+        // LaunchedEffect(selectedContract) will not fire → clear sentinel here.
+        if (round.contract == null) restoredRound = null
+        // Non-null contract: sentinel stays set until LaunchedEffect(selectedContract)
+        // fires in the next recomposition and clears it.
     }
 
     // Derived error flag — true when pointsText parses to an int > 91.
@@ -201,17 +291,16 @@ fun GameScreen(
             title = { Text(strings.undoConfirmTitle) },
             text  = { Text(strings.undoConfirmBody) },
             confirmButton = {
-                // Confirming removes the last round and resets form state so the user
-                // immediately sees the restored round ready for re-entry.
                 AppTextButton(
                     text    = strings.undoPreviousRound,
                     onClick = {
-                        showUndoConfirm  = false
+                        showUndoConfirm = false
+                        // Capture the last round BEFORE removing it.
+                        // LaunchedEffect(restoredRound) will apply all its fields to
+                        // the form once the undo recomposition has settled, so the
+                        // user only needs to correct what was wrong.
+                        restoredRound = viewModel.roundHistory.lastOrNull()
                         viewModel.undoLastRound()
-                        // Reset in-progress form selections so the restored round
-                        // starts fresh (the user will re-enter attacker and contract).
-                        selectedAttacker = null
-                        selectedContract = null
                     }
                 )
             },
