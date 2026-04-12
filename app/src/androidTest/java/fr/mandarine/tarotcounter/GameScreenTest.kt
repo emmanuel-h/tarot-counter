@@ -1184,4 +1184,44 @@ class GameScreenTest {
         // Game should have ended — Final Score screen must now be displayed.
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
     }
+
+    @Test
+    fun end_game_confirmation_dialog_confirm_with_zero_rounds_cancels_game_and_navigates_away() {
+        // Spec (issue #150): if the user typed points but never confirmed a round,
+        // confirming the end-game dialog must cancel the game (not show Final Score).
+        // This covers the zero-rounds path inside the dialog's confirm handler.
+        var endGameCalled = false
+        val storage = FakeGameStorage()
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            storage
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                GameScreen(
+                    viewModel = viewModel,
+                    onEndGame = { endGameCalled = true }
+                )
+            }
+        }
+
+        // Enter points (and select attacker + contract) without confirming the round.
+        selectContractAndEnterScore()
+
+        // Trigger the dialog and confirm.
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("End the game?").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("End Game").get(1).performClick()
+
+        // onEndGame callback must have fired — user navigates away.
+        assertTrue("Confirming end-game dialog with zero rounds must fire onEndGame", endGameCalled)
+        // Final Score screen must NOT appear.
+        composeTestRule.onNodeWithText("Game Over").assertDoesNotExist()
+        // In-progress game entry must have been cleared from storage.
+        assertTrue(
+            "In-progress game must be cleared when game is cancelled via dialog",
+            storage.clearInProgressCallCount >= 1
+        )
+    }
 }
