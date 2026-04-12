@@ -276,10 +276,14 @@ fun AppButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     textStyle: TextStyle = TextStyle.Default,
-    colors: ButtonColors = ButtonDefaults.buttonColors()
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+    // Optional shared state from rememberSharedAutoSizeState(): when passed,
+    // this button's label shrinks together with sibling buttons that share the
+    // same state, producing a uniform font size across the whole row.
+    sharedSizeState: MutableFloatState? = null
 ) {
     Button(onClick = onClick, modifier = modifier, enabled = enabled, colors = colors) {
-        AutoSizeText(text, style = textStyle)
+        AutoSizeText(text, style = textStyle, sharedSizeState = sharedSizeState)
     }
 }
 
@@ -293,10 +297,14 @@ fun AppOutlinedButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    // Optional shared state from rememberSharedAutoSizeState(): when passed,
+    // this button's label shrinks together with sibling buttons that share the
+    // same state, producing a uniform font size across the whole row.
+    sharedSizeState: MutableFloatState? = null
 ) {
     OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled) {
-        AutoSizeText(text)
+        AutoSizeText(text, sharedSizeState = sharedSizeState)
     }
 }
 

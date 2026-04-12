@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,8 +56,9 @@ import androidx.compose.ui.unit.dp
  *
  * @param playerNames  Ordered list of player display names (fallbacks already resolved).
  * @param roundHistory All completed rounds in chronological order, oldest first.
- * @param onBack       Callback fired when the user taps the back arrow (returns to the game).
+ * @param onBack       Callback fired when the user taps "Back to Game" (returns to the active game).
  * @param onNewGame    Callback fired when the user taps "New Game" (navigates back to setup).
+ * @param onMainMenu   Callback fired when the user taps "Main Menu" (navigates to the landing screen).
  * @param modifier     Passed from the parent (e.g. Scaffold inner padding).
  */
 @Composable
@@ -65,6 +67,7 @@ fun FinalScoreScreen(
     roundHistory: List<RoundResult>,
     onBack: () -> Unit,
     onNewGame: () -> Unit,
+    onMainMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Read the active locale and resolve all strings once at the top of the composable.
@@ -271,31 +274,52 @@ fun FinalScoreScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // ── New Game button ───────────────────────────────────────────────────
-        // Full-width with titleMedium text so it reads as the dominant call-to-action
-        // after the winner is announced. `fillMaxWidth` is already set; the larger
-        // text size (`titleMedium` vs the default `labelLarge`) adds visual weight.
-        // titleMedium makes the label larger than the default labelLarge so this
-        // primary call-to-action stands out. AutoSizeText inside AppButton will
-        // shrink it further only if the translation is too long to fit.
-        AppButton(
-            text      = strings.newGame,
-            onClick   = onNewGame,
-            modifier  = Modifier.fillMaxWidth(),
-            textStyle = MaterialTheme.typography.titleMedium
+        // ── Action buttons row ────────────────────────────────────────────────
+        // All three buttons share the row with equal widths via Modifier.weight(1f).
+        // Using weight() instead of fillMaxWidth() is required inside a Row — each
+        // child claims its proportional share of remaining space after unweighted
+        // siblings are measured. With all three at 1f they each get exactly 1/3.
+        //
+        // Order (left → right):
+        //   Back to Game (AppOutlinedButton) — return to the active game
+        //   Main Menu    (AppOutlinedButton) — return to the landing screen
+        //   New Game     (AppButton)         — primary CTA, filled container
+        //
+        // rememberSharedAutoSizeState ensures all three labels shrink together
+        // to the same font size if any single label overflows its 1/3-width slot.
+        // Keyed on the three label strings so a locale change resets the size.
+        //
+        // Arrangement.spacedBy puts the gap only *between* buttons (no outer margins),
+        // keeping the row flush with the surrounding content padding.
+        val buttonSizeState = rememberSharedAutoSizeState(
+            strings.backToGame, strings.mainMenu, strings.newGame
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // ── Back to game button ───────────────────────────────────────────────
-        // Lets the user resume the current game if they ended it by mistake.
-        // AppOutlinedButton has a lower visual weight than the filled "New Game" button,
-        // signalling that resuming is the secondary action.
-        AppOutlinedButton(
-            text     = strings.backToGame,
-            onClick  = onBack,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Left: resume the current game if "End Game" was tapped by mistake.
+            AppOutlinedButton(
+                text            = strings.backToGame,
+                onClick         = onBack,
+                modifier        = Modifier.weight(1f),
+                sharedSizeState = buttonSizeState
+            )
+            // Center: return to the landing screen (main menu).
+            AppOutlinedButton(
+                text            = strings.mainMenu,
+                onClick         = onMainMenu,
+                modifier        = Modifier.weight(1f),
+                sharedSizeState = buttonSizeState
+            )
+            // Right: primary CTA — start a brand-new game (goes to setup screen).
+            AppButton(
+                text            = strings.newGame,
+                onClick         = onNewGame,
+                modifier        = Modifier.weight(1f),
+                sharedSizeState = buttonSizeState
+            )
+        }
     }   // end Column
     }   // end Box
 }

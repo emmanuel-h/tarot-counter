@@ -29,8 +29,8 @@ Round | Alice  | Bob   | Charlie
   2   |  +200  |  -100 |  -100
         ↑ winner column highlighted
 
-[          New Game          ]   ← filled button (primary action)
-[        Back to game        ]   ← outlined button (secondary action)
+[ Back to game ]  [ Main Menu ]  [ New Game ]
+    outlined          outlined      filled
 ```
 
 ## Winner Determination
@@ -84,10 +84,15 @@ Both tokens adapt automatically to light and dark themes. The same `scoreColor()
 | Action | Where | What it does |
 |---|---|---|
 | Back arrow (top-left) | `ScreenHeader` | Returns to the active game round. No state is lost. |
-| **Back to game** | `OutlinedButton` (bottom) | Same as the back arrow — resumes the current game. |
-| **New Game** | `Button` (bottom, primary) | Navigates to the setup screen. All game state is discarded. |
+| **Back to Game** | `OutlinedButton` (bottom-left) | Same as the back arrow — resumes the current game. |
+| **Main Menu** | `OutlinedButton` (bottom-centre) | Navigates to the landing screen. |
+| **New Game** | `Button` (bottom-right, primary) | Navigates to the setup screen. All game state is discarded. |
 
-The back arrow and "Back to game" button serve the same purpose: letting the user dismiss the final score screen if they tapped **End Game** by mistake. Two entry points are provided because the arrow (top) is immediately visible, while the button (bottom) is easier to reach after scrolling down through the score table.
+All three bottom buttons appear on the same horizontal line with equal widths (`Modifier.weight(1f)`) and an 8 dp gap between them (`Arrangement.spacedBy`). A `rememberSharedAutoSizeState` is shared across all three labels so they always display at the same font size — the smallest needed by the longest label. This ensures they fit on all supported screen sizes (min SDK 24, down to ~360 dp wide) without overflow.
+
+The back arrow and "Back to Game" button serve the same purpose: letting the user dismiss the final score screen if they tapped **End Game** by mistake.
+
+**Main Menu** and **New Game** both navigate to the landing/setup screen; they are currently wired to the same `onEndGame` callback. The distinction is semantic — in future, "New Game" could pre-fill the same player list while "Main Menu" always starts blank.
 
 ## Related Files
 
