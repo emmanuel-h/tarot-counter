@@ -238,12 +238,10 @@ fun GameScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // History button — always visible so users can discover it from round 1.
-                    // Disabled until at least one round has been recorded (nothing to show yet).
-                    HistoryButton(
-                        onClick  = { showScoreHistory = true },
-                        enabled  = roundHistory.isNotEmpty()
-                    )
+                    // History button — always visible and always enabled so the user can
+                    // open the score table at any point, even before the first round is played
+                    // (the table shows only the header row with player names in that case).
+                    HistoryButton(onClick = { showScoreHistory = true })
                     // Right-side placeholder mirrors the history button so the
                     // round number stays centred; End Game is in the bottom bar.
                     Spacer(Modifier.size(48.dp))
@@ -880,13 +878,12 @@ private fun CompactScoreboard(
 // An icon-only button with a bar-chart icon for opening the score history overlay.
 // OutlinedIconButton is used instead of plain IconButton so a visible border is drawn
 // around the icon, making it clearer to the user that this is a tappable element.
-// The button is always rendered (never replaced by a Spacer) so users can discover
-// it from round 1; it is disabled until at least one round has been recorded.
+// Always enabled — tapping before the first round opens the table with only headers.
 // The contentDescription ensures screen readers announce the button's purpose.
 @Composable
-fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val strings = appStrings(LocalAppLocale.current)
-    OutlinedIconButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+    OutlinedIconButton(onClick = onClick, modifier = modifier) {
         Icon(
             imageVector        = Icons.Default.BarChart,
             contentDescription = strings.history
