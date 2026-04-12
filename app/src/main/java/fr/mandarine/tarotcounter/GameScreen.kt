@@ -538,26 +538,29 @@ fun GameScreen(
                                 .testTag("partner_dropdown")
                         ) {
                             OutlinedTextField(
-                                // Show the selected partner name, or the localized "None" label.
-                                value         = selectedPartner ?: strings.noneOption,
+                                // Show the selected partner name, or a dash when no partner chosen.
+                                value         = selectedPartner ?: "—",
                                 onValueChange = {},
                                 readOnly      = true,
                                 trailingIcon  = {
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = partnerExpanded)
                                 },
-                                colors        = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                singleLine    = true,
-                                modifier      = Modifier
+                                colors    = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                singleLine = true,
+                                modifier   = Modifier
                                     .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                     .fillMaxWidth()
+                                    // Constrain height to make the field more compact than
+                                    // the default 56 dp OutlinedTextField.
+                                    .height(44.dp)
                             )
                             ExposedDropdownMenu(
                                 expanded         = partnerExpanded,
                                 onDismissRequest = { partnerExpanded = false }
                             ) {
-                                // "None" entry at the top lets the user clear the partner.
+                                // Dash entry at the top lets the user clear the partner.
                                 DropdownMenuItem(
-                                    text           = { Text(strings.noneOption) },
+                                    text           = { Text("—") },
                                     onClick        = {
                                         selectedPartner = null
                                         partnerExpanded = false
