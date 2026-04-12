@@ -45,6 +45,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +65,73 @@ import kotlinx.coroutines.launch
 //       Always use AppButton / AppOutlinedButton / AppTextButton so that every
 //       button label automatically shrinks to fit its container.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ── Custom vector icons ───────────────────────────────────────────────────────
+//
+// Material Icons Extended does not include a sword, so we build a minimal 24 × 24
+// vector here.  Both icons use `by lazy` so the ImageVector is constructed at most
+// once per process and reused across all recompositions.
+//
+// The `path { }` DSL uses PathBuilder coordinates in the 24 × 24 viewport.
+// SolidColor(Color.Black) is the fill; the Icon composable tints it with
+// LocalContentColor, so the actual fill colour never appears on screen.
+
+/** Sword pointing upward — used to indicate "attacker (taker)" mode.
+ *
+ * Shape (24 × 24 viewport):
+ *  • Blade body : constant 2 units wide (x 11–13), y 5–14.
+ *  • Blade tip  : triangular taper only at the very top — point at (12, 1),
+ *                 reaching full blade width at y 5.
+ *  • Guard      : 10 units wide (x 7–17), 2 units tall at y 14–16.
+ *  • Handle     : 2 units wide, y 16–21.
+ */
+val SwordIcon: ImageVector by lazy {
+    ImageVector.Builder(
+        name           = "Sword",
+        defaultWidth   = 24.dp,
+        defaultHeight  = 24.dp,
+        viewportWidth  = 24f,
+        viewportHeight = 24f
+    ).path(fill = SolidColor(Color.Black)) {
+        moveTo(12f, 1f)      // blade tip — sharp point
+        lineTo(13f, 5f)      // right edge of triangular taper
+        lineTo(13f, 14f)     // blade body right edge, constant width to crossguard
+        lineTo(17f, 14f)     // crossguard extends right (10 units total)
+        lineTo(17f, 16f)     // crossguard bottom-right
+        lineTo(13f, 16f)     // handle top-right
+        lineTo(13f, 21f)     // handle bottom-right
+        lineTo(11f, 21f)     // handle bottom-left
+        lineTo(11f, 16f)     // handle top-left
+        lineTo(7f,  16f)     // crossguard bottom-left
+        lineTo(7f,  14f)     // crossguard top-left
+        lineTo(11f, 14f)     // blade body left edge at crossguard
+        lineTo(11f, 5f)      // blade body left edge up
+        close()              // left edge of triangular taper back to tip
+    }.build()
+}
+
+/** Shield outline — used to indicate "defenders" mode. */
+val ShieldIcon: ImageVector by lazy {
+    ImageVector.Builder(
+        name           = "Shield",
+        defaultWidth   = 24.dp,
+        defaultHeight  = 24.dp,
+        viewportWidth  = 24f,
+        viewportHeight = 24f
+    ).path(fill = SolidColor(Color.Black)) {
+        // Classic shield: wide at the top, narrowing to a point at the bottom.
+        // Path follows the Material Design "Shield" reference shape (24 × 24 viewport).
+        moveTo(12f, 1f)           // top centre
+        lineTo(3f, 5f)            // top-left corner
+        verticalLineTo(11f)       // left side straight down
+        // Lower-left curve sweeping down to the bottom centre point.
+        curveToRelative(0f, 5.55f, 3.84f, 10.74f, 9f, 12f)
+        // Lower-right curve mirroring the left, sweeping back up.
+        curveToRelative(5.16f, -1.26f, 9f, -6.45f, 9f, -12f)
+        verticalLineTo(5f)        // right side straight up
+        close()                   // back to top centre
+    }.build()
+}
 
 // Maximum content width for all screens.
 // On large screens (e.g. 10-inch tablets in landscape) the content is constrained

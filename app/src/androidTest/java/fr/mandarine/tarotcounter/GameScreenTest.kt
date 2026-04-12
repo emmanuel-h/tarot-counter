@@ -1,9 +1,11 @@
 package fr.mandarine.tarotcounter
 
 import android.app.Application
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -485,16 +487,108 @@ class GameScreenTest {
     // ── Spec: points field label (issue #114) ────────────────────────────────
 
     @Test
-    fun points_input_shows_label_with_range() {
-        // The label "Points (0-91)" must be visible on the field so users know
-        // what values to enter without needing an external hint.
+    fun points_input_shows_attacker_label_by_default() {
+        // By default the field should show the attacker label (including the valid range)
+        // so users always know what to enter without needing an external hint.
         launchGame()
         selectAttacker()
         composeTestRule.onNodeWithText("Garde").performClick()
 
         composeTestRule
-            .onNodeWithText(EnStrings.pointsLabel)
+            .onNodeWithText(EnStrings.attackerPointsLabel)
             .assertIsDisplayed()
+    }
+
+    // ── Spec: camp toggle (issue #115) ────────────────────────────────────────
+
+    @Test
+    fun camp_toggle_icon_is_visible_after_contract_selected() {
+        // The trailing toggle icon must appear once the points field is shown
+        // (i.e. after a contract is selected), giving the user access to swap camps.
+        launchGame()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        composeTestRule
+            .onNodeWithTag("camp_toggle")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_camp_toggle_switches_label_to_defenders() {
+        // Tapping the trailing icon when in attacker mode must switch the field
+        // label to the defenders label, confirming the mode changed.
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // Default: attacker label is visible.
+        composeTestRule
+            .onNodeWithText(EnStrings.attackerPointsLabel)
+            .assertIsDisplayed()
+
+        // Tap the toggle icon.
+        composeTestRule.onNodeWithTag("camp_toggle").performClick()
+
+        // After toggling: defenders label should now be visible.
+        composeTestRule
+            .onNodeWithText(EnStrings.defenderPointsLabel)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_camp_toggle_twice_returns_to_attacker_label() {
+        // Two taps on the toggle must cycle back to attacker mode.
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        composeTestRule.onNodeWithTag("camp_toggle").performClick() // → defenders
+        composeTestRule.onNodeWithTag("camp_toggle").performClick() // → attacker
+
+        composeTestRule
+            .onNodeWithText(EnStrings.attackerPointsLabel)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_camp_toggle_clears_typed_points() {
+        // When the user switches camps the existing value must be cleared so
+        // there is no ambiguity about which team the displayed number belongs to.
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithTag("points_input").performTextInput("45")
+
+        composeTestRule.onNodeWithTag("camp_toggle").performClick()
+
+        // After the toggle the field must be empty.
+        composeTestRule
+            .onNodeWithTag("points_input")
+            .assert(hasText(""))
+    }
+
+    @Test
+    fun defender_mode_derives_taker_points_on_confirm() {
+        // Entering 30 in defender mode must record taker points as 91 - 30 = 61.
+        // With 1 bout the threshold is 51, so 61 pts → won (+round score in history).
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // Switch to defender mode.
+        composeTestRule.onNodeWithTag("camp_toggle").performClick()
+
+        // Enter the defenders' points (30 → taker has 91-30 = 61 pts).
+        composeTestRule.onNodeWithTag("points_input").performTextInput("30")
+
+        // Select 1 bout so the threshold is 51 — taker with 61 pts wins.
+        composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
+        composeTestRule.onAllNodesWithText("1")[0].performClick()
+
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        // The round must be recorded as won.
+        composeTestRule.onNodeWithTag("round_indicator_won").assertIsDisplayed()
     }
 
     // ── Spec: points field validation (issue #8) ──────────────────────────────

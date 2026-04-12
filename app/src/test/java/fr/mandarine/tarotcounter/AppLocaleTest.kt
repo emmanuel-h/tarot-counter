@@ -357,22 +357,22 @@ class AppLocaleTest {
         assertEquals("Not announced, realized", Chelem.NOT_ANNOUNCED_REALIZED.localizedName(AppLocale.EN))
     }
 
-    // ── Defender-mode strings ─────────────────────────────────────────────────
-    // Verifies the four new strings added for the taker/defender radio-button toggle.
+    // ── Camp-toggle label strings (issue #115) ───────────────────────────────
+    // Verifies the points field labels used by the inline camp toggle.
 
     @Test
-    fun en_attackerMode_and_defenderMode_differ() {
+    fun en_attackerPointsLabel_and_defenderPointsLabel_differ() {
         val strings = appStrings(AppLocale.EN)
-        assertNotEquals(strings.attackerMode, strings.defenderMode)
-        assertEquals("Attacker", strings.attackerMode)
-        assertEquals("Defenders", strings.defenderMode)
+        assertNotEquals(strings.attackerPointsLabel, strings.defenderPointsLabel)
+        assertEquals("Attacker (0-91)", strings.attackerPointsLabel)
+        assertEquals("Defenders (0-91)", strings.defenderPointsLabel)
     }
 
     @Test
-    fun fr_attackerMode_and_defenderMode_differ() {
+    fun fr_attackerPointsLabel_and_defenderPointsLabel_differ() {
         val strings = appStrings(AppLocale.FR)
-        assertNotEquals(strings.attackerMode, strings.defenderMode)
-        assertEquals("Attaquant", strings.attackerMode)
-        assertEquals("Défenseurs", strings.defenderMode)
+        assertNotEquals(strings.attackerPointsLabel, strings.defenderPointsLabel)
+        assertEquals("Attaquant (0-91)", strings.attackerPointsLabel)
+        assertEquals("Défenseurs (0-91)", strings.defenderPointsLabel)
     }
 }
