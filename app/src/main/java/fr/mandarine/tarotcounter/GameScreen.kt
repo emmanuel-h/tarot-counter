@@ -545,13 +545,14 @@ fun GameScreen(
                                 trailingIcon  = {
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = partnerExpanded)
                                 },
-                                colors    = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                colors     = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                                 singleLine = true,
+                                // Smaller font so the text fits inside the reduced-height field.
+                                textStyle  = MaterialTheme.typography.bodyMedium,
                                 modifier   = Modifier
                                     .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                     .fillMaxWidth()
-                                    // Constrain height to make the field more compact than
-                                    // the default 56 dp OutlinedTextField.
+                                    // Compact height — bodyMedium (14 sp) fits comfortably at 44 dp.
                                     .height(44.dp)
                             )
                             ExposedDropdownMenu(
