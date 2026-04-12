@@ -376,7 +376,7 @@ val FrStrings = AppStrings(
     lostOutcome           = { s -> " — Perdu$s" },
 
     mainMenu              = "Menu principal",
-    backToGame            = "Retour à la partie",
+    backToGame            = "Retour",
     gameOver              = "Fin de partie",
     winner                = "Gagnant·e",
     scoreDisplay          = { formattedScore -> "$formattedScore pts" },

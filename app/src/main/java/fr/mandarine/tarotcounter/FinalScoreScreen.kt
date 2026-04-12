@@ -280,34 +280,44 @@ fun FinalScoreScreen(
         // child claims its proportional share of remaining space after unweighted
         // siblings are measured. With all three at 1f they each get exactly 1/3.
         //
-        // Visual hierarchy (left → right):
-        //   Main Menu  (AppTextButton)    — tertiary: transparent background, quietest
-        //   New Game   (AppButton)        — primary: filled container, dominant CTA
-        //   Back to Game (AppOutlinedButton) — secondary: stroke container, moderate weight
+        // Order (left → right):
+        //   Back to Game (AppOutlinedButton) — return to the active game
+        //   Main Menu    (AppOutlinedButton) — return to the landing screen
+        //   New Game     (AppButton)         — primary CTA, filled container
+        //
+        // rememberSharedAutoSizeState ensures all three labels shrink together
+        // to the same font size if any single label overflows its 1/3-width slot.
+        // Keyed on the three label strings so a locale change resets the size.
         //
         // Arrangement.spacedBy puts the gap only *between* buttons (no outer margins),
         // keeping the row flush with the surrounding content padding.
+        val buttonSizeState = rememberSharedAutoSizeState(
+            strings.backToGame, strings.mainMenu, strings.newGame
+        )
         Row(
-            modifier            = Modifier.fillMaxWidth(),
+            modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Tertiary action: return to the app's landing/main-menu screen.
-            AppTextButton(
-                text     = strings.mainMenu,
-                onClick  = onMainMenu,
-                modifier = Modifier.weight(1f)
-            )
-            // Primary CTA: start a brand-new game (goes to setup screen).
-            AppButton(
-                text     = strings.newGame,
-                onClick  = onNewGame,
-                modifier = Modifier.weight(1f)
-            )
-            // Secondary action: resume the current game if ended by mistake.
+            // Left: resume the current game if "End Game" was tapped by mistake.
             AppOutlinedButton(
-                text     = strings.backToGame,
-                onClick  = onBack,
-                modifier = Modifier.weight(1f)
+                text            = strings.backToGame,
+                onClick         = onBack,
+                modifier        = Modifier.weight(1f),
+                sharedSizeState = buttonSizeState
+            )
+            // Center: return to the landing screen (main menu).
+            AppOutlinedButton(
+                text            = strings.mainMenu,
+                onClick         = onMainMenu,
+                modifier        = Modifier.weight(1f),
+                sharedSizeState = buttonSizeState
+            )
+            // Right: primary CTA — start a brand-new game (goes to setup screen).
+            AppButton(
+                text            = strings.newGame,
+                onClick         = onNewGame,
+                modifier        = Modifier.weight(1f),
+                sharedSizeState = buttonSizeState
             )
         }
     }   // end Column
