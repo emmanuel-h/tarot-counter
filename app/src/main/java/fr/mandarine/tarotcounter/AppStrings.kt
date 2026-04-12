@@ -407,7 +407,7 @@ val FrStrings = AppStrings(
     rulesScoreFormulaBody    = "(25 + |points réels − seuil|) × multiplicateur du contrat\n\nLe preneur gagne si ses points sont supérieurs au seuil requis.\nEn cas de victoire il encaisse ; en cas de défaite il paye chaque défenseur.",
 
     rulesDistributionTitle   = "Répartition des scores",
-    rulesDistributionBody    = "3 ou 4 joueurs — sans appelé :\n• Preneur : ±(joueurs − 1) × score\n• Chaque défenseur : ∓score\n\n5 joueurs — avec appelé :\n• Preneur : ±2 × score\n• Appelé : ±1 × score\n• Chaque défenseur : ∓score\n\nChaque manche est à somme nulle.",
+    rulesDistributionBody    = "3 ou 4 joueurs — sans appelé :\n• Preneur : (joueurs − 1) × score\n• Chaque défenseur : score\n\n5 joueurs — avec appelé :\n• Preneur : 2 × score\n• Appelé : score\n• Chaque défenseur : score\n\nChaque manche est à somme nulle.",
 
     rulesBonusTitle          = "Bonus",
     rulesBonusBody           = "Petit au bout — le Petit (1 d'atout) remporté au dernier pli :\n+10 × multiplicateur pour le camp qui le réalise.\n\nPoignée — atouts déclarés avant le jeu :\n• Simple : 20 pts par joueur\n• Double : 30 pts par joueur\n• Triple : 40 pts par joueur\nLe bonus va toujours au camp gagnant.\n\nChelem — tous les plis remportés par la même équipe :\n• Annoncé et réalisé : +400 pts\n• Non annoncé, réalisé : +200 pts\n• Annoncé, non réalisé : −200 pts\n• Défense réalise : −200 pts (le preneur paye chaque défenseur)",
