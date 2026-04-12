@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -424,6 +425,36 @@ class GameScreenTest {
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
         composeTestRule.onNodeWithText("Garde").performClick()
         composeTestRule.onNodeWithText("Partner (called by taker)").assertIsDisplayed()
+    }
+
+    @Test
+    fun partner_selector_shows_all_non_attacker_players() {
+        // All 4 non-attacker players must appear as selectable radio rows.
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
+        selectAttacker("Alice")
+        composeTestRule.onNodeWithText("Garde").performClick()
+        // Alice is the attacker so she must not appear in the partner list.
+        // The other four should all be visible.
+        for (name in listOf("Bob", "Charlie", "Dave", "Eve")) {
+            composeTestRule.onNodeWithText(name).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun partner_selection_stays_when_same_player_tapped_again() {
+        // Re-tapping the selected partner must not deselect them.
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
+        selectAttacker("Alice")
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // First tap — select Bob as partner.
+        composeTestRule.onAllNodesWithText("Bob")[0].performClick()
+        // Bob's radio row should now be selected.
+        composeTestRule.onAllNodesWithText("Bob")[0].assertIsSelected()
+
+        // Second tap on the same row — selection must remain on Bob.
+        composeTestRule.onAllNodesWithText("Bob")[0].performClick()
+        composeTestRule.onAllNodesWithText("Bob")[0].assertIsSelected()
     }
 
     // ── Spec: End Game button (bottom bar) ────────────────────────────────────

@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -638,6 +639,55 @@ fun ScoreTableRow(
                     textAlign = TextAlign.Center,
                     // Prevent long names from wrapping and making rows uneven.
                     maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+// Compact radio-button list for the 5-player partner selection.
+//
+// Unlike PlayerChipSelector, this component:
+//   • Does NOT show a "None" option — once a partner is chosen, the selection stays.
+//   • Tapping an already-selected row does nothing (radio buttons are not deselectable).
+//   • Calls onSelect with a non-null String — the partner is always set, never cleared.
+//
+// label          : localized section header text shown above the list.
+// selectedPlayer : the currently selected partner name, or null if none yet.
+// playerNames    : ordered list of players that can be chosen as partner.
+// onSelect       : callback invoked with the newly selected player name.
+@Composable
+fun PartnerRadioSelector(
+    label: String,
+    selectedPlayer: String?,
+    playerNames: List<String>,
+    onSelect: (String) -> Unit
+) {
+    FormLabel(label)
+    Spacer(Modifier.height(4.dp))
+    // One compact row per player; the whole row is clickable for a larger tap target.
+    Column {
+        for (name in playerNames) {
+            val isSelected = selectedPlayer == name
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Only trigger a selection change when the player is not already selected.
+                    // This prevents the "click to deselect" behavior of FilterChip.
+                    .clickable(enabled = !isSelected) { onSelect(name) }
+                    .padding(vertical = 2.dp)
+            ) {
+                RadioButton(
+                    selected = isSelected,
+                    // null onClick delegates click handling to the parent Row,
+                    // avoiding a double tap-target and the default "deselect on re-tap" behavior.
+                    onClick = null
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text  = name,
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
         }

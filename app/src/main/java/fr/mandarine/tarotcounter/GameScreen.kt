@@ -518,9 +518,12 @@ fun GameScreen(
                     // Fall back to an empty list if no attacker is selected yet
                     // (the partner selector is only reachable once an attacker is chosen).
                     val partnerOptions = displayNames.filter { it != selectedAttacker }
-                    PlayerChipSelector(
+                    // PartnerRadioSelector is used instead of PlayerChipSelector here because:
+                    //   • Radio buttons are the standard control for single mandatory selection.
+                    //   • The partner cannot be deselected once chosen — a 5-player round
+                    //     always has a partner, so "None" is not a valid final state.
+                    PartnerRadioSelector(
                         label          = strings.partnerCalledByTaker,
-                        noneLabel      = strings.noneOption,
                         selectedPlayer = selectedPartner,
                         playerNames    = partnerOptions,
                         onSelect       = { selectedPartner = it }
