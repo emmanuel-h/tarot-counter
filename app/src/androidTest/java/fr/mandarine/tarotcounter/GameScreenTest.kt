@@ -395,10 +395,24 @@ class GameScreenTest {
     // ── Spec: score history navigation ────────────────────────────────────────
 
     @Test
-    fun score_history_button_appears_after_first_round_is_completed() {
+    fun score_history_button_is_visible_from_round_1() {
+        // The button is always rendered so users can discover it immediately.
+        launchGame()
+        composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
+    }
+
+    @Test
+    fun score_history_button_is_disabled_before_first_round_is_completed() {
+        // Disabled until there is actually some history to show.
+        launchGame()
+        composeTestRule.onNodeWithContentDescription("History").assertIsNotEnabled()
+    }
+
+    @Test
+    fun score_history_button_is_enabled_after_first_round_is_completed() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("History").assertIsEnabled()
     }
 
     @Test
