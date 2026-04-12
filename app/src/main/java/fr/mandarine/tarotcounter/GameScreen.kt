@@ -517,9 +517,6 @@ fun GameScreen(
                     // The attacker cannot be their own partner, so exclude them.
                     val partnerOptions = displayNames.filter { it != selectedAttacker }
                     // Label on the left, dropdown on the right — same horizontal row.
-                    // A dropdown (combo box) is more compact than chips and naturally
-                    // prevents deselection: picking an item closes the menu without a
-                    // "deselect on re-tap" risk, and there is no "None" entry.
                     var partnerExpanded by remember { mutableStateOf(false) }
                     Row(
                         modifier             = Modifier.fillMaxWidth(),
@@ -541,8 +538,8 @@ fun GameScreen(
                                 .testTag("partner_dropdown")
                         ) {
                             OutlinedTextField(
-                                // Show the selected partner name, or empty string as placeholder.
-                                value         = selectedPartner ?: "",
+                                // Show the selected partner name, or the localized "None" label.
+                                value         = selectedPartner ?: strings.noneOption,
                                 onValueChange = {},
                                 readOnly      = true,
                                 trailingIcon  = {
@@ -558,6 +555,15 @@ fun GameScreen(
                                 expanded         = partnerExpanded,
                                 onDismissRequest = { partnerExpanded = false }
                             ) {
+                                // "None" entry at the top lets the user clear the partner.
+                                DropdownMenuItem(
+                                    text           = { Text(strings.noneOption) },
+                                    onClick        = {
+                                        selectedPartner = null
+                                        partnerExpanded = false
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                )
                                 for (name in partnerOptions) {
                                     DropdownMenuItem(
                                         text           = { Text(name) },
