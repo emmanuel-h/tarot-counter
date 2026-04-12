@@ -552,8 +552,8 @@ fun GameScreen(
                                 modifier   = Modifier
                                     .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                     .fillMaxWidth()
-                                    // Compact height — bodyMedium (14 sp) fits comfortably at 44 dp.
-                                    .height(44.dp)
+                                    // Compact height — bodyMedium (14 sp) fits comfortably at 48 dp.
+                                    .height(48.dp)
                             )
                             ExposedDropdownMenu(
                                 expanded         = partnerExpanded,
