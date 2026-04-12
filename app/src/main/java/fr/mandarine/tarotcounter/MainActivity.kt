@@ -19,9 +19,10 @@ import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import java.util.Locale
 
 // Represents which screen is currently shown in the app.
-// SETUP = the player name entry screen.
-// GAME  = the active game session.
-enum class Screen { SETUP, GAME }
+// SETUP    = the player name entry screen.
+// GAME     = the active game session.
+// SETTINGS = the settings page (theme, language, feedback).
+enum class Screen { SETUP, GAME, SETTINGS }
 
 // MainActivity is the entry point of every Android app.
 // It extends ComponentActivity, which is the base class for activities
@@ -110,11 +111,18 @@ class MainActivity : ComponentActivity() {
                                     gameViewModel.initGame(game.playerNames, game)
                                     currentScreen = Screen.GAME
                                 },
+                                // Navigate to the settings page when the gear icon is tapped.
+                                onNavigateToSettings = { currentScreen = Screen.SETTINGS }
+                            )
+                            Screen.SETTINGS -> SettingsScreen(
+                                modifier      = Modifier.padding(innerPadding),
+                                // Persist the user's theme choice and re-render the whole UI.
+                                onThemeChange = { gameViewModel.setTheme(it) },
                                 // Persist the user's language choice and trigger a recomposition
                                 // through the StateFlow → collectAsState → CompositionLocalProvider chain.
                                 onLocaleChange = { gameViewModel.setLocale(it) },
-                                // Persist the user's theme choice and re-render the whole UI.
-                                onThemeChange  = { gameViewModel.setTheme(it) }
+                                // Navigate back to the setup screen.
+                                onBack        = { currentScreen = Screen.SETUP }
                             )
                             Screen.GAME -> GameScreen(
                                 viewModel = gameViewModel,
