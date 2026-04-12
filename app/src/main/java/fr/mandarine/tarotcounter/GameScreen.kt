@@ -515,16 +515,72 @@ fun GameScreen(
                 // In a 5-player game the attacker calls a silent partner before the round.
                 if (displayNames.size == 5) {
                     // The attacker cannot be their own partner, so exclude them.
-                    // Fall back to an empty list if no attacker is selected yet
-                    // (the partner selector is only reachable once an attacker is chosen).
                     val partnerOptions = displayNames.filter { it != selectedAttacker }
-                    PlayerChipSelector(
-                        label          = strings.partnerCalledByTaker,
-                        noneLabel      = strings.noneOption,
-                        selectedPlayer = selectedPartner,
-                        playerNames    = partnerOptions,
-                        onSelect       = { selectedPartner = it }
-                    )
+                    // Label on the left, dropdown on the right — same horizontal row.
+                    var partnerExpanded by remember { mutableStateOf(false) }
+                    Row(
+                        modifier             = Modifier.fillMaxWidth(),
+                        verticalAlignment    = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Label takes the left half of the row.
+                        Text(
+                            text     = strings.partnerCalledByTaker,
+                            style    = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        // Dropdown fills the right half.
+                        ExposedDropdownMenuBox(
+                            expanded         = partnerExpanded,
+                            onExpandedChange = { partnerExpanded = !partnerExpanded },
+                            modifier         = Modifier
+                                .weight(1f)
+                                .testTag("partner_dropdown")
+                        ) {
+                            OutlinedTextField(
+                                // Show the selected partner name, or a dash when no partner chosen.
+                                value         = selectedPartner ?: "—",
+                                onValueChange = {},
+                                readOnly      = true,
+                                trailingIcon  = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = partnerExpanded)
+                                },
+                                colors     = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                singleLine = true,
+                                // Smaller font so the text fits inside the reduced-height field.
+                                textStyle  = MaterialTheme.typography.bodyMedium,
+                                modifier   = Modifier
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                    .fillMaxWidth()
+                                    // Compact height — bodyMedium (14 sp) fits comfortably at 48 dp.
+                                    .height(48.dp)
+                            )
+                            ExposedDropdownMenu(
+                                expanded         = partnerExpanded,
+                                onDismissRequest = { partnerExpanded = false }
+                            ) {
+                                // Dash entry at the top lets the user clear the partner.
+                                DropdownMenuItem(
+                                    text           = { Text("—") },
+                                    onClick        = {
+                                        selectedPartner = null
+                                        partnerExpanded = false
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                )
+                                for (name in partnerOptions) {
+                                    DropdownMenuItem(
+                                        text           = { Text(name) },
+                                        onClick        = {
+                                            selectedPartner = name
+                                            partnerExpanded = false
+                                        },
+                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                    )
+                                }
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(Modifier.height(16.dp))

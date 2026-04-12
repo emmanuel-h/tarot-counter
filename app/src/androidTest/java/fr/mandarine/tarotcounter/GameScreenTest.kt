@@ -426,6 +426,38 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("Partner (called by taker)").assertIsDisplayed()
     }
 
+    @Test
+    fun partner_dropdown_shows_non_attacker_players_when_opened() {
+        // Opening the partner dropdown must list all players except the attacker.
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
+        selectAttacker("Alice")
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // Tap the dropdown field (identified by its test tag) to open the menu.
+        composeTestRule.onNodeWithTag("partner_dropdown").performClick()
+
+        // Alice is the attacker — she must NOT appear; the other four must.
+        for (name in listOf("Bob", "Charlie", "Dave", "Eve")) {
+            composeTestRule.onNodeWithText(name).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun partner_dropdown_sets_selected_player_on_item_click() {
+        // Picking a player from the dropdown must display their name in the field.
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
+        selectAttacker("Alice")
+        composeTestRule.onNodeWithText("Garde").performClick()
+
+        // Open the dropdown and pick Bob.
+        composeTestRule.onNodeWithTag("partner_dropdown").performClick()
+        composeTestRule.onNodeWithText("Bob").performClick()
+
+        // The OutlinedTextField inside the dropdown now shows Bob's name.
+        composeTestRule.onNodeWithTag("partner_dropdown")
+            .assert(hasText("Bob"))
+    }
+
     // ── Spec: End Game button (bottom bar) ────────────────────────────────────
 
     @Test

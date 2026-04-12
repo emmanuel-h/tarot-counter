@@ -260,7 +260,9 @@ fun PlayerChipSelector(
 )
 ```
 
-A `FlowRow` of `FilterChip`s — one "None" chip followed by one chip per player. Used for the partner selector (5-player games) and the chelem player selector. Tapping the already-selected player deselects them.
+A `FlowRow` of `FilterChip`s — one "None" chip followed by one chip per player. Used for the **chelem player selector**. Tapping the already-selected player deselects them (passes `null` to `onSelect`).
+
+The partner selector in 5-player games uses an inline `ExposedDropdownMenuBox` (in `GameScreen.kt`) instead — label on the left, dropdown on the right, no "None" entry.
 
 ---
 
