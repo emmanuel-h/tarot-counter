@@ -18,6 +18,12 @@ data class AppStrings(
     val playerFallback: (index: Int) -> String,
     val nameAlreadyUsed: String,
     val startGame: String,
+    // Section header for the first-dealer selection row on the setup screen.
+    val dealerSelectionLabel: String,
+    // Label for the "random dealer" option in the dealer selection toggle.
+    val randomDealer: String,
+    // Label for the "choose a specific player" option in the dealer selection toggle.
+    val chooseDealer: String,
     val pastGames: String,
     // Title of the "resume" card shown when an unfinished game exists.
     val resumeGameTitle: String,
@@ -196,6 +202,9 @@ val EnStrings = AppStrings(
     playerFallback        = { i -> "Player $i" },
     nameAlreadyUsed       = "Name already used",
     startGame             = "Start Game",
+    dealerSelectionLabel  = "First Dealer",
+    randomDealer          = "Random",
+    chooseDealer          = "Choose",
     pastGames             = "Past Games",
     resumeGameTitle       = "Resume Game",
     roundsPlayed          = { n -> if (n == 1) "1 round played" else "$n rounds played" },
@@ -310,6 +319,9 @@ val FrStrings = AppStrings(
     playerFallback        = { i -> "Joueur $i" },
     nameAlreadyUsed       = "Nom déjà utilisé",
     startGame             = "Démarrer",
+    dealerSelectionLabel  = "Premier distributeur",
+    randomDealer          = "Aléatoire",
+    chooseDealer          = "Choisir",
     pastGames             = "Parties précédentes",
     resumeGameTitle       = "Partie en cours",
     roundsPlayed          = { n -> if (n == 1) "1 manche jouée" else "$n manches jouées" },
