@@ -43,7 +43,8 @@ class FinalScoreScreenTest {
     private fun launchFinal(
         roundHistory: List<RoundResult> = emptyList(),
         onBack: () -> Unit = {},
-        onNewGame: () -> Unit = {}
+        onNewGame: () -> Unit = {},
+        onMainMenu: () -> Unit = {}
     ) {
         composeTestRule.setContent {
             TarotCounterTheme {
@@ -51,7 +52,8 @@ class FinalScoreScreenTest {
                     playerNames  = players,
                     roundHistory = roundHistory,
                     onBack       = onBack,
-                    onNewGame    = onNewGame
+                    onNewGame    = onNewGame,
+                    onMainMenu   = onMainMenu
                 )
             }
         }
@@ -310,6 +312,32 @@ class FinalScoreScreenTest {
         launchFinal(onNewGame = { callbackFired = true })
         composeTestRule.onNodeWithText("New Game").performClick()
         assertTrue("onNewGame callback should have been called", callbackFired)
+    }
+
+    // ── Spec: Main Menu button (issue #130) ──────────────────────────────────
+
+    @Test
+    fun main_menu_button_is_displayed() {
+        launchFinal()
+        composeTestRule.onNodeWithText("Main Menu").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_main_menu_button_fires_onMainMenu_callback() {
+        var callbackFired = false
+        launchFinal(onMainMenu = { callbackFired = true })
+        composeTestRule.onNodeWithText("Main Menu").performClick()
+        assertTrue("Main Menu button should fire onMainMenu callback", callbackFired)
+    }
+
+    @Test
+    fun tapping_main_menu_button_does_not_fire_onNewGame_callback() {
+        // The Main Menu and New Game buttons are separate actions; clicking one
+        // must not trigger the other's callback.
+        var newGameCalled = false
+        launchFinal(onNewGame = { newGameCalled = true })
+        composeTestRule.onNodeWithText("Main Menu").performClick()
+        assertTrue("Main Menu click should NOT fire onNewGame", !newGameCalled)
     }
 
     // ── Spec: system back-button (issue #38) ─────────────────────────────────

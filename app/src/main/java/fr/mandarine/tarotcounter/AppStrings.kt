@@ -116,6 +116,7 @@ data class AppStrings(
     val lostOutcome: (score: String) -> String,
 
     // ── Final Score Screen ────────────────────────────────────────────────────
+    val mainMenu: String,
     val backToGame: String,
     val gameOver: String,
     val winner: String,
@@ -258,6 +259,7 @@ val EnStrings = AppStrings(
     wonOutcome            = { s -> " — Won$s" },
     lostOutcome           = { s -> " — Lost$s" },
 
+    mainMenu              = "Main Menu",
     backToGame            = "Back to game",
     gameOver              = "Game Over",
     winner                = "Winner",
@@ -373,6 +375,7 @@ val FrStrings = AppStrings(
     wonOutcome            = { s -> " — Gagné$s" },
     lostOutcome           = { s -> " — Perdu$s" },
 
+    mainMenu              = "Menu principal",
     backToGame            = "Retour à la partie",
     gameOver              = "Fin de partie",
     winner                = "Gagnant·e",

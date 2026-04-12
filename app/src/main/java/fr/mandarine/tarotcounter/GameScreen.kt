@@ -169,6 +169,7 @@ fun GameScreen(
             roundHistory = roundHistory,
             onBack       = { showFinalScore = false },
             onNewGame    = onEndGame,
+            onMainMenu   = onEndGame,  // both "New Game" and "Main Menu" navigate to the landing screen
             modifier     = modifier
         )
         return
