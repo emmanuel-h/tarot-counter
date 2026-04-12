@@ -179,23 +179,11 @@ The partner (5-player) does not participate in the poignée bonus exchange. The 
 
 The minimum number of trumps needed to declare each type differs per player count — see the [Poignée thresholds table](#poignée-trump-thresholds) in the Inline round details section above.
 
-## Compact Scoreboard & Round History
+## Compact Scoreboard
 
 After the first round is completed the game screen shows a persistent **compact scoreboard** at the top of the page — one column per player with their name and running total. This stays visible at all times without opening a separate screen.
 
 Each player column carries `Modifier.weight(1f)` so all columns share the card width equally. Player names that are too long for their column are truncated with an ellipsis ("…") rather than overflowing their neighbours — this is important in 5-player games on narrow screens.
-
-Below the round input, a full round-by-round log is displayed newest-first.
-Each row begins with a colored **●** indicator so the outcome is readable at a glance
-without reading the text:
-
-| Indicator color | Outcome  |
-|-----------------|----------|
-| Green (primary) | Won      |
-| Red (error)     | Lost     |
-| Grey (muted)    | Skipped  |
-
-All indicator colors are Material theme tokens, adapting automatically to light and dark mode.
 
 ```
 Scores
@@ -203,16 +191,9 @@ Scores
 │ Alice   Bob    Charlie  │
 │  +80    -40     -40     │
 └─────────────────────────┘
-
-●  Round 2: Bob — Prise · 0 bouts · 50 pts — Lost (-31)
-●  Round 1: Alice — Garde · 2 bouts · 56 pts — Won (+80)
 ```
 
-Skipped rounds show no outcome and do not affect scores.
-
-The `RoundHistoryRow` composable (private to `GameScreen.kt`) handles this layout.
-It receives a `RoundResult`, builds the text content, and renders the indicator + text in a `Row`.
-A thin `HorizontalDivider` (0.5 dp) separates consecutive rows for better readability.
+The full round-by-round detail log is available on the **Score History screen** (opened via the bar-chart icon in the header) in **List view** — see `docs/score-history.md`.
 
 #### Header
 
