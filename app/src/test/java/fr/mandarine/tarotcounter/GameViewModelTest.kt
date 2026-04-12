@@ -998,4 +998,83 @@ class GameViewModelTest {
 
         assertEquals(2, storage.lastSavedInProgress?.currentRound)
     }
+
+    // ── undoLastRound ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `undoLastRound removes the last entry from roundHistory`() = runTest {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+        vm.recordSkipped()                                  // round 1 → history has 1 entry
+        vm.recordSkipped()                                  // round 2 → history has 2 entries
+
+        vm.undoLastRound()
+
+        // After undo there should be exactly 1 entry left.
+        assertEquals(1, vm.roundHistory.size)
+    }
+
+    @Test
+    fun `undoLastRound decrements currentRound`() = runTest {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+        vm.recordSkipped()  // advances to round 2
+
+        vm.undoLastRound()
+
+        // currentRound should be back to 1 so the user re-enters round 1.
+        assertEquals(1, vm.currentRound)
+    }
+
+    @Test
+    fun `undoLastRound is a no-op when roundHistory is empty`() = runTest {
+        val vm = GameViewModel(Application(), FakeGameStorage())
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        // Should not throw and should not change any state.
+        vm.undoLastRound()
+
+        assertEquals(1, vm.currentRound)
+        assertEquals(0, vm.roundHistory.size)
+    }
+
+    @Test
+    fun `undoLastRound persists the rolled-back snapshot to storage`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+        vm.recordSkipped()  // saveInProgressCallCount = 1
+
+        vm.undoLastRound()
+
+        // undoLastRound must call saveInProgressGame exactly once more (count = 2).
+        assertEquals(2, storage.saveInProgressCallCount)
+    }
+
+    @Test
+    fun `undoLastRound snapshot contains correct round count after undo`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+        vm.recordSkipped()  // history: 1 round, currentRound = 2
+        vm.recordSkipped()  // history: 2 rounds, currentRound = 3
+
+        vm.undoLastRound()
+
+        // The persisted snapshot must show 1 round and round counter 2.
+        assertEquals(1, storage.lastSavedInProgress?.rounds?.size)
+        assertEquals(2, storage.lastSavedInProgress?.currentRound)
+    }
+
+    @Test
+    fun `undoLastRound does not call saveInProgressGame when history is empty`() = runTest {
+        val storage = FakeGameStorage()
+        val vm = GameViewModel(Application(), storage)
+        vm.initGame(listOf("Alice", "Bob", "Charlie"), inProgressGame = null)
+
+        vm.undoLastRound()
+
+        // Guard fires before saveInProgressGame — no storage write should occur.
+        assertEquals(0, storage.saveInProgressCallCount)
+    }
 }

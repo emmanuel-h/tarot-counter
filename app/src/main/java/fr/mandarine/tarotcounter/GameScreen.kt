@@ -20,7 +20,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
@@ -106,6 +108,9 @@ fun GameScreen(
     // Controls whether the final score screen overlay is shown.
     var showFinalScore by remember { mutableStateOf(false) }
 
+    // Controls whether the "undo previous round" confirmation dialog is visible.
+    var showUndoConfirm by remember { mutableStateOf(false) }
+
     // ── Hoisted form state ────────────────────────────────────────────────────
     // These variables are declared here (rather than inside the form block) so
     // the pinned bottom-bar Confirm button can read and submit them without
@@ -124,18 +129,73 @@ fun GameScreen(
     // The player who called/achieved the chelem; reset to null when chelem reverts to NONE.
     var chelemPlayer     by remember { mutableStateOf<String?>(null) }
 
-    // Reset the attacker selection each time the round counter advances.
+    // ── Undo-restoration state ────────────────────────────────────────────────
+    //
+    // When the user confirms "undo", we capture the last RoundResult before
+    // removing it, then restore all form fields so only the wrong value needs
+    // to be corrected.
+    //
+    // The challenge: two existing LaunchedEffects would normally erase those
+    // values immediately after restoration —
+    //   • LaunchedEffect(currentRound) resets selectedAttacker on every round
+    //     change, including an undo (which decrements currentRound).
+    //   • LaunchedEffect(selectedContract) resets every bonus/score field
+    //     whenever selectedContract changes — including when we write the
+    //     restored contract.
+    //
+    // We coordinate them with two helpers:
+    //
+    //   • previousRound: tracks the previous currentRound value.
+    //     LaunchedEffect(currentRound) checks whether the counter *increased*
+    //     (normal forward advance → reset attacker) or *decreased* (undo →
+    //     keep it; restoredRound will supply the correct value).
+    //
+    //   • restoredRound: holds the RoundResult being restored.
+    //     LaunchedEffect(selectedContract) skips its wipe-and-clear if this
+    //     is non-null, then clears the sentinel so it behaves normally again.
+    //     LaunchedEffect(restoredRound) applies all field values.
+    //     If the restored contract is null (skipped round), selectedContract
+    //     doesn't change so LaunchedEffect(selectedContract) never fires;
+    //     LaunchedEffect(restoredRound) clears the sentinel itself in that case.
+
+    // Remembers the round counter from the previous composition so we can
+    // distinguish a forward advance from an undo (backward move).
+    var previousRound by remember { mutableIntStateOf(currentRound) }
+
+    // Non-null only during the two-frame undo restoration window (see above).
+    var restoredRound by remember { mutableStateOf<RoundResult?>(null) }
+
+    // Reset the attacker selection when a new round starts (forward advance only).
     // LaunchedEffect re-runs whenever its key (currentRound) changes value.
-    // Note: this runs AFTER the composition is committed, but because the assignment
-    // is non-suspending the UI reflects the reset on the very next recomposition.
+    // Note: this runs AFTER the composition is committed, but because the
+    // assignment is non-suspending the UI reflects the change on the next
+    // recomposition.
     LaunchedEffect(currentRound) {
-        selectedAttacker = null
+        if (currentRound > previousRound) {
+            // Normal forward advance — a new round started; clear the attacker.
+            selectedAttacker = null
+        }
+        // If currentRound decreased (undo), leave the attacker alone.
+        // LaunchedEffect(restoredRound) will write the correct value.
+        previousRound = currentRound
     }
 
     // Reset every form field whenever the selected contract changes (including to null).
     // LaunchedEffect re-runs on each new key value — the assignments are non-suspending
     // so the reset happens effectively in the same frame.
+    //
+    // Exception: skip the wipe when restoredRound is non-null. That means
+    // LaunchedEffect(restoredRound) just changed selectedContract as part of
+    // a restoration — the restored values must not be discarded. After skipping,
+    // the sentinel is cleared so subsequent contract changes behave normally.
+    // If selectedContract didn't actually change (null → null, skipped round),
+    // this effect never fires; LaunchedEffect(restoredRound) clears the sentinel
+    // itself in that case.
     LaunchedEffect(selectedContract) {
+        if (restoredRound != null) {
+            restoredRound = null  // sentinel consumed — next contract change resets normally
+            return@LaunchedEffect
+        }
         bouts           = 0
         pointsText      = ""
         defenderMode    = false
@@ -146,6 +206,41 @@ fun GameScreen(
         triplePoignee   = null
         chelem          = Chelem.NONE
         chelemPlayer    = null
+    }
+
+    // Applies all form fields from the captured round after an undo.
+    // Declared after the other two LaunchedEffects so it runs in the same
+    // composition pass but later in the tree; it fires once per undo action.
+    //
+    // Setting selectedContract here triggers LaunchedEffect(selectedContract)
+    // in the *next* recomposition — the sentinel (restoredRound) is left non-null
+    // until then so that LaunchedEffect(selectedContract) knows to skip the wipe.
+    // Exception: if the restored contract is null (skipped round), selectedContract
+    // won't actually change, so LaunchedEffect(selectedContract) never fires; we
+    // clear the sentinel here instead.
+    LaunchedEffect(restoredRound) {
+        val round = restoredRound ?: return@LaunchedEffect
+        val details = round.details
+        selectedAttacker = round.takerName
+        selectedContract = round.contract
+        bouts            = details?.bouts         ?: 0
+        // RoundDetails always stores taker points (already converted from
+        // defenders' mode on confirm), so we restore as attacker points with
+        // defenderMode = false to avoid double-conversion on the next confirm.
+        pointsText       = details?.points?.toString() ?: ""
+        defenderMode     = false
+        selectedPartner  = details?.partnerName
+        petitAuBout      = details?.petitAuBout
+        poignee          = details?.poignee
+        doublePoignee    = details?.doublePoignee
+        triplePoignee    = details?.triplePoignee
+        chelem           = details?.chelem        ?: Chelem.NONE
+        chelemPlayer     = details?.chelemPlayer
+        // Skipped round: contract is null, so selectedContract didn't change →
+        // LaunchedEffect(selectedContract) will not fire → clear sentinel here.
+        if (round.contract == null) restoredRound = null
+        // Non-null contract: sentinel stays set until LaunchedEffect(selectedContract)
+        // fires in the next recomposition and clears it.
     }
 
     // Derived error flag — true when pointsText parses to an int > 91.
@@ -184,6 +279,35 @@ fun GameScreen(
             modifier     = modifier
         )
         return
+    }
+
+    // ── Undo confirmation dialog ──────────────────────────────────────────────
+    // AlertDialog is a Material 3 modal overlay; it does NOT replace the whole screen
+    // (unlike the FinalScore/ScoreHistory overlays above), so the game content remains
+    // visible behind the dimmed backdrop. The user must explicitly confirm or cancel.
+    if (showUndoConfirm) {
+        AlertDialog(
+            onDismissRequest = { showUndoConfirm = false },
+            title = { Text(strings.undoConfirmTitle) },
+            text  = { Text(strings.undoConfirmBody) },
+            confirmButton = {
+                AppTextButton(
+                    text    = strings.undoPreviousRound,
+                    onClick = {
+                        showUndoConfirm = false
+                        // Capture the last round BEFORE removing it.
+                        // LaunchedEffect(restoredRound) will apply all its fields to
+                        // the form once the undo recomposition has settled, so the
+                        // user only needs to correct what was wrong.
+                        restoredRound = viewModel.roundHistory.lastOrNull()
+                        viewModel.undoLastRound()
+                    }
+                )
+            },
+            dismissButton = {
+                AppTextButton(text = strings.cancel, onClick = { showUndoConfirm = false })
+            }
+        )
     }
 
     // ── Single-page game layout ───────────────────────────────────────────────
@@ -240,13 +364,18 @@ fun GameScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // History button — always visible and always enabled so the user can
-                    // open the score table at any point, even before the first round is played
-                    // (the table shows only the header row with player names in that case).
+                    // Previous (undo) button — top-left; only shown once at least one round
+                    // has been recorded. Before any round is played there is nothing to undo.
+                    if (roundHistory.isNotEmpty()) {
+                        UndoPreviousRoundButton(onClick = { showUndoConfirm = true })
+                    } else {
+                        // Invisible placeholder keeps the round number centred when no
+                        // previous round exists yet.
+                        Spacer(Modifier.size(48.dp))
+                    }
+                    // History button — top-right; always visible so the user can review
+                    // scores at any point (even before the first round, where only headers show).
                     HistoryButton(onClick = { showScoreHistory = true })
-                    // Right-side placeholder mirrors the history button so the
-                    // round number stays centred; End Game is in the bottom bar.
-                    Spacer(Modifier.size(48.dp))
                 }
             }
 
@@ -877,6 +1006,24 @@ private fun CompactScoreboard(
 
 // An icon-only button with a bar-chart icon for opening the score history overlay.
 // OutlinedIconButton is used instead of plain IconButton so a visible border is drawn
+// ── UndoPreviousRoundButton ───────────────────────────────────────────────────
+
+// Icon button placed in the top-left corner of the game header.
+// It is only rendered when at least one round has been recorded (the caller checks
+// roundHistory.isNotEmpty() before including it), so it is always tappable when shown.
+// Tapping opens a confirmation dialog rather than performing the undo immediately,
+// preventing accidental data loss.
+@Composable
+fun UndoPreviousRoundButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val strings = appStrings(LocalAppLocale.current)
+    OutlinedIconButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            imageVector        = Icons.AutoMirrored.Filled.Undo,
+            contentDescription = strings.undoPreviousRound
+        )
+    }
+}
+
 // around the icon, making it clearer to the user that this is a tappable element.
 // Always enabled — tapping before the first round opens the table with only headers.
 // The contentDescription ensures screen readers announce the button's purpose.

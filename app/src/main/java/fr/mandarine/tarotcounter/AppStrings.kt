@@ -96,6 +96,11 @@ data class AppStrings(
     val chelemTooltipBody: String,
     // Error shown below the points text field when the entered value exceeds 91.
     val pointsOutOfRange: String,
+    // Accessibility label for the "undo previous round" icon button in the game header.
+    val undoPreviousRound: String,
+    // Confirmation dialog for "Undo previous round".
+    val undoConfirmTitle: String,
+    val undoConfirmBody: String,
     // Confirmation dialog for "Skip round".
     val skipRoundConfirmTitle: String,
     val skipRoundConfirmBody: String,
@@ -252,6 +257,9 @@ val EnStrings = AppStrings(
     triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} trumps shown before play.\nBonus: 40 pts per player." },
     chelemTooltipBody     = "All tricks won by the same team.\n\nAnnounced & realized: +400 pts\nNot announced, realized: +200 pts\nAnnounced, not realized: −200 pts\nDefenders realized: −200 pts (taker pays each defender)",
     pointsOutOfRange      = "Must be between 0 and 91",
+    undoPreviousRound     = "Undo previous round",
+    undoConfirmTitle      = "Undo previous round?",
+    undoConfirmBody       = "Are you sure to go back and modify the last round?",
     skipRoundConfirmTitle = "Skip this round?",
     skipRoundConfirmBody  = "No contract will be recorded for this round.",
     endGameConfirmTitle   = "End the game?",
@@ -345,7 +353,7 @@ val FrStrings = AppStrings(
     attackerLabel         = "Preneur",
     chooseContract        = { taker -> "$taker — choisissez un contrat :" },
     skipRound             = "Passer",
-    numberOfBouts         = "Nombre de bouts (oudlers)",
+    numberOfBouts         = "Nombre de bouts",
     pointsHeader          = "Points",
     attackerPointsLabel   = "Attaquant (0-91)",
     defenderPointsLabel   = "Défenseurs (0-91)",
@@ -370,6 +378,9 @@ val FrStrings = AppStrings(
     triplePoigneeTooltipBody = { n -> "${poigneeThresholds(n).third} atouts déclarés avant le jeu.\nBonus : 40 pts par joueur." },
     chelemTooltipBody     = "Tous les plis remportés par la même équipe.\n\nAnnoncé et réalisé : +400 pts\nNon annoncé, réalisé : +200 pts\nAnnoncé, non réalisé : −200 pts\nDéfense réalise : −200 pts (le preneur paye chaque défenseur)",
     pointsOutOfRange      = "Doit être entre 0 et 91",
+    undoPreviousRound     = "Revenir à la manche précédente",
+    undoConfirmTitle      = "Revenir à la manche précédente ?",
+    undoConfirmBody       = "Êtes-vous sûr de vouloir modifier les données de la manche précédente ?.",
     skipRoundConfirmTitle = "Passer ce tour ?",
     skipRoundConfirmBody  = "Aucun contrat ne sera enregistré pour ce tour.",
     endGameConfirmTitle   = "Terminer la partie ?",

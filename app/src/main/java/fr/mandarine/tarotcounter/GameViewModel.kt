@@ -180,6 +180,25 @@ class GameViewModel internal constructor(
         saveInProgressGame(buildProgressSnapshot())
     }
 
+    // Removes the last recorded round and moves back to it so the user can correct it.
+    //
+    // This is the "undo" action: it rolls back both the in-memory state and the
+    // persisted in-progress snapshot. A UI confirmation dialog should gate this call
+    // so players don't trigger it accidentally.
+    //
+    // Guard: if roundHistory is empty (no rounds played yet) this is a no-op,
+    // because there is nothing to undo.
+    fun undoLastRound() {
+        if (roundHistory.isEmpty()) return
+        // removeAt(lastIndex) triggers a Compose snapshot notification so every
+        // composable that reads roundHistory recomposes automatically.
+        roundHistory.removeAt(roundHistory.lastIndex)
+        // Move the round counter back by one — the user will re-enter this round.
+        currentRound--
+        // Persist the rolled-back state so a resume after a crash stays consistent.
+        saveInProgressGame(buildProgressSnapshot())
+    }
+
     // Records a skipped round (no contract selected), advances the round counter,
     // and persists the updated in-progress snapshot.
     fun recordSkipped() {
