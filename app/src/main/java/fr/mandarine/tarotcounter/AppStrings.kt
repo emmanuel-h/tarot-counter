@@ -47,6 +47,8 @@ data class AppStrings(
     val chooseContract: (taker: String) -> String,
     val skipRound: String,
     val numberOfBouts: String,
+    // Section header placed above the points text field (mirrors numberOfBouts on the left).
+    val pointsHeader: String,
     // Text field label shown when the user is entering the attacker (taker)'s points.
     // Also used as the content description of the trailing toggle icon when in defender mode
     // (tapping it switches back to attacker mode).
@@ -177,6 +179,7 @@ val EnStrings = AppStrings(
     chooseContract        = { taker -> "$taker — choose a contract:" },
     skipRound             = "Skip round",
     numberOfBouts         = "Number of bouts (oudlers)",
+    pointsHeader          = "Points",
     // Floating label on the points field; short enough to fit on one line in a
     // half-width field that also has a trailing toggle icon.
     attackerPointsLabel   = "Attacker (0-91)",
@@ -267,6 +270,7 @@ val FrStrings = AppStrings(
     chooseContract        = { taker -> "$taker — choisissez un contrat :" },
     skipRound             = "Passer la manche",
     numberOfBouts         = "Nombre de bouts (oudlers)",
+    pointsHeader          = "Points",
     attackerPointsLabel   = "Attaquant (0-91)",
     defenderPointsLabel   = "Défenseurs (0-91)",
     partnerCalledByTaker  = "Appelé (par le preneur)",

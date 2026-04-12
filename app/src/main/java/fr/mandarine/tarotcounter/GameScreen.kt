@@ -428,6 +428,10 @@ fun GameScreen(
 
                     // Right half: points entry with an inline camp toggle
                     Column(modifier = Modifier.weight(1f)) {
+                        // Section header mirrors the "Number of bouts (oudlers)" label
+                        // on the left so both halves of the Row look structurally identical.
+                        FormLabel(strings.pointsHeader)
+                        Spacer(Modifier.height(8.dp))
                         // ── Points field with trailing camp toggle ───────────────
                         // The floating label tells the user which camp's points to enter.
                         // The trailing icon (person = attacker, group = defenders) lets

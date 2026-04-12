@@ -78,12 +78,12 @@ import kotlinx.coroutines.launch
 
 /** Sword pointing upward — used to indicate "attacker (taker)" mode.
  *
- * Shape (24 × 24 viewport):
- *  • Blade : 1 unit wide (x 11.5–12.5), tapers to a sharp point at the top.
- *  • Crossguard : 12 units wide (x 6–18), 2 units tall — clearly wider than
- *    the blade so the silhouette is immediately recognisable as a sword.
- *  • Grip : 1 unit wide, same as the blade — elegant rapier proportion.
- *  • Pommel : diamond shape at the bottom — gives visual weight and character.
+ * Deliberately simple shape (24 × 24 viewport):
+ *  • Blade   : 2 units wide (x 11–13), tapers to a sharp point at the top (y 1).
+ *  • Guard   : 14 units wide (x 5–19), 2 units tall — the dominant horizontal
+ *              element that makes the silhouette read instantly as a sword.
+ *  • Handle  : 2 units wide, same as blade.
+ *  • Pommel  : 6 units wide (x 9–15), 2 units tall — anchors the bottom.
  */
 val SwordIcon: ImageVector by lazy {
     ImageVector.Builder(
@@ -93,28 +93,24 @@ val SwordIcon: ImageVector by lazy {
         viewportWidth  = 24f,
         viewportHeight = 24f
     ).path(fill = SolidColor(Color.Black)) {
-        moveTo(12f, 1f)           // blade tip (sharp point)
-        // ── Blade right edge ──
-        lineTo(12.5f, 10f)        // blade-crossguard junction, right
-        // ── Crossguard, right half ──
-        lineTo(18f, 10f)          // crossguard top-right  (12 units wide total)
-        lineTo(18f, 12f)          // crossguard bottom-right
-        lineTo(12.5f, 12f)        // back to grip right
-        // ── Grip ──
-        lineTo(12.5f, 19f)        // grip-pommel junction, right
-        // ── Pommel (diamond) ──
-        lineTo(15f, 21f)          // pommel right point
-        lineTo(12f, 23f)          // pommel bottom point
-        lineTo(9f, 21f)           // pommel left point
-        lineTo(11.5f, 19f)        // grip-pommel junction, left
-        // ── Grip left edge back up ──
-        lineTo(11.5f, 12f)        // guard-grip junction, left
-        // ── Crossguard, left half ──
-        lineTo(6f, 12f)           // crossguard bottom-left
-        lineTo(6f, 10f)           // crossguard top-left
-        lineTo(11.5f, 10f)        // blade-crossguard junction, left
-        // ── Blade left edge back to tip ──
-        close()
+        moveTo(12f, 1f)      // blade tip
+        lineTo(13f, 4f)      // blade widens to 2 units on the right
+        lineTo(13f, 13f)     // blade right edge down to crossguard
+        lineTo(19f, 13f)     // crossguard extends right (14 units total)
+        lineTo(19f, 15f)     // crossguard bottom-right
+        lineTo(13f, 15f)     // back to handle right
+        lineTo(13f, 21f)     // handle bottom-right
+        lineTo(15f, 21f)     // pommel right
+        lineTo(15f, 23f)     // pommel bottom-right
+        lineTo(9f,  23f)     // pommel bottom-left
+        lineTo(9f,  21f)     // pommel top-left
+        lineTo(11f, 21f)     // handle bottom-left
+        lineTo(11f, 15f)     // handle top-left
+        lineTo(5f,  15f)     // crossguard bottom-left
+        lineTo(5f,  13f)     // crossguard top-left
+        lineTo(11f, 13f)     // blade left edge at crossguard
+        lineTo(11f, 4f)      // blade left edge up
+        close()              // back to tip (12, 1)
     }.build()
 }
 
