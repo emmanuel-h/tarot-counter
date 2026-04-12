@@ -181,6 +181,8 @@ The minimum number of trumps needed to declare each type differs per player coun
 
 After the first round is completed the game screen shows a persistent **compact scoreboard** at the top of the page — one column per player with their name and running total. This stays visible at all times without opening a separate screen.
 
+Each player column carries `Modifier.weight(1f)` so all columns share the card width equally. Player names that are too long for their column are truncated with an ellipsis ("…") rather than overflowing their neighbours — this is important in 5-player games on narrow screens.
+
 Below the round input, a full round-by-round log is displayed newest-first.
 Each row begins with a colored **●** indicator so the outcome is readable at a glance
 without reading the text:

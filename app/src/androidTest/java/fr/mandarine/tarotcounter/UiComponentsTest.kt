@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -213,6 +214,40 @@ class UiComponentsTest {
             "Ticking an already-checked checkbox should pass null (clear assignment)",
             null, selected
         )
+    }
+
+    @Test
+    fun bonusGrid_five_players_all_names_appear_in_header() {
+        // Regression for issue #118: with 5 players the label column consumed
+        // 0.42 f of the width, leaving each player column only ~11 % — too narrow
+        // for most names. Reducing labelWeight to 0.36 f and adding textAlign =
+        // TextAlign.Center ensures each name is visible (at least as a truncated node).
+        val fivePlayers = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                CompactBonusGrid(
+                    playerNames     = fivePlayers,
+                    bonusLabels     = bonusLabels,
+                    bonusTooltips   = bonusTips,
+                    petitAuBout     = null, onPetit          = {},
+                    poignee         = null, onPoignee        = {},
+                    doublePoignee   = null, onDoublePoignee  = {},
+                    triplePoignee   = null, onTriplePoignee  = {}
+                )
+            }
+        }
+        // All five names must be present somewhere in the composition tree
+        // (the Text composable emits a semantics node even when the text is clipped
+        // by the available width — substring = true catches partial matches too).
+        fivePlayers.forEach { name ->
+            assertTrue(
+                "Player '$name' should appear in the bonus-grid header with 5 players",
+                composeTestRule
+                    .onAllNodesWithText(name, substring = true)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            )
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -466,8 +466,10 @@ fun CompactBonusGrid(
         BonusRow(bonusLabels[3], bonusTooltips[3], triplePoignee,  onTriplePoignee)
     )
 
-    // The label column is slightly wider to accommodate the text + ⓘ icon.
-    val labelWeight = 0.42f
+    // Label column: wide enough for the bonus text + ⓘ icon.
+    // Reduced from 0.42 → 0.36 so the gap between the label and the first
+    // checkbox column is eliminated, freeing ~6 % more width for player columns.
+    val labelWeight = 0.36f
     // Each player column gets an equal share of the remaining width.
     val colWeight   = (1f - labelWeight) / playerNames.size
 
@@ -486,6 +488,8 @@ fun CompactBonusGrid(
                     style     = MaterialTheme.typography.labelSmall,
                     maxLines  = 1,
                     overflow  = TextOverflow.Ellipsis,
+                    // Center the name over its checkbox column.
+                    textAlign = TextAlign.Center,
                     modifier  = Modifier.weight(colWeight)
                 )
             }

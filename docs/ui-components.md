@@ -244,6 +244,8 @@ fun CompactBonusGrid(
 
 A compact grid showing four player-assigned bonuses (petit au bout, poignée, double poignée, triple poignée). The header row shows player names; each data row shows a bonus label + ⓘ on the left and one `Checkbox` per player on the right. Ticking a checked box clears the assignment (sets it back to `null`).
 
+**Layout weights:** the label column occupies `0.36f` of the total row width; each player column receives an equal share of the remaining `0.64f`. Player names in the header are centred over their checkbox column and truncated with ellipsis when the name exceeds the available width (5-player games on narrow screens).
+
 ---
 
 ## PlayerChipSelector
