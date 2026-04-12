@@ -79,9 +79,10 @@ import kotlinx.coroutines.launch
 /** Sword pointing upward — used to indicate "attacker (taker)" mode.
  *
  * Shape (24 × 24 viewport):
- *  • Blade  : 2 units wide (x 11–13), tapers to a sharp point at the top (y 1).
- *             Long blade — runs from y 1 down to y 17, dominating the icon.
- *  • Guard  : 14 units wide (x 5–19), 2 units tall at y 17–19.
+ *  • Blade  : a true triangle — a single tip point at (12, 1) whose two edges
+ *             taper continuously outward to 2 units wide at the crossguard (y 14).
+ *             The left edge is drawn implicitly by close().
+ *  • Guard  : 10 units wide (x 7–17), 2 units tall at y 14–16.
  *  • Handle : 2 units wide, runs to the bottom edge (y 23). No pommel.
  */
 val SwordIcon: ImageVector by lazy {
@@ -92,20 +93,18 @@ val SwordIcon: ImageVector by lazy {
         viewportWidth  = 24f,
         viewportHeight = 24f
     ).path(fill = SolidColor(Color.Black)) {
-        moveTo(12f, 1f)      // blade tip
-        lineTo(13f, 4f)      // blade widens to 2 units on the right
-        lineTo(13f, 17f)     // blade right edge down to crossguard
-        lineTo(19f, 17f)     // crossguard extends right (14 units total)
-        lineTo(19f, 19f)     // crossguard bottom-right
-        lineTo(13f, 19f)     // back to handle right
-        lineTo(13f, 23f)     // handle bottom-right (reaches viewport edge)
+        moveTo(12f, 1f)      // blade tip — a true sharp point
+        lineTo(13f, 14f)     // right blade edge tapers out to crossguard
+        lineTo(17f, 14f)     // crossguard extends right (10 units total)
+        lineTo(17f, 16f)     // crossguard bottom-right
+        lineTo(13f, 16f)     // handle top-right
+        lineTo(13f, 23f)     // handle bottom-right
         lineTo(11f, 23f)     // handle bottom-left
-        lineTo(11f, 19f)     // handle top-left
-        lineTo(5f,  19f)     // crossguard bottom-left
-        lineTo(5f,  17f)     // crossguard top-left
-        lineTo(11f, 17f)     // blade left edge at crossguard
-        lineTo(11f, 4f)      // blade left edge up
-        close()              // back to tip (12, 1)
+        lineTo(11f, 16f)     // handle top-left
+        lineTo(7f,  16f)     // crossguard bottom-left
+        lineTo(7f,  14f)     // crossguard top-left
+        lineTo(11f, 14f)     // left blade edge at crossguard
+        close()              // left blade edge tapers back to tip (12, 1)
     }.build()
 }
 
