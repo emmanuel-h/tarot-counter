@@ -111,6 +111,11 @@ fun GameScreen(
     // Controls whether the "undo previous round" confirmation dialog is visible.
     var showUndoConfirm by remember { mutableStateOf(false) }
 
+    // Controls whether the "end game with pending points" confirmation dialog is visible.
+    // This is shown when the user taps "End Game" while the points field is non-empty,
+    // to protect against accidentally discarding unsaved round data.
+    var showEndGameConfirm by remember { mutableStateOf(false) }
+
     // ── Hoisted form state ────────────────────────────────────────────────────
     // These variables are declared here (rather than inside the form block) so
     // the pinned bottom-bar Confirm button can read and submit them without
@@ -306,6 +311,38 @@ fun GameScreen(
             },
             dismissButton = {
                 AppTextButton(text = strings.cancel, onClick = { showUndoConfirm = false })
+            }
+        )
+    }
+
+    // ── End-game confirmation dialog ─────────────────────────────────────────
+    // Shown only when the user taps "End Game" while there are pending points in the
+    // points field, so they cannot accidentally lose unsaved round data.
+    // On confirm: the game ends normally (or is cancelled if no rounds have been played).
+    // On dismiss: the dialog closes and the user continues entering points.
+    if (showEndGameConfirm) {
+        AlertDialog(
+            onDismissRequest = { showEndGameConfirm = false },
+            title = { Text(strings.endGameConfirmTitle) },
+            text  = { Text(strings.endGameConfirmBody) },
+            confirmButton = {
+                AppTextButton(
+                    text    = strings.endGame,
+                    onClick = {
+                        showEndGameConfirm = false
+                        if (roundHistory.isEmpty()) {
+                            // Zero rounds played — cancel the game silently.
+                            viewModel.clearInProgressGame()
+                            onEndGame()
+                        } else {
+                            viewModel.endGame()
+                            showFinalScore = true
+                        }
+                    }
+                )
+            },
+            dismissButton = {
+                AppTextButton(text = strings.cancel, onClick = { showEndGameConfirm = false })
             }
         )
     }
@@ -880,7 +917,12 @@ fun GameScreen(
             AppButton(
                 text     = strings.endGame,
                 onClick  = {
-                    if (roundHistory.isEmpty()) {
+                    // If the user has already typed something in the points field,
+                    // they may be mid-entry — show a confirmation dialog first so
+                    // they cannot accidentally lose unsaved round data (issue #150).
+                    if (pointsText.isNotBlank()) {
+                        showEndGameConfirm = true
+                    } else if (roundHistory.isEmpty()) {
                         // Zero rounds played — cancel silently, nothing to record.
                         viewModel.clearInProgressGame()
                         onEndGame()

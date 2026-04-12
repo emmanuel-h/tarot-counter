@@ -213,7 +213,7 @@ A persistent three-button bar at the bottom of the screen, always visible regard
 
 | Button | Style | Behaviour |
 |--------|-------|-----------|
-| **End Game** | Filled — error container (red) | Ends the current game. **If at least one round has been played**, the game is saved and the Final Score screen is shown. **If no rounds have been played**, the game is cancelled silently — the in-progress entry is cleared and the user returns to the setup screen without anything being recorded (issue #90). The red color signals that this action terminates the game. |
+| **End Game** | Filled — error container (red) | Ends the current game. **If the points field is non-empty** (pending points entered but not yet confirmed), a confirmation dialog appears first so the user can cancel and continue entering data (issue #150). Once confirmed (or if the field was empty): **if at least one round has been played**, the game is saved and the Final Score screen is shown; **if no rounds have been played**, the game is cancelled silently — the in-progress entry is cleared and the user returns to the setup screen (issue #90). The red color signals that this action terminates the game. |
 | **Skip round** | Outlined | Records the current round as skipped (no contract, no score) and advances to the next one. The outlined style marks it as a secondary/neutral action. |
 | **Confirm round** | Filled — primary | Saves the contract, score, and all bonus details, then advances to the next round. **Disabled** until both a contract is selected *and* a non-empty score is entered. Also disabled while the points field contains an invalid value (> 91). |
 
