@@ -395,10 +395,23 @@ class GameScreenTest {
     // ── Spec: score history navigation ────────────────────────────────────────
 
     @Test
-    fun score_history_button_appears_after_first_round_is_completed() {
+    fun score_history_button_is_visible_and_enabled_from_round_1() {
+        // The button is always rendered and always enabled so users can discover it immediately.
         launchGame()
-        composeTestRule.onNodeWithText("Skip round").performClick()
         composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("History").assertIsEnabled()
+    }
+
+    @Test
+    fun tapping_history_button_before_first_round_shows_header_only() {
+        // Before any round is played the table should show player-name headers but no score rows.
+        launchGame()
+        composeTestRule.onNodeWithContentDescription("History").performClick()
+        // The screen title and the player-name header must appear.
+        composeTestRule.onNodeWithText("Score history").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Alice").assertIsDisplayed()
+        // No round rows: "Round" column header is present but no "1", "2", … cells.
+        composeTestRule.onAllNodesWithText("1").assertCountEquals(0)
     }
 
     @Test
