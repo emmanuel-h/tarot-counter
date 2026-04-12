@@ -156,7 +156,8 @@ fun ScoreTableRow(
 
 A single horizontal row in a score table. Used by both `ScoreHistoryScreen` and `FinalScoreScreen`.
 
-- **Column widths:** index 0 ("Round") → `SCORE_TABLE_ROUND_COL_WIDTH` (64 dp); all other columns → `SCORE_TABLE_PLAYER_COL_WIDTH` (80 dp).
+- **Column widths:** uses `Modifier.weight()` — index 0 ("Round") gets weight `SCORE_TABLE_ROUND_COL_WEIGHT` (0.8f); all other columns get `SCORE_TABLE_PLAYER_COL_WEIGHT` (1.0f). This distributes the full available width proportionally, so all columns are always visible on screen regardless of player count (no horizontal scrolling needed, even with 5 players).
+- **Text sizing:** each cell uses `AutoSizeText` with a shared size state per row, so long player names shrink gracefully and all cells in a row stay at the same font size.
 - **`isHeader`:** renders all text bold (for the header row).
 - **`scoreValues`:** parallel list of raw integers for semantic colour coding via `scoreColor()`. Pass `null` or include `null` entries to skip colouring for that cell. Index 0 should always be `null` (round-number column has no colour).
 - **`winnerColumnIndices`:** zero-based column indices highlighted with a gold/amber background and bold text. Defaults to `emptySet()` (no highlighting), so `ScoreHistoryScreen` can use this composable without any extra arguments. `FinalScoreScreen` passes the winner column indices.

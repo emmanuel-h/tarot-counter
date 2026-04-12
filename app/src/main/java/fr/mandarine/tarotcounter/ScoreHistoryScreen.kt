@@ -1,6 +1,5 @@
 package fr.mandarine.tarotcounter
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,13 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,7 +33,7 @@ import androidx.compose.ui.unit.dp
  *   |   1   |  +50  | -25  |  -25   |
  *   |   2   |  +20  | -10  |  -10   |
  *
- * The table scrolls horizontally (for 5 players) and vertically (for many rounds).
+ * The table uses weighted columns so all players fit on screen at once (issue #129).
  *
  * @param playerNames  Ordered list of player display names (fallbacks already resolved).
  * @param roundHistory Completed rounds in chronological order, oldest first.
@@ -79,56 +74,30 @@ fun ScoreHistoryScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── Score table ───────────────────────────────────────────────────────
-        // Two scroll directions: left↔right for many players, up↓down for many rounds.
-        // We use a plain Column (not LazyColumn) inside two nested scroll modifiers,
-        // which is fine for Tarot games (typical: tens of rounds, 3–5 players).
-        //
-        // The Box wrapper lets us overlay a scroll-hint arrow when the table extends
-        // beyond the right edge of the screen. The Icon sits at Alignment.TopEnd so
-        // it is visible when the user first opens the screen and naturally disappears
-        // as they scroll down — exactly when the hint is no longer needed.
-        val hScrollState = rememberScrollState()
-        Box {
-            Column(
-                // Only horizontal scrolling here — vertical scrolling is handled
-                // by the outer Column so the two scroll directions don't conflict.
-                modifier = Modifier.horizontalScroll(hScrollState)
-            ) {
-                // Column headers: localized "Round" header, then one header per player name.
-                // No score values for the header row — labels use the default colour.
+        // The table uses weighted columns (ScoreTableRow) so it always fills the
+        // available screen width without horizontal scrolling, regardless of how
+        // many players are in the game (issue #129).
+        // Vertical scrolling is already handled by the outer Column above.
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Column headers: localized "Round" header, then one header per player name.
+            // No score values for the header row — labels use the default colour.
+            ScoreTableRow(
+                cells    = listOf(strings.roundColumn) + playerNames,
+                isHeader = true
+            )
+            HorizontalDivider()
+
+            // buildScoreTableData() (GameModels.kt) accumulates the running totals and
+            // formats each cell — the loop that was previously duplicated here is now
+            // shared with FinalScoreScreen (issue #75).
+            for (row in buildScoreTableData(playerNames, roundHistory)) {
                 ScoreTableRow(
-                    cells = listOf(strings.roundColumn) + playerNames,
-                    isHeader = true
-                )
-                HorizontalDivider()
-
-                // buildScoreTableData() (GameModels.kt) accumulates the running totals and
-                // formats each cell — the loop that was previously duplicated here is now
-                // shared with FinalScoreScreen (issue #75).
-                for (row in buildScoreTableData(playerNames, roundHistory)) {
-                    ScoreTableRow(
-                        cells       = row.cells,
-                        isHeader    = false,
-                        scoreValues = row.scoreValues
-                    )
-                }
-        }
-
-            // Arrow hint: floats at the top-right corner of the Box.
-            // Visible when there is more content to the right (i.e. ≥4–5 players).
-            // Automatically disappears when the user scrolls right (canScrollForward = false).
-            if (hScrollState.canScrollForward) {
-                Icon(
-                    imageVector        = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier           = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(16.dp)
+                    cells       = row.cells,
+                    isHeader    = false,
+                    scoreValues = row.scoreValues
                 )
             }
-        }   // end (inner table) Box
+        }   // end table Column
     }   // end Column
     }   // end (centering) Box
 }
