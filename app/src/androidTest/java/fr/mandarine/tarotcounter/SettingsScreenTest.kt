@@ -174,4 +174,69 @@ class SettingsScreenTest {
         launch()
         composeTestRule.onNodeWithText("Language").assertIsDisplayed()
     }
+
+    // ── Spec: rules button ────────────────────────────────────────────────────
+
+    @Test
+    fun rules_button_is_displayed_in_english() {
+        launch()
+        composeTestRule.onNodeWithText("Rules").assertIsDisplayed()
+    }
+
+    @Test
+    fun rules_button_is_displayed_in_french() {
+        launch(locale = AppLocale.FR)
+        composeTestRule.onNodeWithText("Règles").assertIsDisplayed()
+    }
+
+    // ── Spec: rules dialog ────────────────────────────────────────────────────
+
+    @Test
+    fun tapping_rules_button_opens_dialog_with_title() {
+        launch()
+
+        composeTestRule.onNodeWithText("Rules").performClick()
+
+        // The dialog title should now be visible.
+        composeTestRule.onNodeWithText("Game Rules").assertIsDisplayed()
+    }
+
+    @Test
+    fun rules_dialog_shows_all_section_headings() {
+        launch()
+        composeTestRule.onNodeWithText("Rules").performClick()
+
+        composeTestRule.onNodeWithText("Objective").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Contracts").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Score Formula").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Score Distribution").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bonuses").assertIsDisplayed()
+    }
+
+    @Test
+    fun rules_dialog_shows_section_headings_in_french() {
+        launch(locale = AppLocale.FR)
+        composeTestRule.onNodeWithText("Règles").performClick()
+
+        composeTestRule.onNodeWithText("Objectif").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Contrats").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Calcul du score").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Répartition des scores").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bonus").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_close_dismisses_rules_dialog() {
+        launch()
+
+        // Open the dialog.
+        composeTestRule.onNodeWithText("Rules").performClick()
+        composeTestRule.onNodeWithText("Game Rules").assertIsDisplayed()
+
+        // Tap the "Close" button inside the dialog.
+        composeTestRule.onNodeWithText("Close").performClick()
+
+        // The dialog title should no longer be visible.
+        composeTestRule.onNodeWithText("Game Rules").assertDoesNotExist()
+    }
 }

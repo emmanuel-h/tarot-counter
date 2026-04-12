@@ -14,7 +14,26 @@ A back arrow (←) returns the user to the landing screen.
 |---------|--------|---------------|
 | Theme toggle | ☀️ Light / 🌙 Dark | `GameViewModel.setTheme()` → DataStore |
 | Language toggle | 🇬🇧 English / 🇫🇷 French | `GameViewModel.setLocale()` → DataStore |
+| Rules | Opens rules dialog (no persistence) | Local `remember` state |
 | Send Feedback | Opens default email client | Android Intent (mailto:) |
+
+### Rules dialog
+
+Tapping **Rules** opens `RulesDialog` — a scrollable modal that covers all implemented scoring
+mechanics, sourced directly from the logic in `GameModels.kt`:
+
+| Section | Content |
+|---------|---------|
+| Objective | Bout thresholds (0 → 56 pts, 1 → 51, 2 → 41, 3 → 36) |
+| Contracts | Prise ×1, Garde ×2, Garde Sans ×4, Garde Contre ×6 |
+| Score Formula | (25 + \|actual − required\|) × multiplier |
+| Score Distribution | 3/4-player vs 5-player taker/partner/defender split |
+| Bonuses | Petit au bout, Poignée (simple/double/triple), Chelem |
+
+The dialog is displayed inline on top of SettingsScreen using a standard Compose `Dialog`. It is
+dismissed by tapping the **Close** button or tapping the scrim outside the dialog. The open/closed
+state is held in a `var showRules by remember { mutableStateOf(false) }` local variable in
+`SettingsScreen` — nothing is persisted.
 
 Both the theme and language choices survive app restarts — they are stored with DataStore
 (see `docs/game-persistence.md`) and restored in `MainActivity` via `collectAsState()`.
@@ -41,7 +60,8 @@ Screen.SETTINGS ──(back arrow)──► Screen.SETUP
 
 | File | Role |
 |------|------|
-| `app/src/main/…/SettingsScreen.kt` | Composable UI for the settings page |
-| `app/src/androidTest/…/SettingsScreenTest.kt` | UI tests for the settings page |
-| `app/src/main/…/AppStrings.kt` | `settings`, `settingsTitle`, `themeLabel`, `languageLabel` strings |
+| `app/src/main/…/SettingsScreen.kt` | Composable UI for the settings page; holds `showRules` state |
+| `app/src/main/…/RulesScreen.kt` | `RulesDialog` composable |
+| `app/src/androidTest/…/SettingsScreenTest.kt` | UI tests for the settings page and rules dialog |
+| `app/src/main/…/AppStrings.kt` | `settings`, `settingsTitle`, `themeLabel`, `languageLabel`, `rulesButton`, `rulesTitle`, etc. |
 | `app/src/main/…/MainActivity.kt` | `Screen.SETTINGS` enum value and navigation wiring |

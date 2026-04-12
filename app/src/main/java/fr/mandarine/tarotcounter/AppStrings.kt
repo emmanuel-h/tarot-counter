@@ -146,6 +146,29 @@ data class AppStrings(
     // Label for the button that opens the user's email client to contact the developer.
     val feedbackButton: String,
 
+    // ── Rules dialog (Settings Screen) ────────────────────────────────────────
+    // Label for the button that opens the rules dialog from the settings page.
+    val rulesButton: String,
+    // Title shown at the top of the rules dialog.
+    val rulesTitle: String,
+    // Label for the dismiss button at the bottom of the rules dialog.
+    val rulesClose: String,
+    // Section: how many points are needed to win based on bout count.
+    val rulesObjectiveTitle: String,
+    val rulesObjectiveBody: String,
+    // Section: the four contracts and their score multipliers.
+    val rulesContractsTitle: String,
+    val rulesContractsBody: String,
+    // Section: the formula that converts bouts + points + contract into a score.
+    val rulesScoreFormulaTitle: String,
+    val rulesScoreFormulaBody: String,
+    // Section: how the round score is split between the taker, partner, and defenders.
+    val rulesDistributionTitle: String,
+    val rulesDistributionBody: String,
+    // Section: petit au bout, poignée, and chelem bonuses.
+    val rulesBonusTitle: String,
+    val rulesBonusBody: String,
+
     // ── Chelem enum labels ────────────────────────────────────────────────────
     val chelemNone: String,
     val chelemAnnouncedRealized: String,
@@ -257,6 +280,25 @@ val EnStrings = AppStrings(
     themeLabel               = "Theme",
     languageLabel            = "Language",
     feedbackButton           = "Send Feedback",
+
+    rulesButton              = "Rules",
+    rulesTitle               = "Game Rules",
+    rulesClose               = "Close",
+
+    rulesObjectiveTitle      = "Objective",
+    rulesObjectiveBody       = "Win the round by reaching the required points based on your bouts (oudlers):\n\n• 3 bouts → 36 pts minimum\n• 2 bouts → 41 pts minimum\n• 1 bout  → 51 pts minimum\n• 0 bouts → 56 pts minimum\n\nBouts are the 21 of trumps, the Petit (1 of trumps), and the Excuse.",
+
+    rulesContractsTitle      = "Contracts",
+    rulesContractsBody       = "The taker announces a contract that multiplies all scores:\n\n• Small (Prise)       × 1\n• Guard (Garde)       × 2\n• Guard Without       × 4\n• Guard Against       × 6",
+
+    rulesScoreFormulaTitle   = "Score Formula",
+    rulesScoreFormulaBody    = "(25 + |actual − required|) × contract multiplier\n\nThe taker wins if their points ≥ the required threshold.\nOn a win the taker collects from defenders; on a loss the taker pays each defender.",
+
+    rulesDistributionTitle   = "Score Distribution",
+    rulesDistributionBody    = "3 or 4 players — no partner:\n• Taker: ±(players − 1) × score\n• Each defender: ∓score\n\n5 players — with called partner:\n• Taker: ±2 × score\n• Partner: ±1 × score\n• Each defender: ∓score\n\nEvery round is zero-sum.",
+
+    rulesBonusTitle          = "Bonuses",
+    rulesBonusBody           = "Petit au bout — Petit (1 of trumps) won on the last trick:\n+10 × multiplier to the achieving camp.\n\nPoignée — trumps shown before play:\n• Simple: 20 pts per player\n• Double: 30 pts per player\n• Triple: 40 pts per player\nBonus always goes to the winning camp.\n\nChelem — all tricks won by the same team:\n• Announced & realized: +400 pts\n• Not announced, realized: +200 pts\n• Announced, not realized: −200 pts\n• Defenders realized: −200 pts (taker pays each defender)",
 )
 
 // ── French strings ────────────────────────────────────────────────────────────
@@ -350,6 +392,25 @@ val FrStrings = AppStrings(
     themeLabel               = "Thème",
     languageLabel            = "Langue",
     feedbackButton           = "Contacter le développeur",
+
+    rulesButton              = "Règles",
+    rulesTitle               = "Règles du jeu",
+    rulesClose               = "Fermer",
+
+    rulesObjectiveTitle      = "Objectif",
+    rulesObjectiveBody       = "Gagner la manche en atteignant le seuil de points selon vos bouts :\n\n• 3 bouts → 36 pts minimum\n• 2 bouts → 41 pts minimum\n• 1 bout  → 51 pts minimum\n• 0 bout  → 56 pts minimum\n\nLes bouts sont le 21 d'atout, le Petit (1 d'atout) et l'Excuse.",
+
+    rulesContractsTitle      = "Contrats",
+    rulesContractsBody       = "Le preneur annonce un contrat qui multiplie tous les scores :\n\n• Prise         × 1\n• Garde         × 2\n• Garde Sans    × 4\n• Garde Contre  × 6",
+
+    rulesScoreFormulaTitle   = "Calcul du score",
+    rulesScoreFormulaBody    = "(25 + |points réels − seuil|) × multiplicateur du contrat\n\nLe preneur gagne si ses points sont supérieurs au seuil requis.\nEn cas de victoire il encaisse ; en cas de défaite il paye chaque défenseur.",
+
+    rulesDistributionTitle   = "Répartition des scores",
+    rulesDistributionBody    = "3 ou 4 joueurs — sans appelé :\n• Preneur : ±(joueurs − 1) × score\n• Chaque défenseur : ∓score\n\n5 joueurs — avec appelé :\n• Preneur : ±2 × score\n• Appelé : ±1 × score\n• Chaque défenseur : ∓score\n\nChaque manche est à somme nulle.",
+
+    rulesBonusTitle          = "Bonus",
+    rulesBonusBody           = "Petit au bout — le Petit (1 d'atout) remporté au dernier pli :\n+10 × multiplicateur pour le camp qui le réalise.\n\nPoignée — atouts déclarés avant le jeu :\n• Simple : 20 pts par joueur\n• Double : 30 pts par joueur\n• Triple : 40 pts par joueur\nLe bonus va toujours au camp gagnant.\n\nChelem — tous les plis remportés par la même équipe :\n• Annoncé et réalisé : +400 pts\n• Non annoncé, réalisé : +200 pts\n• Annoncé, non réalisé : −200 pts\n• Défense réalise : −200 pts (le preneur paye chaque défenseur)",
 )
 
 // Returns the AppStrings for the given locale.
