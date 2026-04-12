@@ -197,6 +197,41 @@ A small bold label placed above a form section (e.g. above the bouts dropdown or
 FormLabel(strings.numberOfBouts)
 ```
 
+### Side-by-side form fields with aligned labels and inputs (IntrinsicSize pattern)
+
+When two form fields are placed in a `Row` side by side, both their **labels** and their **input controls** need to align vertically — even when one label is longer than the other (e.g. "Nombre de bouts (oudlers)" wraps to two lines in French while "Points" is always one line).
+
+Using `verticalAlignment = Alignment.Bottom` on the Row aligns the form fields but pushes the shorter column down, misaligning its label (issue #145). The correct pattern is:
+
+```kotlin
+Row(
+    modifier = Modifier
+        .fillMaxWidth()
+        // Row height = tallest column's natural (non-expanded) height.
+        // Required so fillMaxHeight() inside each Column has a concrete ceiling.
+        .height(IntrinsicSize.Min),
+    horizontalArrangement = Arrangement.spacedBy(16.dp)
+    // No verticalAlignment — each Column handles its own vertical layout.
+) {
+    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+        FormLabel(strings.numberOfBouts)  // label at top
+        Spacer(Modifier.weight(1f))       // pushes the field to the bottom
+        // … form field (e.g. dropdown)
+    }
+    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+        FormLabel(strings.pointsHeader)   // label at top — vertically aligned with the left label
+        Spacer(Modifier.weight(1f))       // pushes the field to the bottom
+        // … form field (e.g. OutlinedTextField)
+    }
+}
+```
+
+Key points:
+- `Modifier.height(IntrinsicSize.Min)` gives the Row a fixed height equal to the tallest column's content height (before any expansion). This is what makes `fillMaxHeight()` inside children meaningful.
+- `fillMaxHeight()` on each Column makes it expand to that shared height.
+- `Spacer(Modifier.weight(1f))` inside each Column acts as a flexible gap — it takes whatever vertical space remains after the label, pushing the form control to the bottom of the Column.
+- Result: labels are top-aligned, form controls are bottom-aligned, regardless of how much each label wraps.
+
 ---
 
 ## BonusInfoIcon
