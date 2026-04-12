@@ -45,6 +45,12 @@ enum class Chelem(val displayName: String) {
     DEFENDERS_REALIZED("Defenders realized")
 }
 
+// Total number of trump cards in a standard French Tarot deck.
+// Trumps 1–21 plus the Excuse = 22 cards.
+// Used to validate that the combined atout thresholds declared by all players
+// do not exceed what physically exists in the deck.
+const val TOTAL_ATOUTS_IN_DECK = 22
+
 // All the bonus and scoring details collected after a contract is chosen.
 //
 // Fields that are "assigned to a player" use String? — null means nobody claimed that bonus.
@@ -52,22 +58,63 @@ enum class Chelem(val displayName: String) {
 //
 // `partnerName` is only relevant in a 5-player game: the taker calls one other player as their
 // silent partner. It is null for 3- and 4-player games.
+//
+// Multi-player poignée (issue #149):
+//   Any number of players can independently declare a simple, double, or triple poignée.
+//   The new `poignees` / `doublePoignees` / `triplePoignees` lists hold all declarants.
+//
+//   The legacy nullable fields (`poignee`, `doublePoignee`, `triplePoignee`) are kept so that
+//   old saved-game JSON (which contains a single player name string) still deserialises without
+//   error — kotlinx.serialization uses named keys, so new fields not present in old JSON just
+//   receive their default values. The `effectivePoignees` computed properties bridge the two:
+//   they return the new list when non-empty, or wrap the old nullable field as a singleton list.
 @Serializable
 data class RoundDetails(
     val bouts: Int,             // number of oudlers (0–3) in the taker's tricks
     val points: Int,            // points scored by the taker (0–91)
     val partnerName: String?,   // taker's called partner (5-player only); null otherwise
     val petitAuBout: String?,   // player who captured the 1 of trump on the last trick, or null
-    val poignee: String?,       // player who showed a poignée (10+ trumps), or null
-    val doublePoignee: String?, // player who showed a double poignée (13+ trumps), or null
-    val triplePoignee: String? = null, // player who showed a triple poignée (15+ trumps), or null
+
+    // ── Legacy single-player poignée fields (kept for backward-compat deserialization) ──
+    // New code always writes to the list fields below; these are only populated when
+    // reading old saved games that were created before issue #149.
+    val poignee: String?       = null, // player who showed a simple poignée, or null (legacy)
+    val doublePoignee: String? = null, // player who showed a double poignée, or null (legacy)
+    val triplePoignee: String? = null, // player who showed a triple poignée, or null (legacy)
+
+    // ── New multi-player poignée fields (issue #149) ──────────────────────────
+    // Any number of players can declare a poignée simultaneously (e.g. both the taker
+    // and a defender each show their own trump hand). Each declaration contributes its
+    // full bonus to the winning camp independently.
+    val poignees: List<String>       = emptyList(), // all players who declared simple poignée
+    val doublePoignees: List<String> = emptyList(), // all players who declared double poignée
+    val triplePoignees: List<String> = emptyList(), // all players who declared triple poignée
+
     val chelem: Chelem,         // grand slam outcome
     // The player who called or achieved the chelem. Null when chelem == NONE.
     // In a 3- or 4-player game only the taker can call it; in a 5-player game the
     // partner can also announce a chelem. When a chelem is announced, that player
     // leads the first trick of the round — regardless of the normal turn order.
     val chelemPlayer: String? = null
-)
+) {
+    // ── Migration helpers ─────────────────────────────────────────────────────
+    // These computed properties make the rest of the codebase migration-transparent:
+    // they return the new list when it contains entries, or fall back to the legacy
+    // single-player field by wrapping it in a singleton list (or empty list if null).
+    // `listOfNotNull` produces an empty list when its argument is null.
+
+    /** All players who declared a simple poignée (new or legacy format). */
+    val effectivePoignees: List<String>
+        get() = poignees.ifEmpty { listOfNotNull(poignee) }
+
+    /** All players who declared a double poignée (new or legacy format). */
+    val effectiveDoublePoignees: List<String>
+        get() = doublePoignees.ifEmpty { listOfNotNull(doublePoignee) }
+
+    /** All players who declared a triple poignée (new or legacy format). */
+    val effectiveTriplePoignees: List<String>
+        get() = triplePoignees.ifEmpty { listOfNotNull(triplePoignee) }
+}
 
 // Returns the minimum number of points the taker needs to win, based on
 // how many bouts (oudlers) they hold in their tricks.
@@ -176,9 +223,9 @@ fun poigneeThresholds(playerCount: Int): Triple<Int, Int, Int> = when (playerCou
 //   partner delta  = 0   (partner is not involved in the petit-au-bout bonus)
 fun petitAuBoutBonus(contract: Contract): Int = 10 * contract.multiplier
 
-// Returns the flat poignée (trump show) bonus per defender.
+// Returns the flat poignée (trump show) bonus per defender for a single declaration.
 //
-// Exactly one of the three parameters should be non-null at most per round.
+// Exactly one of the three parameters should be non-null at most per call.
 // The bonus is the amount exchanged between the taker and *each* defender:
 //   triplePoignee → 40 pts
 //   doublePoignee → 30 pts
@@ -189,6 +236,8 @@ fun petitAuBoutBonus(contract: Contract): Int = 10 * contract.multiplier
 // declared it. The sign is applied in GameScreen using the round outcome:
 //   taker won  → taker collects bonus from each defender
 //   taker lost → each defender collects bonus from the taker
+//
+// Note: use `totalPoigneeBonus` for multi-player scenarios (issue #149).
 fun poigneeBonus(
     poignee: String?,
     doublePoignee: String?,
@@ -198,6 +247,51 @@ fun poigneeBonus(
     doublePoignee != null -> 30
     poignee       != null -> 20
     else                  ->  0
+}
+
+// Returns the **total** poignée bonus per defender across all players who declared
+// a poignée in the same round (issue #149).
+//
+// In the updated rules any number of players can each show their own trump hand —
+// for example both the taker (simple, 20 pts) and a defender (double, 30 pts)
+// may declare simultaneously. Each declaration contributes independently:
+//   total = (simple count × 20) + (double count × 30) + (triple count × 40)
+//
+// The bonus still always goes to the **winning camp** as a whole — the direction
+// is determined by the round outcome, not by who declared.
+//
+// Parameters:
+//   poignees       : all players who declared a simple poignée
+//   doublePoignees : all players who declared a double poignée
+//   triplePoignees : all players who declared a triple poignée
+fun totalPoigneeBonus(
+    poignees: List<String>,
+    doublePoignees: List<String>,
+    triplePoignees: List<String>
+): Int = poignees.size * 20 + doublePoignees.size * 30 + triplePoignees.size * 40
+
+// Returns the total number of atouts (trumps) that all declared poignées claim
+// to represent. Used to validate that declarations do not exceed what is physically
+// possible given the 22 trumps in the deck.
+//
+// Each poignée type requires a minimum trump count that varies by player count
+// (from `poigneeThresholds`). When multiple players declare, their minimum
+// requirements add up — if the sum exceeds `TOTAL_ATOUTS_IN_DECK` (22) then at
+// least one player must be lying, and the form should reject the input.
+//
+// Example (4 players, thresholds 10 / 13 / 15):
+//   Alice declares triple (15) + Bob declares simple (10) → total = 25 > 22 → invalid
+//   Alice declares simple (10) + Bob declares simple (10) → total = 20 ≤ 22 → valid
+fun totalAtoutsAnnounced(
+    poignees: List<String>,
+    doublePoignees: List<String>,
+    triplePoignees: List<String>,
+    playerCount: Int
+): Int {
+    val (simpleMin, doubleMin, tripleMin) = poigneeThresholds(playerCount)
+    return poignees.size * simpleMin +
+           doublePoignees.size * doubleMin +
+           triplePoignees.size * tripleMin
 }
 
 // Returns the flat chelem (grand slam) bonus.
@@ -278,7 +372,15 @@ fun applyBonuses(
     //   taker won  → taker collects bonus from each defender
     //   taker lost → each defender collects bonus from the taker
     // The partner (5-player only) is not involved.
-    val pBonus = poigneeBonus(details.poignee, details.doublePoignee, details.triplePoignee)
+    //
+    // `effectivePoignees` / `effectiveDoublePoignees` / `effectiveTriplePoignees`
+    // transparently handle both old saved games (single player in legacy nullable
+    // fields) and new games (multi-player lists from issue #149).
+    val pBonus = totalPoigneeBonus(
+        details.effectivePoignees,
+        details.effectiveDoublePoignees,
+        details.effectiveTriplePoignees
+    )
     val pSign  = if (won) 1 else -1
     val scoresAfterPoignee = if (pBonus == 0) scoresAfterPab else {
         scoresAfterPab.mapValues { (player, score) ->

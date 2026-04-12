@@ -253,6 +253,186 @@ class GameModelsTest {
         assertEquals(0, takerDelta + defenderDelta * numDefenders)
     }
 
+    // ── totalPoigneeBonus (issue #149) ────────────────────────────────────────
+
+    @Test
+    fun `totalPoigneeBonus returns 0 when no poignees are declared`() {
+        assertEquals(0, totalPoigneeBonus(emptyList(), emptyList(), emptyList()))
+    }
+
+    @Test
+    fun `totalPoigneeBonus returns 20 for one simple poignee`() {
+        assertEquals(20, totalPoigneeBonus(listOf("Alice"), emptyList(), emptyList()))
+    }
+
+    @Test
+    fun `totalPoigneeBonus returns 30 for one double poignee`() {
+        assertEquals(30, totalPoigneeBonus(emptyList(), listOf("Bob"), emptyList()))
+    }
+
+    @Test
+    fun `totalPoigneeBonus returns 40 for one triple poignee`() {
+        assertEquals(40, totalPoigneeBonus(emptyList(), emptyList(), listOf("Charlie")))
+    }
+
+    @Test
+    fun `totalPoigneeBonus accumulates when two players each declare a simple poignee`() {
+        // Alice (simple 20) + Bob (simple 20) = 40 total.
+        assertEquals(40, totalPoigneeBonus(listOf("Alice", "Bob"), emptyList(), emptyList()))
+    }
+
+    @Test
+    fun `totalPoigneeBonus accumulates across different types`() {
+        // Alice (simple 20) + Bob (double 30) = 50 total.
+        assertEquals(50, totalPoigneeBonus(listOf("Alice"), listOf("Bob"), emptyList()))
+    }
+
+    @Test
+    fun `totalPoigneeBonus accumulates all three types together`() {
+        // Simple 20 + double 30 + triple 40 = 90.
+        assertEquals(
+            90,
+            totalPoigneeBonus(listOf("Alice"), listOf("Bob"), listOf("Charlie"))
+        )
+    }
+
+    // ── totalAtoutsAnnounced (issue #149) ─────────────────────────────────────
+
+    @Test
+    fun `totalAtoutsAnnounced returns 0 when no poignees are declared`() {
+        assertEquals(0, totalAtoutsAnnounced(emptyList(), emptyList(), emptyList(), 4))
+    }
+
+    @Test
+    fun `totalAtoutsAnnounced returns simple threshold for one simple poignee (4 players)`() {
+        // 4-player threshold: simple = 10.
+        assertEquals(10, totalAtoutsAnnounced(listOf("Alice"), emptyList(), emptyList(), 4))
+    }
+
+    @Test
+    fun `totalAtoutsAnnounced returns double threshold for one double poignee (4 players)`() {
+        // 4-player threshold: double = 13.
+        assertEquals(13, totalAtoutsAnnounced(emptyList(), listOf("Bob"), emptyList(), 4))
+    }
+
+    @Test
+    fun `totalAtoutsAnnounced returns triple threshold for one triple poignee (4 players)`() {
+        // 4-player threshold: triple = 15.
+        assertEquals(15, totalAtoutsAnnounced(emptyList(), emptyList(), listOf("Alice"), 4))
+    }
+
+    @Test
+    fun `totalAtoutsAnnounced accumulates two simple poignees for 4 players`() {
+        // Alice (10) + Bob (10) = 20. Still within the 22-card limit.
+        assertEquals(20, totalAtoutsAnnounced(listOf("Alice", "Bob"), emptyList(), emptyList(), 4))
+    }
+
+    @Test
+    fun `totalAtoutsAnnounced exceeds limit for triple plus simple (4 players)`() {
+        // Alice declares triple (15) + Bob declares simple (10) = 25 > 22.
+        val total = totalAtoutsAnnounced(listOf("Bob"), emptyList(), listOf("Alice"), 4)
+        assertTrue("Triple + simple should exceed 22 atouts", total > TOTAL_ATOUTS_IN_DECK)
+        assertEquals(25, total)
+    }
+
+    @Test
+    fun `totalAtoutsAnnounced uses correct thresholds for 3 players`() {
+        // 3-player threshold: simple = 13, double = 15, triple = 18.
+        assertEquals(13, totalAtoutsAnnounced(listOf("Alice"), emptyList(), emptyList(), 3))
+        assertEquals(15, totalAtoutsAnnounced(emptyList(), listOf("Alice"), emptyList(), 3))
+        assertEquals(18, totalAtoutsAnnounced(emptyList(), emptyList(), listOf("Alice"), 3))
+    }
+
+    @Test
+    fun `totalAtoutsAnnounced uses correct thresholds for 5 players`() {
+        // 5-player threshold: simple = 8, double = 10, triple = 13.
+        assertEquals(8,  totalAtoutsAnnounced(listOf("Alice"), emptyList(), emptyList(), 5))
+        assertEquals(10, totalAtoutsAnnounced(emptyList(), listOf("Alice"), emptyList(), 5))
+        assertEquals(13, totalAtoutsAnnounced(emptyList(), emptyList(), listOf("Alice"), 5))
+    }
+
+    // ── RoundDetails effectivePoignees (issue #149 backward compat) ───────────
+
+    @Test
+    fun `effectivePoignees returns new list when populated`() {
+        val d = RoundDetails(
+            bouts = 2, points = 50, partnerName = null, petitAuBout = null,
+            poignees = listOf("Alice", "Bob"), chelem = Chelem.NONE
+        )
+        assertEquals(listOf("Alice", "Bob"), d.effectivePoignees)
+    }
+
+    @Test
+    fun `effectivePoignees falls back to legacy field when new list is empty`() {
+        // Old saved-game format: `poignee = "Alice"`, `poignees` absent → defaults to [].
+        val d = RoundDetails(
+            bouts = 2, points = 50, partnerName = null, petitAuBout = null,
+            poignee = "Alice", chelem = Chelem.NONE
+        )
+        assertEquals(listOf("Alice"), d.effectivePoignees)
+    }
+
+    @Test
+    fun `effectivePoignees returns empty list when both fields are empty or null`() {
+        val d = RoundDetails(
+            bouts = 2, points = 50, partnerName = null, petitAuBout = null,
+            chelem = Chelem.NONE
+        )
+        assertEquals(emptyList<String>(), d.effectivePoignees)
+    }
+
+    // ── applyBonuses — multi-player poignée (issue #149) ─────────────────────
+
+    @Test
+    fun `applyBonuses — two simple poignees by different players (taker wins, 4-player)`() {
+        // Alice (taker) and Bob (defender) each declare a simple poignée.
+        // totalPoigneeBonus = 20 + 20 = 40. Taker wins → pSign = +1.
+        // Alice delta = +1 × 40 × 3 = +120
+        // Bob/Charlie/Dave delta = -1 × 40 = -40 each
+        val base = mapOf("Alice" to +120, "Bob" to -40, "Charlie" to -40, "Dave" to -40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = RoundDetails(
+                bouts = 2, points = 50, partnerName = null, petitAuBout = null,
+                poignees = listOf("Alice", "Bob"), chelem = Chelem.NONE
+            ),
+            takerName    = "Alice",
+            won          = true,
+            numDefenders = 3
+        )
+        assertEquals(+240, result["Alice"])  // +120 base + 120 bonus
+        assertEquals(-80,  result["Bob"])    // -40 base - 40 bonus
+        assertEquals(-80,  result["Charlie"])
+        assertEquals(-80,  result["Dave"])
+        assertEquals(0, result.values.sum())  // zero-sum
+    }
+
+    @Test
+    fun `applyBonuses — mixed simple and double poignees (taker loses, 4-player)`() {
+        // Alice (simple 20) + Bob (double 30) = 50 total. Taker loses → pSign = -1.
+        // Alice delta = -1 × 50 × 3 = -150
+        // Bob/Charlie/Dave delta = +1 × 50 = +50 each
+        val base = mapOf("Alice" to -120, "Bob" to +40, "Charlie" to +40, "Dave" to +40)
+        val result = applyBonuses(
+            baseScores   = base,
+            contract     = Contract.GARDE,
+            details      = RoundDetails(
+                bouts = 2, points = 50, partnerName = null, petitAuBout = null,
+                poignees = listOf("Alice"), doublePoignees = listOf("Bob"),
+                chelem = Chelem.NONE
+            ),
+            takerName    = "Alice",
+            won          = false,
+            numDefenders = 3
+        )
+        assertEquals(-270, result["Alice"])  // -120 - 150
+        assertEquals(+90,  result["Bob"])    // +40 + 50
+        assertEquals(+90,  result["Charlie"])
+        assertEquals(+90,  result["Dave"])
+        assertEquals(0, result.values.sum())  // zero-sum
+    }
+
     // ── chelemBonus ───────────────────────────────────────────────────────────
 
     @Test

@@ -347,11 +347,27 @@ fun FormLabel(text: String) {
 // Holds the display data and state callbacks for one row of the bonus grid.
 // Declared at file scope (not inside the composable) so it is not recreated on
 // every recomposition of [CompactBonusGrid].
+//
+// Two selection modes are supported:
+//
+//   Single-select  (multiSelect = false) — used for Petit au bout.
+//     At most one player can be assigned at a time. `value` holds the selected
+//     player name (or null). `onSelect` receives the new selection (or null to clear).
+//
+//   Multi-select   (multiSelect = true)  — used for the three Poignée rows.
+//     Any number of players can declare simultaneously. `values` holds the current
+//     set of selected names. `onToggle` receives (playerName, isNowChecked) so the
+//     caller can add or remove the player from its set independently.
 data class BonusRow(
     val label: String,
     val tooltip: String,
-    val value: String?,
-    val onSelect: (String?) -> Unit
+    // ── Single-select fields (petit au bout) ──────────────────────────────────
+    val value: String?              = null,
+    val onSelect: ((String?) -> Unit)? = null,
+    // ── Multi-select fields (poignées, issue #149) ────────────────────────────
+    val values: Set<String>                     = emptySet(),
+    val onToggle: ((String, Boolean) -> Unit)?  = null,
+    val multiSelect: Boolean                    = false
 )
 
 // A label cell that wraps both a bonus name and a decorative ⓘ icon inside a
@@ -449,28 +465,62 @@ fun BonusInfoIcon(title: String, body: String) {
 //   Row 0 (header):  empty label column | Player1 | Player2 | …
 //   Row 1–4 (data):  label + ⓘ          | ☑/☐    | ☑/☐    | …
 //
-// Each player cell holds a [Checkbox]. Ticking an unchecked box assigns that
-// player; ticking the already-checked player clears the assignment (null).
+// Each player cell holds a [Checkbox]:
+//   • Petit au bout row   — single-select: ticking a box deselects the previous one.
+//   • Poignée rows        — multi-select:  any number of boxes can be ticked at once.
+//     (Issue #149: multiple players may each show their own trump hand independently.)
 //
-// bonusLabels   : four localized label strings (parallel to the state params).
-// bonusTooltips : four tooltip body strings shown when the ⓘ is tapped.
+// bonusLabels      : four localized label strings (parallel to the state params).
+// bonusTooltips    : four tooltip body strings shown when the ⓘ is tapped.
+// petitAuBout      : currently selected player for Petit au bout, or null.
+// onPetit          : called with the selected player name (or null to clear).
+// poignees         : set of players who declared a simple poignée.
+// onPoignee        : called with (playerName, isNowChecked) when a box is toggled.
+// doublePoignees   : set of players who declared a double poignée.
+// onDoublePoignee  : called with (playerName, isNowChecked) when a box is toggled.
+// triplePoignees   : set of players who declared a triple poignée.
+// onTriplePoignee  : called with (playerName, isNowChecked) when a box is toggled.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompactBonusGrid(
     playerNames: List<String>,
     bonusLabels: List<String>,
     bonusTooltips: List<String>,
-    petitAuBout: String?,     onPetit: (String?) -> Unit,
-    poignee: String?,         onPoignee: (String?) -> Unit,
-    doublePoignee: String?,   onDoublePoignee: (String?) -> Unit,
-    triplePoignee: String?,   onTriplePoignee: (String?) -> Unit
+    petitAuBout: String?,           onPetit: (String?) -> Unit,
+    poignees: Set<String>,          onPoignee: (String, Boolean) -> Unit,
+    doublePoignees: Set<String>,    onDoublePoignee: (String, Boolean) -> Unit,
+    triplePoignees: Set<String>,    onTriplePoignee: (String, Boolean) -> Unit
 ) {
-    // Zip labels + tooltips + state pairs into one list for the grid loop.
+    // Build one BonusRow per bonus. The first row (Petit au bout) uses single-select;
+    // the three Poignée rows use multi-select (issue #149).
     val bonuses = listOf(
-        BonusRow(bonusLabels[0], bonusTooltips[0], petitAuBout,   onPetit),
-        BonusRow(bonusLabels[1], bonusTooltips[1], poignee,        onPoignee),
-        BonusRow(bonusLabels[2], bonusTooltips[2], doublePoignee,  onDoublePoignee),
-        BonusRow(bonusLabels[3], bonusTooltips[3], triplePoignee,  onTriplePoignee)
+        BonusRow(
+            label    = bonusLabels[0],
+            tooltip  = bonusTooltips[0],
+            value    = petitAuBout,
+            onSelect = onPetit
+        ),
+        BonusRow(
+            label       = bonusLabels[1],
+            tooltip     = bonusTooltips[1],
+            values      = poignees,
+            onToggle    = onPoignee,
+            multiSelect = true
+        ),
+        BonusRow(
+            label       = bonusLabels[2],
+            tooltip     = bonusTooltips[2],
+            values      = doublePoignees,
+            onToggle    = onDoublePoignee,
+            multiSelect = true
+        ),
+        BonusRow(
+            label       = bonusLabels[3],
+            tooltip     = bonusTooltips[3],
+            values      = triplePoignees,
+            onToggle    = onTriplePoignee,
+            multiSelect = true
+        )
     )
 
     // Label column: wide enough for the bonus text + ⓘ icon.
@@ -521,16 +571,30 @@ fun CompactBonusGrid(
                     BonusLabelCell(label = row.label, body = row.tooltip)
                 }
 
-                // One Checkbox per player. Ticking an unchecked box assigns
-                // that player; ticking the already-checked player clears it.
+                // One Checkbox per player. Rendering logic differs by selection mode:
+                //   Single-select (Petit au bout): ticking a box also clears any other.
+                //   Multi-select  (Poignées):      each box toggles independently.
                 for (name in playerNames) {
-                    Checkbox(
-                        checked         = row.value == name,
-                        onCheckedChange = { checked ->
-                            row.onSelect(if (checked) name else null)
-                        },
-                        modifier = Modifier.weight(colWeight)
-                    )
+                    if (row.multiSelect) {
+                        // Multi-select: pass (name, newCheckedState) to the caller.
+                        Checkbox(
+                            checked         = name in row.values,
+                            onCheckedChange = { checked ->
+                                row.onToggle?.invoke(name, checked)
+                            },
+                            modifier = Modifier.weight(colWeight)
+                        )
+                    } else {
+                        // Single-select: ticking an unchecked box assigns that player;
+                        // ticking the already-checked player clears it (passes null).
+                        Checkbox(
+                            checked         = row.value == name,
+                            onCheckedChange = { checked ->
+                                row.onSelect?.invoke(if (checked) name else null)
+                            },
+                            modifier = Modifier.weight(colWeight)
+                        )
+                    }
                 }
             }
         }
