@@ -2,6 +2,7 @@ package fr.mandarine.tarotcounter
 
 import android.app.Application
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -890,6 +891,165 @@ class GameScreenTest {
         // After advancing to round 2, the Confirm button must again be disabled
         // (no attacker selected yet for the new round).
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+    }
+
+    // ── Spec: undo previous round (issue #146) ───────────────────────────────
+
+    @Test
+    fun undo_button_is_not_shown_before_any_round_is_played() {
+        // The undo button must not appear when there is nothing to undo.
+        launchGame()
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun undo_button_appears_after_a_round_is_confirmed() {
+        // Once at least one round has been recorded the undo button must be visible.
+        launchGame()
+        selectContractAndEnterScore()
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun undo_button_appears_after_a_round_is_skipped() {
+        // Skipped rounds are recorded too, so undo must be available after a skip.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun tapping_undo_button_shows_confirmation_dialog() {
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .performClick()
+
+        composeTestRule.onNodeWithText(EnStrings.undoConfirmTitle).assertIsDisplayed()
+    }
+
+    @Test
+    fun undo_confirmation_dialog_shows_updated_body_text() {
+        // The body must describe pre-filling behaviour, not deletion.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .performClick()
+
+        composeTestRule.onNodeWithText(EnStrings.undoConfirmBody).assertIsDisplayed()
+    }
+
+    @Test
+    fun cancelling_undo_dialog_keeps_the_current_round() {
+        // Tapping Cancel must close the dialog without changing the round counter.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .performClick()
+
+        composeTestRule.onNodeWithText(EnStrings.cancel).performClick()
+
+        // Still on round 2 after the skip.
+        composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
+    }
+
+    @Test
+    fun confirming_undo_goes_back_to_round_1() {
+        // After confirming undo the round counter must decrease by one.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        // Now on round 2 — undo it.
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .performClick()
+        composeTestRule.onNodeWithText(EnStrings.undoPreviousRound).performClick()
+
+        composeTestRule.onNodeWithText("Round 1").assertIsDisplayed()
+    }
+
+    @Test
+    fun confirming_undo_restores_attacker_in_form() {
+        // After undo, the attacker from the previous round must be pre-selected.
+        // The "choose a contract" prompt includes the attacker name and is only shown
+        // when an attacker is selected — so its presence proves the attacker was restored.
+        launchGame()
+        selectContractAndEnterScore(attacker = "Alice", contract = "Garde", score = "45")
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        // Undo round 1.
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .performClick()
+        composeTestRule.onNodeWithText(EnStrings.undoPreviousRound).performClick()
+
+        // "Alice — choose a contract:" is only rendered when Alice is selected as attacker.
+        composeTestRule
+            .onNodeWithText("Alice", substring = true)
+            .assertIsDisplayed()
+        // Contract row must be visible (selectedContract was restored to Garde).
+        composeTestRule.onNodeWithText("Garde", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun confirming_undo_restores_points_in_form() {
+        // After undo, the points field must show the taker's score from the previous round.
+        launchGame()
+        selectContractAndEnterScore(attacker = "Alice", contract = "Garde", score = "45")
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        // Undo round 1.
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .performClick()
+        composeTestRule.onNodeWithText(EnStrings.undoPreviousRound).performClick()
+
+        // Points field must be pre-filled with "45".
+        composeTestRule
+            .onNodeWithTag("points_input")
+            .assert(hasText("45"))
+    }
+
+    @Test
+    fun confirming_undo_hides_undo_button_when_back_to_first_round() {
+        // After undoing the only round, the undo button must disappear again.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .performClick()
+        composeTestRule.onNodeWithText(EnStrings.undoPreviousRound).performClick()
+
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun history_button_is_on_top_right_and_undo_on_top_left_after_first_round() {
+        // Both buttons must be simultaneously visible after the first round is recorded.
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.undoPreviousRound)
+            .assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(EnStrings.history)
+            .assertIsDisplayed()
     }
 
     // ── Spec: compact scoreboard — player name truncation (issue #118) ─────────
