@@ -1080,4 +1080,108 @@ class GameScreenTest {
             )
         }
     }
+
+    // ── Spec: End Game confirmation when points are pending (issue #150) ──────
+    // Clicking "End Game" while the points field is non-empty must show a
+    // confirmation dialog to prevent accidentally discarding unsaved round data.
+
+    @Test
+    fun end_game_without_pending_points_proceeds_without_dialog() {
+        // Spec (issue #150): if the user has NOT typed anything in the points field,
+        // pressing "End Game" should end the game immediately with no dialog.
+        // This ensures normal flow is unaffected when no data would be lost.
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            FakeGameStorage()
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                GameScreen(viewModel = viewModel)
+            }
+        }
+
+        // Click "End Game" without touching the points field at all.
+        composeTestRule.onNodeWithText("End Game").performClick()
+
+        // No confirmation dialog should appear — the title is absent.
+        composeTestRule.onNodeWithText("End the game?").assertDoesNotExist()
+    }
+
+    @Test
+    fun end_game_with_pending_points_shows_confirmation_dialog() {
+        // Spec (issue #150): if the user has typed points but not confirmed the round,
+        // pressing "End Game" must show a confirmation dialog so they can cancel.
+        launchGame()
+
+        // Select attacker + contract + type points (but do NOT confirm the round).
+        selectContractAndEnterScore()
+
+        // Click "End Game" while the points field is non-empty.
+        composeTestRule.onNodeWithText("End Game").performClick()
+
+        // The confirmation dialog title must be visible.
+        composeTestRule.onNodeWithText("End the game?").assertIsDisplayed()
+        // The dialog body must also be shown.
+        composeTestRule.onNodeWithText("The current round will not be saved.").assertIsDisplayed()
+    }
+
+    @Test
+    fun end_game_confirmation_dialog_cancel_dismisses_dialog_and_keeps_game_running() {
+        // Spec (issue #150): tapping "Cancel" in the end-game confirmation dialog must
+        // close the dialog and leave the user on the game screen (game still running).
+        launchGame()
+        selectContractAndEnterScore()
+
+        // Trigger the dialog.
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("End the game?").assertIsDisplayed()
+
+        // Cancel — the dialog should disappear and the game screen should still be shown.
+        composeTestRule.onNodeWithText("Cancel").performClick()
+
+        // Dialog is gone.
+        composeTestRule.onNodeWithText("End the game?").assertDoesNotExist()
+        // Game screen is still active — the round header should still be visible.
+        composeTestRule.onNodeWithText("Round 1").assertIsDisplayed()
+        // Final Score screen must NOT have been shown.
+        composeTestRule.onNodeWithText("Game Over").assertDoesNotExist()
+    }
+
+    @Test
+    fun end_game_confirmation_dialog_confirm_ends_game_and_shows_final_score() {
+        // Spec (issue #150): tapping the "End Game" confirm button in the dialog must
+        // end the game and navigate to the Final Score screen (when rounds have been played).
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            FakeGameStorage()
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                GameScreen(viewModel = viewModel)
+            }
+        }
+
+        // Confirm one round so roundHistory is non-empty, then start filling the next.
+        selectContractAndEnterScore()
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        // Begin filling the next round (attacker + contract + points) without confirming.
+        selectContractAndEnterScore()
+
+        // Trigger the confirmation dialog and confirm.
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("End the game?").assertIsDisplayed()
+        // The dialog has two buttons that say "End Game" — click the one inside the dialog.
+        // onAllNodesWithText gives us both; the last one is the confirm button in the dialog.
+        composeTestRule.onAllNodesWithText("End Game").apply {
+            // There are two: the bottom-bar button and the dialog confirm button.
+            // Index 1 is the dialog button (rendered on top of the game screen).
+            get(1).performClick()
+        }
+
+        // Game should have ended — Final Score screen must now be displayed.
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+    }
 }
