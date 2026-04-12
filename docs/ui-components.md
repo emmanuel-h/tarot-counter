@@ -246,28 +246,6 @@ A compact grid showing four player-assigned bonuses (petit au bout, poignée, do
 
 ---
 
-## PartnerRadioSelector
-
-```kotlin
-@Composable
-fun PartnerRadioSelector(
-    label: String,
-    selectedPlayer: String?,
-    playerNames: List<String>,
-    onSelect: (String) -> Unit
-)
-```
-
-A compact radio-button list used exclusively for **partner selection in 5-player games**. Each player is shown as a tappable row (full-width, so the tap target isn't limited to the radio circle). Key behaviour differences from `PlayerChipSelector`:
-
-- **No "None" option** — a partner must always be chosen; there is no way to revert to "none" once a selection is made.
-- **No deselect on re-tap** — tapping the already-selected player is a no-op (the `Row` is disabled via `clickable(enabled = !isSelected)`).
-- **`onSelect` receives a non-null `String`** — the callback is only ever called with a player name.
-
-`RadioButton(onClick = null)` is used so that accessibility focus and click handling live on the parent `Row`, following the [Material 3 recommendation](https://developer.android.com/develop/ui/compose/accessibility#custom-actions) for radio list items.
-
----
-
 ## PlayerChipSelector
 
 ```kotlin
@@ -282,7 +260,9 @@ fun PlayerChipSelector(
 )
 ```
 
-A `FlowRow` of `FilterChip`s — one "None" chip followed by one chip per player. Used for the **chelem player selector** (all player counts). Tapping the already-selected player deselects them (passes `null` to `onSelect`).
+A `FlowRow` of `FilterChip`s — one "None" chip followed by one chip per player. Used for the **chelem player selector**. Tapping the already-selected player deselects them (passes `null` to `onSelect`).
+
+The partner selector in 5-player games uses an inline `ExposedDropdownMenuBox` (in `GameScreen.kt`) instead — label on the left, dropdown on the right, no "None" entry.
 
 ---
 

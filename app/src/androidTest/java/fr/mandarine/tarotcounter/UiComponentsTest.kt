@@ -25,7 +25,6 @@ import org.junit.runner.RunWith
  *   - AppButton / AppOutlinedButton / AppTextButton — label display and click behavior
  *   - CompactBonusGrid — player header, bonus labels, and checkbox toggle logic
  *   - PlayerChipSelector — "None" chip, player chips, selection and deselection
- *   - PartnerRadioSelector — radio-button list, selection, no deselection on re-tap
  *   - ScoreTableRow — cell content rendered for header and data rows
  *
  * Run with: ./gradlew connectedAndroidTest
@@ -311,85 +310,6 @@ class UiComponentsTest {
         composeTestRule.onNodeWithText("None").performClick()
 
         assertEquals("Tapping None chip should call onSelect(null)", null, result)
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // PartnerRadioSelector
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private val radioPlayers = listOf("Alice", "Bob", "Charlie")
-
-    private fun launchRadioSelector(
-        selected: String? = null,
-        onSelect: (String) -> Unit = {}
-    ) {
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                PartnerRadioSelector(
-                    label          = "Partner",
-                    selectedPlayer = selected,
-                    playerNames    = radioPlayers,
-                    onSelect       = onSelect
-                )
-            }
-        }
-    }
-
-    @Test
-    fun radioSelector_shows_section_label() {
-        launchRadioSelector()
-        composeTestRule.onNodeWithText("Partner").assertIsDisplayed()
-    }
-
-    @Test
-    fun radioSelector_shows_all_player_names() {
-        launchRadioSelector()
-        for (name in radioPlayers) {
-            composeTestRule.onNodeWithText(name).assertIsDisplayed()
-        }
-    }
-
-    @Test
-    fun radioSelector_no_node_selected_when_selectedPlayer_is_null() {
-        launchRadioSelector(selected = null)
-        // None of the radio rows should be selected initially.
-        for (name in radioPlayers) {
-            composeTestRule.onNodeWithText(name).assertIsNotSelected()
-        }
-    }
-
-    @Test
-    fun radioSelector_correct_node_is_selected_when_player_is_set() {
-        launchRadioSelector(selected = "Bob")
-        composeTestRule.onNodeWithText("Bob").assertIsSelected()
-    }
-
-    @Test
-    fun radioSelector_other_nodes_are_not_selected_when_one_player_chosen() {
-        launchRadioSelector(selected = "Bob")
-        composeTestRule.onNodeWithText("Alice").assertIsNotSelected()
-        composeTestRule.onNodeWithText("Charlie").assertIsNotSelected()
-    }
-
-    @Test
-    fun radioSelector_tapping_unselected_player_calls_onSelect_with_name() {
-        var result: String? = null
-        launchRadioSelector(selected = null, onSelect = { result = it })
-
-        composeTestRule.onNodeWithText("Alice").performClick()
-
-        assertEquals("Tapping Alice should call onSelect(\"Alice\")", "Alice", result)
-    }
-
-    @Test
-    fun radioSelector_tapping_already_selected_player_does_not_call_onSelect() {
-        // Re-tapping the selected partner must be a no-op — partner cannot be deselected.
-        var callCount = 0
-        launchRadioSelector(selected = "Alice", onSelect = { callCount++ })
-
-        composeTestRule.onNodeWithText("Alice").performClick()
-
-        assertEquals("onSelect must not be called when re-tapping the selected partner", 0, callCount)
     }
 
     // ─────────────────────────────────────────────────────────────────────────

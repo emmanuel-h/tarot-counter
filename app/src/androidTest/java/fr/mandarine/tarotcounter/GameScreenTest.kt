@@ -5,7 +5,6 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -428,33 +427,35 @@ class GameScreenTest {
     }
 
     @Test
-    fun partner_selector_shows_all_non_attacker_players() {
-        // All 4 non-attacker players must appear as selectable radio rows.
+    fun partner_dropdown_shows_non_attacker_players_when_opened() {
+        // Opening the partner dropdown must list all players except the attacker.
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
         selectAttacker("Alice")
         composeTestRule.onNodeWithText("Garde").performClick()
-        // Alice is the attacker so she must not appear in the partner list.
-        // The other four should all be visible.
+
+        // Tap the dropdown field (identified by its test tag) to open the menu.
+        composeTestRule.onNodeWithTag("partner_dropdown").performClick()
+
+        // Alice is the attacker — she must NOT appear; the other four must.
         for (name in listOf("Bob", "Charlie", "Dave", "Eve")) {
             composeTestRule.onNodeWithText(name).assertIsDisplayed()
         }
     }
 
     @Test
-    fun partner_selection_stays_when_same_player_tapped_again() {
-        // Re-tapping the selected partner must not deselect them.
+    fun partner_dropdown_sets_selected_player_on_item_click() {
+        // Picking a player from the dropdown must display their name in the field.
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
         selectAttacker("Alice")
         composeTestRule.onNodeWithText("Garde").performClick()
 
-        // First tap — select Bob as partner.
-        composeTestRule.onAllNodesWithText("Bob")[0].performClick()
-        // Bob's radio row should now be selected.
-        composeTestRule.onAllNodesWithText("Bob")[0].assertIsSelected()
+        // Open the dropdown and pick Bob.
+        composeTestRule.onNodeWithTag("partner_dropdown").performClick()
+        composeTestRule.onNodeWithText("Bob").performClick()
 
-        // Second tap on the same row — selection must remain on Bob.
-        composeTestRule.onAllNodesWithText("Bob")[0].performClick()
-        composeTestRule.onAllNodesWithText("Bob")[0].assertIsSelected()
+        // The OutlinedTextField inside the dropdown now shows Bob's name.
+        composeTestRule.onNodeWithTag("partner_dropdown")
+            .assert(hasText("Bob"))
     }
 
     // ── Spec: End Game button (bottom bar) ────────────────────────────────────

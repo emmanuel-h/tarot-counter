@@ -515,19 +515,62 @@ fun GameScreen(
                 // In a 5-player game the attacker calls a silent partner before the round.
                 if (displayNames.size == 5) {
                     // The attacker cannot be their own partner, so exclude them.
-                    // Fall back to an empty list if no attacker is selected yet
-                    // (the partner selector is only reachable once an attacker is chosen).
                     val partnerOptions = displayNames.filter { it != selectedAttacker }
-                    // PartnerRadioSelector is used instead of PlayerChipSelector here because:
-                    //   • Radio buttons are the standard control for single mandatory selection.
-                    //   • The partner cannot be deselected once chosen — a 5-player round
-                    //     always has a partner, so "None" is not a valid final state.
-                    PartnerRadioSelector(
-                        label          = strings.partnerCalledByTaker,
-                        selectedPlayer = selectedPartner,
-                        playerNames    = partnerOptions,
-                        onSelect       = { selectedPartner = it }
-                    )
+                    // Label on the left, dropdown on the right — same horizontal row.
+                    // A dropdown (combo box) is more compact than chips and naturally
+                    // prevents deselection: picking an item closes the menu without a
+                    // "deselect on re-tap" risk, and there is no "None" entry.
+                    var partnerExpanded by remember { mutableStateOf(false) }
+                    Row(
+                        modifier             = Modifier.fillMaxWidth(),
+                        verticalAlignment    = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Label takes the left half of the row.
+                        Text(
+                            text     = strings.partnerCalledByTaker,
+                            style    = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        // Dropdown fills the right half.
+                        ExposedDropdownMenuBox(
+                            expanded         = partnerExpanded,
+                            onExpandedChange = { partnerExpanded = !partnerExpanded },
+                            modifier         = Modifier
+                                .weight(1f)
+                                .testTag("partner_dropdown")
+                        ) {
+                            OutlinedTextField(
+                                // Show the selected partner name, or empty string as placeholder.
+                                value         = selectedPartner ?: "",
+                                onValueChange = {},
+                                readOnly      = true,
+                                trailingIcon  = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = partnerExpanded)
+                                },
+                                colors        = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                singleLine    = true,
+                                modifier      = Modifier
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                    .fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(
+                                expanded         = partnerExpanded,
+                                onDismissRequest = { partnerExpanded = false }
+                            ) {
+                                for (name in partnerOptions) {
+                                    DropdownMenuItem(
+                                        text           = { Text(name) },
+                                        onClick        = {
+                                            selectedPartner = name
+                                            partnerExpanded = false
+                                        },
+                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                    )
+                                }
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(Modifier.height(16.dp))
