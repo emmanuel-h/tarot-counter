@@ -29,6 +29,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -879,11 +880,13 @@ private fun CompactScoreboard(
 // ── Shared composables ────────────────────────────────────────────────────────
 
 // An icon-only button with a bar-chart icon for opening the score history overlay.
+// OutlinedIconButton is used instead of plain IconButton so a visible border is drawn
+// around the icon, making it clearer to the user that this is a tappable element.
 // The contentDescription ensures screen readers announce the button's purpose.
 @Composable
 fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val strings = appStrings(LocalAppLocale.current)
-    IconButton(onClick = onClick, modifier = modifier) {
+    OutlinedIconButton(onClick = onClick, modifier = modifier) {
         Icon(
             imageVector        = Icons.Default.BarChart,
             contentDescription = strings.history
