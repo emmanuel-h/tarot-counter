@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  # Keep Gradle dependencies up to date (AGP, Kotlin, AndroidX, Compose, etc.)
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Group all non-major updates into a single PR to reduce noise
+    groups:
+      androidx:
+        patterns:
+          - "androidx.*"
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "org.jetbrains.kotlinx*"
+    labels:
+      - "dependencies"
