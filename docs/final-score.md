@@ -32,7 +32,7 @@ Round | Alice  | Bob   | Charlie
 [ Back to game ]  [ Main Menu ]  [ New Game ]
     outlined          outlined      filled
 
-[         Export PDF         ]   ← outlined, full-width (issue #138)
+[ Share PDF ]  [ Save to device ]   ← outlined, equal width (issue #138)
 ```
 
 ## Winner Determination
@@ -89,7 +89,8 @@ Both tokens adapt automatically to light and dark themes. The same `scoreColor()
 | **Back to Game** | `OutlinedButton` (bottom-left) | Same as the back arrow — resumes the current game. |
 | **Main Menu** | `OutlinedButton` (bottom-centre) | Navigates to the landing screen. |
 | **New Game** | `Button` (bottom-right, primary) | Navigates to the setup screen. All game state is discarded. |
-| **Export PDF** | `OutlinedButton` (full-width, below primary row) | Generates a PDF score sheet and opens the system share sheet. |
+| **Share PDF** | `OutlinedButton` (left, below primary row) | Generates a PDF score sheet and opens the OS share sheet (Gmail, Drive, PDF viewer, etc.). |
+| **Save to device** | `OutlinedButton` (right, below primary row) | Generates a PDF score sheet and opens the system file-save picker (DocumentsUI) so the user can choose a permanent save location (e.g. Downloads). No storage permission required. |
 
 All three bottom buttons appear on the same horizontal line with equal widths (`Modifier.weight(1f)`) and an 8 dp gap between them (`Arrangement.spacedBy`). A `rememberSharedAutoSizeState` is shared across all three labels so they always display at the same font size — the smallest needed by the longest label. This ensures they fit on all supported screen sizes (min SDK 24, down to ~360 dp wide) without overflow.
 
@@ -99,13 +100,18 @@ The back arrow and "Back to Game" button serve the same purpose: letting the use
 
 ## PDF Export (issue #138)
 
-Tapping **Export PDF** generates an A4 score sheet modelled on the official FFT scoring table (R-RO201206.pdf, page 10) and opens the system share sheet. The user can then send the PDF to a PDF viewer, Google Drive, Gmail, etc.
+The final score screen offers two ways to export the game scores as an A4 PDF modelled on the official FFT scoring table (R-RO201206.pdf, page 10):
+
+| Button | Flow |
+|---|---|
+| **Share PDF** | Generates PDF → `FileProvider` URI → `Intent.ACTION_SEND` → OS share sheet (Gmail, Drive, PDF viewer, …) |
+| **Save to device** | Generates PDF → `Intent.ACTION_CREATE_DOCUMENT` → system file-save picker → user picks location → bytes copied to chosen URI |
 
 ### How it works
 
 1. `PdfExporter.generateScorePdf()` draws the score table onto an `android.graphics.pdf.PdfDocument` page and writes it to `cacheDir/tarot_scores.pdf`. No external library is needed — Android's built-in PDF API is available since API 19.
-2. `FileProvider` (configured in `AndroidManifest.xml` + `res/xml/file_paths.xml`) converts the private file path to a `content://` URI that external apps can safely read.
-3. An `Intent.ACTION_SEND` intent carries the URI to the OS share sheet.
+2. **Share PDF**: `FileProvider` converts the private cache path to a `content://` URI; an `Intent.ACTION_SEND` carries it to the OS share sheet.
+3. **Save to device**: `ActivityResultContracts.CreateDocument("application/pdf")` opens DocumentsUI so the user can navigate to Downloads (or any other location) and save the file there. No storage permission is required — the OS grants write access only to the URI the user explicitly chose.
 
 ### PDF layout
 

@@ -388,18 +388,25 @@ class FinalScoreScreenTest {
         assertTrue("Cancelling should NOT fire onNewGame", !newGameCalled)
     }
 
-    // ── Spec: Export PDF button (issue #138) ──────────────────────────────────
+    // ── Spec: PDF export buttons (issue #138) ────────────────────────────────
 
     @Test
-    fun export_pdf_button_is_displayed() {
-        // Spec: the "Export PDF" button must always appear on the final score screen.
+    fun share_pdf_button_is_displayed() {
+        // Spec: the "Share PDF" button must always appear on the final score screen.
         launchFinal()
-        composeTestRule.onNodeWithText("Export PDF").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Share PDF").assertIsDisplayed()
     }
 
     @Test
-    fun export_pdf_button_is_displayed_when_rounds_were_played() {
-        // Spec: the button must also appear when there is actual score data to export.
+    fun save_to_device_button_is_displayed() {
+        // Spec: the "Save to device" button must always appear on the final score screen.
+        launchFinal()
+        composeTestRule.onNodeWithText("Save to device").assertIsDisplayed()
+    }
+
+    @Test
+    fun both_pdf_buttons_are_displayed_when_rounds_were_played() {
+        // Spec: both PDF buttons must appear when there is actual score data to export.
         val history = listOf(
             RoundResult(
                 roundNumber  = 1,
@@ -411,6 +418,7 @@ class FinalScoreScreenTest {
             )
         )
         launchFinal(roundHistory = history)
-        composeTestRule.onNodeWithText("Export PDF").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Share PDF").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save to device").assertIsDisplayed()
     }
 }

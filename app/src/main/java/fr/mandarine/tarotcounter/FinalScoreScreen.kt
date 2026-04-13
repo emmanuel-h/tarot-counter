@@ -1,7 +1,10 @@
 package fr.mandarine.tarotcounter
 
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
@@ -91,8 +94,40 @@ fun FinalScoreScreen(
     // We use it to run PDF generation on the IO dispatcher (file write).
     val coroutineScope = rememberCoroutineScope()
 
-    // Shown as an AlertDialog when PDF generation throws an exception.
+    // Shown as an AlertDialog when PDF generation or saving throws an exception.
     var showExportError by remember { mutableStateOf(false) }
+
+    // Holds the generated PDF file between the "Save to device" button click and the
+    // file-picker result. The launcher callback runs asynchronously (after the user
+    // picks a destination), so we cannot use a local variable — we need state that
+    // survives recomposition.
+    var pendingPdfFile by remember { mutableStateOf<java.io.File?>(null) }
+
+    // `ActivityResultContracts.CreateDocument` opens the system file-save picker
+    // (DocumentsUI). The user navigates to any location they like (Downloads, Drive,
+    // SD card…) and taps Save. No storage permission is required — the OS grants
+    // write access to the specific URI the user chose.
+    //
+    // When the picker returns, `destinationUri` is the URI selected by the user
+    // (null if they cancelled). We then copy the cached PDF bytes into that URI
+    // via `ContentResolver.openOutputStream`.
+    val savePdfLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { destinationUri: Uri? ->
+        val file = pendingPdfFile
+        if (destinationUri == null || file == null) return@rememberLauncherForActivityResult
+
+        // Writing bytes is I/O — run on the IO dispatcher to keep the UI responsive.
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                context.contentResolver.openOutputStream(destinationUri)?.use { out ->
+                    file.inputStream().use { input -> input.copyTo(out) }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { showExportError = true }
+            }
+        }
+    }
 
     // ── System back-button handling ───────────────────────────────────────────
     // Controls whether the leave-confirmation dialog is visible.
@@ -356,59 +391,94 @@ fun FinalScoreScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ── Export PDF button ─────────────────────────────────────────────────
-        // Placed on its own row below the primary action buttons because it is
-        // a secondary action (not needed every game). Using AppOutlinedButton
-        // keeps it visually lighter than the primary "New Game" button.
+        // ── PDF export row ────────────────────────────────────────────────────
+        // Two secondary outlined buttons placed on their own row below the
+        // primary action buttons. Both buttons generate the same PDF content;
+        // they differ only in what happens to the file afterward:
         //
-        // On click:
-        //   1. PdfExporter.generateScorePdf() builds the PDF on the IO thread.
-        //   2. FileProvider converts the file path to a content:// URI so the
-        //      receiving app can read our private cache file.
-        //   3. ACTION_SEND launches the OS share sheet (PDF viewer, Drive, etc.).
-        AppOutlinedButton(
-            text    = strings.exportPdf,
-            onClick = {
-                coroutineScope.launch {
-                    try {
-                        // Generate the PDF on the IO dispatcher — writing to disk
-                        // is I/O work and should never block the main (UI) thread.
-                        val file = withContext(Dispatchers.IO) {
-                            PdfExporter.generateScorePdf(context, playerNames, roundHistory, strings)
+        //   "Share PDF"      → generates to cacheDir, opens the OS share sheet
+        //                      (lets the user pick Gmail, Drive, a PDF viewer, etc.)
+        //   "Save to device" → generates to cacheDir, then opens the system
+        //                      file-save picker (DocumentsUI) so the user can
+        //                      choose a permanent location such as Downloads.
+        //
+        // rememberSharedAutoSizeState keeps both labels at the same font size so
+        // neither is larger than the other.
+        val pdfButtonSizeState = rememberSharedAutoSizeState(strings.exportPdf, strings.savePdf)
+
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Left: share the PDF via the OS share sheet.
+            AppOutlinedButton(
+                text            = strings.exportPdf,
+                sharedSizeState = pdfButtonSizeState,
+                modifier        = Modifier.weight(1f),
+                onClick         = {
+                    coroutineScope.launch {
+                        try {
+                            // Generate the PDF on the IO dispatcher — writing to disk
+                            // is I/O work and should never block the main (UI) thread.
+                            val file = withContext(Dispatchers.IO) {
+                                PdfExporter.generateScorePdf(context, playerNames, roundHistory, strings)
+                            }
+
+                            // FileProvider turns the private file path into a
+                            // content:// URI that external apps are allowed to read.
+                            // The authority string must match AndroidManifest.xml.
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                file
+                            )
+
+                            // FLAG_GRANT_READ_URI_PERMISSION gives the chosen app
+                            // temporary access to the FileProvider URI.
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type  = "application/pdf"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+
+                            context.startActivity(
+                                Intent.createChooser(shareIntent, strings.exportPdf)
+                            )
+                        } catch (e: Exception) {
+                            showExportError = true
                         }
-
-                        // FileProvider turns the private file path into a
-                        // content:// URI that external apps are allowed to read.
-                        // The authority string must match AndroidManifest.xml.
-                        val uri = FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            file
-                        )
-
-                        // Build a share intent for the PDF.
-                        // FLAG_GRANT_READ_URI_PERMISSION grants the chosen app
-                        // temporary read access to the FileProvider URI.
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type  = "application/pdf"
-                            putExtra(Intent.EXTRA_STREAM, uri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-
-                        // Intent.createChooser wraps the share intent in a system
-                        // picker so the user can select which app to open the PDF with.
-                        context.startActivity(
-                            Intent.createChooser(shareIntent, strings.exportPdf)
-                        )
-                    } catch (e: Exception) {
-                        // Surface any unexpected failure (disk full, PdfDocument error,
-                        // FileProvider misconfiguration, etc.) as an error dialog.
-                        showExportError = true
                     }
                 }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
+            )
+
+            // Right: save the PDF to a user-chosen location on the device.
+            AppOutlinedButton(
+                text            = strings.savePdf,
+                sharedSizeState = pdfButtonSizeState,
+                modifier        = Modifier.weight(1f),
+                onClick         = {
+                    coroutineScope.launch {
+                        try {
+                            // Generate the PDF to the app's private cache directory.
+                            // We store the File reference in `pendingPdfFile` so the
+                            // rememberLauncherForActivityResult callback (which fires
+                            // asynchronously after the user picks a save location) can
+                            // copy the bytes to the chosen destination URI.
+                            val file = withContext(Dispatchers.IO) {
+                                PdfExporter.generateScorePdf(context, playerNames, roundHistory, strings)
+                            }
+                            pendingPdfFile = file
+
+                            // Launch the system file-save picker with a suggested filename.
+                            // The user can rename the file in the picker before saving.
+                            savePdfLauncher.launch("tarot_scores.pdf")
+                        } catch (e: Exception) {
+                            showExportError = true
+                        }
+                    }
+                }
+            )
+        }
     }   // end Column
     }   // end Box
 }
