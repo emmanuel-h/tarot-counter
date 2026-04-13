@@ -248,6 +248,10 @@ afterEvaluate {
                 // Android Activity and DataStore storage (can't run on JVM)
                 "fr.mandarine.tarotcounter.MainActivity*," +
                 "fr.mandarine.tarotcounter.GameStorage*," +
+                // PdfExporter uses android.graphics.pdf.PdfDocument, an Android
+                // framework class that cannot be instantiated on the JVM.
+                // Behaviour is validated via instrumented tests (PdfExporterTest).
+                "fr.mandarine.tarotcounter.PdfExporter*," +
                 // Kotlin serialization plugin-generated serializer classes
                 "fr.mandarine.tarotcounter.*\$\$serializer," +
                 "fr.mandarine.tarotcounter.*\$serializer," +

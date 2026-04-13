@@ -1,5 +1,6 @@
 package fr.mandarine.tarotcounter
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -33,12 +34,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * FinalScoreScreen shows the game results when the player ends the game early
@@ -73,6 +80,20 @@ fun FinalScoreScreen(
     // Read the active locale and resolve all strings once at the top of the composable.
     val strings = appStrings(LocalAppLocale.current)
 
+    // `LocalContext.current` gives us the Activity context, which we need to:
+    //   1. Call PdfExporter.generateScorePdf() (needs cacheDir)
+    //   2. Call FileProvider.getUriForFile() to create a shareable content:// URI
+    //   3. Call context.startActivity() to launch the OS share sheet
+    val context = LocalContext.current
+
+    // A coroutine scope tied to this composable's lifecycle. It is automatically
+    // cancelled when the composable leaves the composition, preventing leaks.
+    // We use it to run PDF generation on the IO dispatcher (file write).
+    val coroutineScope = rememberCoroutineScope()
+
+    // Shown as an AlertDialog when PDF generation throws an exception.
+    var showExportError by remember { mutableStateOf(false) }
+
     // ── System back-button handling ───────────────────────────────────────────
     // Controls whether the leave-confirmation dialog is visible.
     // The dialog is triggered by the system back button (or gesture), not by the
@@ -100,6 +121,18 @@ fun FinalScoreScreen(
             dismissButton = {
                 // "Cancel" closes the dialog and returns to the Final Score screen.
                 AppTextButton(text = strings.cancel, onClick = { showLeaveConfirm = false })
+            }
+        )
+    }
+
+    // Error dialog shown if PDF generation fails (e.g. disk full).
+    if (showExportError) {
+        AlertDialog(
+            onDismissRequest = { showExportError = false },
+            title = { Text(strings.exportPdf) },
+            text  = { Text(strings.exportPdfError) },
+            confirmButton = {
+                AppTextButton(text = strings.cancel, onClick = { showExportError = false })
             }
         )
     }
@@ -320,6 +353,62 @@ fun FinalScoreScreen(
                 sharedSizeState = buttonSizeState
             )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ── Export PDF button ─────────────────────────────────────────────────
+        // Placed on its own row below the primary action buttons because it is
+        // a secondary action (not needed every game). Using AppOutlinedButton
+        // keeps it visually lighter than the primary "New Game" button.
+        //
+        // On click:
+        //   1. PdfExporter.generateScorePdf() builds the PDF on the IO thread.
+        //   2. FileProvider converts the file path to a content:// URI so the
+        //      receiving app can read our private cache file.
+        //   3. ACTION_SEND launches the OS share sheet (PDF viewer, Drive, etc.).
+        AppOutlinedButton(
+            text    = strings.exportPdf,
+            onClick = {
+                coroutineScope.launch {
+                    try {
+                        // Generate the PDF on the IO dispatcher — writing to disk
+                        // is I/O work and should never block the main (UI) thread.
+                        val file = withContext(Dispatchers.IO) {
+                            PdfExporter.generateScorePdf(context, playerNames, roundHistory, strings)
+                        }
+
+                        // FileProvider turns the private file path into a
+                        // content:// URI that external apps are allowed to read.
+                        // The authority string must match AndroidManifest.xml.
+                        val uri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            file
+                        )
+
+                        // Build a share intent for the PDF.
+                        // FLAG_GRANT_READ_URI_PERMISSION grants the chosen app
+                        // temporary read access to the FileProvider URI.
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type  = "application/pdf"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+
+                        // Intent.createChooser wraps the share intent in a system
+                        // picker so the user can select which app to open the PDF with.
+                        context.startActivity(
+                            Intent.createChooser(shareIntent, strings.exportPdf)
+                        )
+                    } catch (e: Exception) {
+                        // Surface any unexpected failure (disk full, PdfDocument error,
+                        // FileProvider misconfiguration, etc.) as an error dialog.
+                        showExportError = true
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
     }   // end Column
     }   // end Box
 }

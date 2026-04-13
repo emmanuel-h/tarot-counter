@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider path configuration.
+
+    Tells Android which directories the app is allowed to expose via
+    content:// URIs through FileProvider. Only paths listed here can be
+    shared with other apps (e.g. the system PDF viewer / share sheet).
+
+    <cache-path> maps to Context.getCacheDir() — the app's private cache
+    directory. Files written there are automatically cleaned up by Android
+    when storage is low, making it the right place for temporary exports
+    like PDF score sheets.
+
+    The name="pdf_exports" is an arbitrary label used as a path segment
+    in the resulting URI; it doesn't affect which folder is exposed.
+    path="." means the entire cache root is accessible (not just a subfolder).
+-->
+<paths>
+    <cache-path name="pdf_exports" path="." />
+</paths>

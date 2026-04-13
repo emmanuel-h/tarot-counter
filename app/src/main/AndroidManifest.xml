@@ -21,6 +21,34 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            FileProvider exposes files from the app's private cache directory
+            to other apps (e.g. a PDF viewer, Gmail, Drive) via a content:// URI.
+
+            Without FileProvider, apps targeting API 24+ cannot share private
+            files with file:// URIs because the OS blocks cross-app file access.
+
+            android:authorities must be globally unique — using ${applicationId}
+            as a prefix guarantees uniqueness across all installed apps.
+            android:exported="false" means only apps we explicitly grant
+            permission to can access the URI.
+            android:grantUriPermissions="true" allows us to attach
+            FLAG_GRANT_READ_URI_PERMISSION to the share intent so the
+            receiving app can open the file.
+
+            The <meta-data> element points to res/xml/file_paths.xml, which
+            lists which directories are eligible for sharing.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

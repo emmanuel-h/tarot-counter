@@ -387,4 +387,30 @@ class FinalScoreScreenTest {
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
         assertTrue("Cancelling should NOT fire onNewGame", !newGameCalled)
     }
+
+    // ── Spec: Export PDF button (issue #138) ──────────────────────────────────
+
+    @Test
+    fun export_pdf_button_is_displayed() {
+        // Spec: the "Export PDF" button must always appear on the final score screen.
+        launchFinal()
+        composeTestRule.onNodeWithText("Export PDF").assertIsDisplayed()
+    }
+
+    @Test
+    fun export_pdf_button_is_displayed_when_rounds_were_played() {
+        // Spec: the button must also appear when there is actual score data to export.
+        val history = listOf(
+            RoundResult(
+                roundNumber  = 1,
+                takerName    = "Alice",
+                contract     = Contract.GARDE,
+                details      = null,
+                won          = true,
+                playerScores = mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)
+            )
+        )
+        launchFinal(roundHistory = history)
+        composeTestRule.onNodeWithText("Export PDF").assertIsDisplayed()
+    }
 }

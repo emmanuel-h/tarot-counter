@@ -31,6 +31,8 @@ Round | Alice  | Bob   | Charlie
 
 [ Back to game ]  [ Main Menu ]  [ New Game ]
     outlined          outlined      filled
+
+[         Export PDF         ]   ← outlined, full-width (issue #138)
 ```
 
 ## Winner Determination
@@ -87,6 +89,7 @@ Both tokens adapt automatically to light and dark themes. The same `scoreColor()
 | **Back to Game** | `OutlinedButton` (bottom-left) | Same as the back arrow — resumes the current game. |
 | **Main Menu** | `OutlinedButton` (bottom-centre) | Navigates to the landing screen. |
 | **New Game** | `Button` (bottom-right, primary) | Navigates to the setup screen. All game state is discarded. |
+| **Export PDF** | `OutlinedButton` (full-width, below primary row) | Generates a PDF score sheet and opens the system share sheet. |
 
 All three bottom buttons appear on the same horizontal line with equal widths (`Modifier.weight(1f)`) and an 8 dp gap between them (`Arrangement.spacedBy`). A `rememberSharedAutoSizeState` is shared across all three labels so they always display at the same font size — the smallest needed by the longest label. This ensures they fit on all supported screen sizes (min SDK 24, down to ~360 dp wide) without overflow.
 
@@ -94,11 +97,40 @@ The back arrow and "Back to Game" button serve the same purpose: letting the use
 
 **Main Menu** and **New Game** both navigate to the landing/setup screen; they are currently wired to the same `onEndGame` callback. The distinction is semantic — in future, "New Game" could pre-fill the same player list while "Main Menu" always starts blank.
 
+## PDF Export (issue #138)
+
+Tapping **Export PDF** generates an A4 score sheet modelled on the official FFT scoring table (R-RO201206.pdf, page 10) and opens the system share sheet. The user can then send the PDF to a PDF viewer, Google Drive, Gmail, etc.
+
+### How it works
+
+1. `PdfExporter.generateScorePdf()` draws the score table onto an `android.graphics.pdf.PdfDocument` page and writes it to `cacheDir/tarot_scores.pdf`. No external library is needed — Android's built-in PDF API is available since API 19.
+2. `FileProvider` (configured in `AndroidManifest.xml` + `res/xml/file_paths.xml`) converts the private file path to a `content://` URI that external apps can safely read.
+3. An `Intent.ACTION_SEND` intent carries the URI to the OS share sheet.
+
+### PDF layout
+
+```
+              TAROT                           13/04/2026
+ ─────────────────────────────────────────────────────
+  Manche │   Alice   │   Bob    │  Charlie
+ ────────┼───────────┼──────────┼──────────
+    1    │   +50     │  -25     │  -25
+    2    │   +20     │  -10     │  -10
+ ════════╪═══════════╪══════════╪══════════
+  Total  │   +20     │  -10     │  -10
+```
+
+Player names longer than 12 characters are truncated with `…` to prevent column overflow in 5-player games.
+
 ## Related Files
 
 - `FinalScoreScreen.kt` — Composable implementation
+- `PdfExporter.kt` — PDF generation logic (`PdfDocument` API)
+- `AndroidManifest.xml` — `FileProvider` declaration
+- `res/xml/file_paths.xml` — FileProvider path configuration
 - `ScreenHeader.kt` — Shared back-arrow + title header used by this screen and `ScoreHistoryScreen`
 - `GameModels.kt` — `computeFinalTotals()` and `findWinners()` pure functions
 - `GameScreen.kt` — bottom-bar **End Game** button (OutlinedButton), `showFinalScore` state, routing
-- `FinalScoreScreenTest.kt` — UI tests
+- `FinalScoreScreenTest.kt` — UI tests (including Export PDF button visibility)
+- `PdfExporterTest.kt` — Instrumented tests for PDF file generation
 - `GameModelsTest.kt` — Unit tests for `computeFinalTotals` and `findWinners`

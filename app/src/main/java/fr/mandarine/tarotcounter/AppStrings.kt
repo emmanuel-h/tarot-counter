@@ -125,6 +125,10 @@ data class AppStrings(
     val lostOutcome: (score: String) -> String,
 
     // ── Final Score Screen ────────────────────────────────────────────────────
+    // Label for the "Export PDF" button on the final score screen.
+    val exportPdf: String,
+    // Error message shown if PDF generation fails (e.g. no storage space).
+    val exportPdfError: String,
     val mainMenu: String,
     val backToGame: String,
     val gameOver: String,
@@ -276,6 +280,8 @@ val EnStrings = AppStrings(
     wonOutcome            = { s -> " — Won$s" },
     lostOutcome           = { s -> " — Lost$s" },
 
+    exportPdf             = "Export PDF",
+    exportPdfError        = "Failed to generate PDF. Please try again.",
     mainMenu              = "Main Menu",
     backToGame            = "Back to game",
     gameOver              = "Game Over",
@@ -398,6 +404,8 @@ val FrStrings = AppStrings(
     wonOutcome            = { s -> " — Gagné$s" },
     lostOutcome           = { s -> " — Perdu$s" },
 
+    exportPdf             = "Exporter en PDF",
+    exportPdfError        = "Échec de la génération du PDF. Veuillez réessayer.",
     mainMenu              = "Menu principal",
     backToGame            = "Retour",
     gameOver              = "Fin de partie",
