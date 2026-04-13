@@ -642,12 +642,12 @@ fun GameScreen(
                         Spacer(Modifier.weight(1f))
                         // ── Points field with trailing camp toggle ───────────────
                         // The floating label tells the user which camp's points to enter.
-                        // The trailing icon (Sword = attacker, Shield = defenders) lets
+                        // The trailing icon (Swords = attacker, Shield = defenders) lets
                         // them switch camp without leaving the keyboard.
-                        // SwordIcon is a custom 24×24 vector defined in UiComponents.kt
-                        // (Material Icons 1.7.0 has no sword); Icons.Default.Shield is the
-                        // polished Material Design shield from the Extended icon set.
-                        // Together they form a clear attack/defend contrast.
+                        // SwordsIcon embeds the Material Symbols Outlined "swords" path
+                        // (material-icons-extended 1.7.x has no sword glyph).
+                        // Icons.Default.Shield is the standard Material Design shield.
+                        // Together they form an immediately-recognisable attack/defend pair.
                         // Tapping it clears the current value so there is no confusion
                         // about which camp the displayed number belongs to.
                         // When the user enters defender points, the app converts on
@@ -678,7 +678,7 @@ fun GameScreen(
                                 )
                             },
                             // Trailing icon acts as the camp toggle.
-                            // The icon represents the CURRENT mode (Sword = attacker,
+                            // The icon represents the CURRENT mode (Swords = attacker,
                             // Shield = defenders), and the content description describes
                             // what the NEXT tap will switch to, following Material
                             // accessibility guidelines for toggle controls.
@@ -693,15 +693,14 @@ fun GameScreen(
                                     modifier = Modifier.testTag("camp_toggle")
                                 ) {
                                     Icon(
-                                        // SwordIcon (custom 24×24 vector) = attacker (taker).
-                                        // Icons.Default.Shield (Material Design) = defenders.
-                                        // The sword/shield pairing makes the attack/defend roles
-                                        // immediately clear; the polished Material shield
-                                        // is easier to read than the previous custom one.
+                                        // SwordsIcon (Material Symbols "swords" path) = attacker.
+                                        // Icons.Default.Shield (Material Icons Extended) = defenders.
+                                        // Both icons are from Google's Material design language,
+                                        // giving a clear, immediately-recognisable attack/defend pair.
                                         imageVector = if (defenderMode)
                                             Icons.Default.Shield  // defenders hold the shield
                                         else
-                                            SwordIcon,            // attacker wields the sword
+                                            SwordsIcon,           // attacker wields the crossed swords
                                         // Content description names the NEXT mode so screen
                                         // readers announce the action, not the current state.
                                         contentDescription = if (defenderMode)
