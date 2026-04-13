@@ -2,6 +2,22 @@
 
 All reusable UI building blocks live in `UiComponents.kt`.
 
+## SwordsIcon
+
+```kotlin
+val SwordsIcon: ImageVector
+```
+
+A custom `ImageVector` embedding the **Material Symbols Outlined "swords"** path (FILL 0, wght 400, GRAD 0, opsz 24), used as the **attacker (taker)** camp toggle icon in the Points field of `GameScreen`. Defined here because `material-icons-extended` 1.7.x does not ship a swords glyph.
+
+The path data is parsed at first use via `PathParser.parsePathString()` from the raw SVG `d` attribute sourced from [fonts.google.com/icons](https://fonts.google.com/icons). The original SVG uses a 960 × 960 viewport with the Y-origin at −960 (`viewBox="0 -960 960 960"`); an `addGroup(translationY = 960f)` call remaps it into Android's (0, 0) … (960, 960) coordinate space.
+
+The companion **shield** icon for the defenders camp uses `Icons.Default.Shield` from Material Icons Extended — no custom definition needed.
+
+Both icons are tinted at render time by `LocalContentColor` (via the `Icon` composable), so the `SolidColor(Color.Black)` fill never appears directly.
+
+---
+
 ## MAX_CONTENT_WIDTH
 
 ```kotlin

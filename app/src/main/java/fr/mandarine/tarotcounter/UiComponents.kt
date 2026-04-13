@@ -46,7 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,71 +65,51 @@ import kotlinx.coroutines.launch
 //       button label automatically shrinks to fit its container.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Custom vector icons ───────────────────────────────────────────────────────
+// ── Custom vector icon ────────────────────────────────────────────────────────
 //
-// Material Icons Extended does not include a sword, so we build a minimal 24 × 24
-// vector here.  Both icons use `by lazy` so the ImageVector is constructed at most
-// once per process and reused across all recompositions.
+// Material Icons Extended 1.7.x does not include a crossed-swords icon, so we
+// embed the path data from the Material Symbols Outlined "swords" glyph here.
 //
-// The `path { }` DSL uses PathBuilder coordinates in the 24 × 24 viewport.
-// SolidColor(Color.Black) is the fill; the Icon composable tints it with
-// LocalContentColor, so the actual fill colour never appears on screen.
+// The icon uses `by lazy` so the ImageVector is built at most once per process
+// and reused across all recompositions.
+//
+// Source: https://fonts.google.com/icons — Material Symbols Outlined "swords",
+// FILL 0, wght 400, GRAD 0, opsz 24.  The original SVG uses a 960 × 960
+// viewport with the Y-origin at −960 (i.e. viewBox="0 -960 960 960"), so
+// addGroup applies a +960 Y-translation to remap it into Android's (0,0)…
+// (960,960) space.  SolidColor(Color.Black) is the nominal fill; the Icon
+// composable tints it with LocalContentColor at render time, so the literal
+// fill colour never appears on screen.
+//
+// The shield counterpart uses Icons.Default.Shield from Material Icons Extended.
 
-/** Sword pointing upward — used to indicate "attacker (taker)" mode.
- *
- * Shape (24 × 24 viewport):
- *  • Blade body : constant 2 units wide (x 11–13), y 5–14.
- *  • Blade tip  : triangular taper only at the very top — point at (12, 1),
- *                 reaching full blade width at y 5.
- *  • Guard      : 10 units wide (x 7–17), 2 units tall at y 14–16.
- *  • Handle     : 2 units wide, y 16–21.
- */
-val SwordIcon: ImageVector by lazy {
+/** Crossed swords — used to indicate "attacker (taker)" mode. */
+val SwordsIcon: ImageVector by lazy {
+    // Parse the raw SVG path string from Material Symbols into Compose PathNodes.
+    // This avoids hand-translating ~30 SVG commands into PathBuilder calls.
+    val nodes = PathParser().parsePathString(
+        "M762-96 645-212l-88 88-28-28q-23-23-23-57t23-57l169-169q-23-23 57-23t57 23l28 28" +
+        "-88 88 116 117q12 12 12 28t-12 28l-50 50q-12 12-28 12t-28-12Zm118-628L426-270l5 4" +
+        "q23 23 23 57t-23 57l-28 28-88-88L198-96q-12 12-28 12t-28-12l-50-50q-12-12-12-28" +
+        "t12-28l116-117-88-88 28-28q23-23 57-23t57 23l4 5 454-454h160v160Z" +
+        "M334-583l24-23 23-24-23 24-24 23Z" +
+        "m-56 57L80-724v-160h160l198 198-57 56-174-174h-47v47l174 174-56 57Z" +
+        "m92 199 430-430v-47h-47L323-374l47 47Z" +
+        "m0 0-24-23-23-24 23 24 24 23Z"
+    ).toNodes()
+
     ImageVector.Builder(
-        name           = "Sword",
+        name           = "Swords",
         defaultWidth   = 24.dp,
         defaultHeight  = 24.dp,
-        viewportWidth  = 24f,
-        viewportHeight = 24f
-    ).path(fill = SolidColor(Color.Black)) {
-        moveTo(12f, 1f)      // blade tip — sharp point
-        lineTo(13f, 5f)      // right edge of triangular taper
-        lineTo(13f, 14f)     // blade body right edge, constant width to crossguard
-        lineTo(17f, 14f)     // crossguard extends right (10 units total)
-        lineTo(17f, 16f)     // crossguard bottom-right
-        lineTo(13f, 16f)     // handle top-right
-        lineTo(13f, 21f)     // handle bottom-right
-        lineTo(11f, 21f)     // handle bottom-left
-        lineTo(11f, 16f)     // handle top-left
-        lineTo(7f,  16f)     // crossguard bottom-left
-        lineTo(7f,  14f)     // crossguard top-left
-        lineTo(11f, 14f)     // blade body left edge at crossguard
-        lineTo(11f, 5f)      // blade body left edge up
-        close()              // left edge of triangular taper back to tip
-    }.build()
-}
-
-/** Shield outline — used to indicate "defenders" mode. */
-val ShieldIcon: ImageVector by lazy {
-    ImageVector.Builder(
-        name           = "Shield",
-        defaultWidth   = 24.dp,
-        defaultHeight  = 24.dp,
-        viewportWidth  = 24f,
-        viewportHeight = 24f
-    ).path(fill = SolidColor(Color.Black)) {
-        // Classic shield: wide at the top, narrowing to a point at the bottom.
-        // Path follows the Material Design "Shield" reference shape (24 × 24 viewport).
-        moveTo(12f, 1f)           // top centre
-        lineTo(3f, 5f)            // top-left corner
-        verticalLineTo(11f)       // left side straight down
-        // Lower-left curve sweeping down to the bottom centre point.
-        curveToRelative(0f, 5.55f, 3.84f, 10.74f, 9f, 12f)
-        // Lower-right curve mirroring the left, sweeping back up.
-        curveToRelative(5.16f, -1.26f, 9f, -6.45f, 9f, -12f)
-        verticalLineTo(5f)        // right side straight up
-        close()                   // back to top centre
-    }.build()
+        viewportWidth  = 960f,   // Material Symbols uses a 960 × 960 viewport
+        viewportHeight = 960f
+    )
+        // Shift the origin: SVG Y-axis runs from −960 to 0; Android's runs 0 to 960.
+        .addGroup(translationY = 960f)
+        .addPath(pathData = nodes, fill = SolidColor(Color.Black))
+        .clearGroup()
+        .build()
 }
 
 // Maximum content width for all screens.

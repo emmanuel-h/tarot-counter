@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -641,8 +642,12 @@ fun GameScreen(
                         Spacer(Modifier.weight(1f))
                         // ── Points field with trailing camp toggle ───────────────
                         // The floating label tells the user which camp's points to enter.
-                        // The trailing icon (person = attacker, group = defenders) lets
+                        // The trailing icon (Swords = attacker, Shield = defenders) lets
                         // them switch camp without leaving the keyboard.
+                        // SwordsIcon embeds the Material Symbols Outlined "swords" path
+                        // (material-icons-extended 1.7.x has no sword glyph).
+                        // Icons.Default.Shield is the standard Material Design shield.
+                        // Together they form an immediately-recognisable attack/defend pair.
                         // Tapping it clears the current value so there is no confusion
                         // about which camp the displayed number belongs to.
                         // When the user enters defender points, the app converts on
@@ -673,8 +678,8 @@ fun GameScreen(
                                 )
                             },
                             // Trailing icon acts as the camp toggle.
-                            // The icon represents the CURRENT mode (sword = attacker,
-                            // shield = defenders), and the content description describes
+                            // The icon represents the CURRENT mode (Swords = attacker,
+                            // Shield = defenders), and the content description describes
                             // what the NEXT tap will switch to, following Material
                             // accessibility guidelines for toggle controls.
                             trailingIcon = {
@@ -688,10 +693,14 @@ fun GameScreen(
                                     modifier = Modifier.testTag("camp_toggle")
                                 ) {
                                     Icon(
+                                        // SwordsIcon (Material Symbols "swords" path) = attacker.
+                                        // Icons.Default.Shield (Material Icons Extended) = defenders.
+                                        // Both icons are from Google's Material design language,
+                                        // giving a clear, immediately-recognisable attack/defend pair.
                                         imageVector = if (defenderMode)
-                                            ShieldIcon  // defenders hold the shield
+                                            Icons.Default.Shield  // defenders hold the shield
                                         else
-                                            SwordIcon,  // attacker wields the sword
+                                            SwordsIcon,           // attacker wields the crossed swords
                                         // Content description names the NEXT mode so screen
                                         // readers announce the action, not the current state.
                                         contentDescription = if (defenderMode)
