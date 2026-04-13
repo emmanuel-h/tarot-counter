@@ -65,7 +65,7 @@ Tapping the active chip again collapses the form and deselects the contract.
 | Field              | Type                        | Description |
 |--------------------|-----------------------------|-------------|
 | Bouts (oudlers)    | Dropdown (0 / 1 / 2 / 3)   | Number of oudlers in the taker's tricks |
-| Points             | Number input with trailing camp-toggle icon | Points scored by the selected camp. The floating label shows the current camp and the valid range: **"Attacker (0-91)"** by default, or **"Defenders (0-91)"** after toggling. Tapping the trailing icon (⚔ sword = attacker, 🛡 shield = defenders) switches camps and clears the field to prevent ambiguity. When defenders' mode is active the app converts to taker points on confirm (`takerPoints = 91 − defenderPoints`). Values outside 0–91 show an error and disable the Confirm button. |
+| Points             | Number input with trailing camp-toggle icon | Points scored by the selected camp. The floating label shows the current camp and the valid range: **"Attacker (0-91)"** by default, or **"Defenders (0-91)"** after toggling. Tapping the trailing icon (custom sword = attacker, `Icons.Default.Shield` = defenders) switches camps and clears the field to prevent ambiguity. When defenders' mode is active the app converts to taker points on confirm (`takerPoints = 91 − defenderPoints`). Values outside 0–91 show an error and disable the Confirm button. |
 | Partner            | None or any player (5-player only) | The player called by the taker as a silent partner |
 | Petit au bout      | Checkbox per player         | Player who captured the 1 of trump on the last trick |
 | Poignée            | Checkbox per player         | Player who showed a simple Poignée (see thresholds below) |

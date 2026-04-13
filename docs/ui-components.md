@@ -2,6 +2,20 @@
 
 All reusable UI building blocks live in `UiComponents.kt`.
 
+## SwordIcon
+
+```kotlin
+val SwordIcon: ImageVector
+```
+
+A custom 24 × 24 `ImageVector` of a sword pointing upward, used as the **attacker (taker)** camp toggle icon in the Points field of `GameScreen`. Defined via the `ImageVector.Builder` path DSL because Material Icons Extended 1.7.0 does not include a sword.
+
+The companion **shield** icon for the defenders camp uses `Icons.Default.Shield` from the Material Icons Extended library — no custom definition needed for that one.
+
+Both icons are tinted at render time by `LocalContentColor` (via the `Icon` composable), so the SolidColor fill used in the path definition never appears directly.
+
+---
+
 ## MAX_CONTENT_WIDTH
 
 ```kotlin

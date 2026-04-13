@@ -65,15 +65,18 @@ import kotlinx.coroutines.launch
 //       button label automatically shrinks to fit its container.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Custom vector icons ───────────────────────────────────────────────────────
+// ── Custom vector icon ────────────────────────────────────────────────────────
 //
-// Material Icons Extended does not include a sword, so we build a minimal 24 × 24
-// vector here.  Both icons use `by lazy` so the ImageVector is constructed at most
-// once per process and reused across all recompositions.
+// Material Icons Extended 1.7.0 does not include a sword, so we build a minimal
+// 24 × 24 vector here.  The icon uses `by lazy` so the ImageVector is constructed
+// at most once per process and reused across all recompositions.
 //
 // The `path { }` DSL uses PathBuilder coordinates in the 24 × 24 viewport.
 // SolidColor(Color.Black) is the fill; the Icon composable tints it with
-// LocalContentColor, so the actual fill colour never appears on screen.
+// LocalContentColor at render time, so the literal fill colour never appears.
+//
+// The shield counterpart is Icons.Default.Shield from Material Icons Extended,
+// which is a polished Material Design icon and needs no custom definition here.
 
 /** Sword pointing upward — used to indicate "attacker (taker)" mode.
  *
@@ -106,29 +109,6 @@ val SwordIcon: ImageVector by lazy {
         lineTo(11f, 14f)     // blade body left edge at crossguard
         lineTo(11f, 5f)      // blade body left edge up
         close()              // left edge of triangular taper back to tip
-    }.build()
-}
-
-/** Shield outline — used to indicate "defenders" mode. */
-val ShieldIcon: ImageVector by lazy {
-    ImageVector.Builder(
-        name           = "Shield",
-        defaultWidth   = 24.dp,
-        defaultHeight  = 24.dp,
-        viewportWidth  = 24f,
-        viewportHeight = 24f
-    ).path(fill = SolidColor(Color.Black)) {
-        // Classic shield: wide at the top, narrowing to a point at the bottom.
-        // Path follows the Material Design "Shield" reference shape (24 × 24 viewport).
-        moveTo(12f, 1f)           // top centre
-        lineTo(3f, 5f)            // top-left corner
-        verticalLineTo(11f)       // left side straight down
-        // Lower-left curve sweeping down to the bottom centre point.
-        curveToRelative(0f, 5.55f, 3.84f, 10.74f, 9f, 12f)
-        // Lower-right curve mirroring the left, sweeping back up.
-        curveToRelative(5.16f, -1.26f, 9f, -6.45f, 9f, -12f)
-        verticalLineTo(5f)        // right side straight up
-        close()                   // back to top centre
     }.build()
 }
 
