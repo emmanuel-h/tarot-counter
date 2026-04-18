@@ -299,5 +299,5 @@ dependencies {
     // pitest-command-line is the entry-point JAR that drives mutation analysis.
     // It pulls in pitest-core (the mutation engine) transitively.
     // Version kept in sync with the version documented in docs/mutation-testing.md.
-    pitestEngine("org.pitest:pitest-command-line:1.17.3")
+    pitestEngine("org.pitest:pitest-command-line:1.23.0")
 }
