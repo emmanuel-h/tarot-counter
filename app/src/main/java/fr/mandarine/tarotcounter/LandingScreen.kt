@@ -24,7 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -129,9 +129,11 @@ fun LandingScreen(
             horizontalArrangement = Arrangement.End, // push the icon to the right edge
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // IconButton provides the standard 48 dp touch target around the icon.
-            // contentDescription is read aloud by screen-readers (accessibility).
-            IconButton(onClick = onNavigateToSettings) {
+            // OutlinedIconButton provides a visible border around the icon, matching
+            // the HistoryButton and UndoPreviousRoundButton style used in GameScreen.
+            // The outline makes the button visually consistent with other major action
+            // buttons throughout the app, while still providing the standard 48 dp touch target.
+            OutlinedIconButton(onClick = onNavigateToSettings) {
                 Icon(
                     imageVector        = Icons.Default.Settings,
                     contentDescription = strings.settings,
