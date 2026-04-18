@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertEquals
@@ -106,6 +107,24 @@ class LandingScreenTest {
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
 
         assert(called) { "Expected onNavigateToSettings to be called when gear icon is tapped" }
+    }
+
+    // ── Spec: settings button is large/consistent with other action buttons ────
+    // The settings button uses OutlinedIconButton (same as HistoryButton in GameScreen)
+    // which renders with a visible border and a minimum 40 dp touch target (issue #161).
+    @Test
+    fun settings_button_has_minimum_touch_target_size() {
+        launch()
+        val bounds = composeTestRule
+            .onNodeWithContentDescription("Settings")
+            .getBoundsInRoot()
+        val width  = bounds.right - bounds.left
+        val height = bounds.bottom - bounds.top
+        // OutlinedIconButton provides at least a 40 dp touch area.
+        assert(width >= 40.dp && height >= 40.dp) {
+            "Expected settings button to be at least 40×40 dp " +
+                "(actual: ${width}×${height})"
+        }
     }
 
     // ── Spec: player-count chips 3, 4, 5 ─────────────────────────────────────
