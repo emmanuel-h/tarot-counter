@@ -1,6 +1,6 @@
 [versions]
 agp = "9.2.1"
-coreKtx = "1.18.0"
+coreKtx = "1.19.0"
 junit = "4.13.2"
 # kotlinx-coroutines-test: runTest, UnconfinedTestDispatcher, Dispatchers.setMain for ViewModel tests.
 kotlinxCoroutinesTest = "1.10.2"
@@ -9,7 +9,7 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.13.0"
 kotlin = "2.3.21"
-composeBom = "2026.04.01"
+composeBom = "2026.05.01"
 # Kotlinx Serialization: converts Kotlin objects to/from JSON strings.
 kotlinxSerializationJson = "1.11.0"
 # DataStore: Android's modern key-value storage solution (replaces SharedPreferences).
