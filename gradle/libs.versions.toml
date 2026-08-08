@@ -6,16 +6,16 @@ junit = "4.13.2"
 kotlinxCoroutinesTest = "1.11.0"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
-lifecycleRuntimeKtx = "2.10.0"
+lifecycleRuntimeKtx = "2.11.0"
 activityCompose = "1.13.0"
 kotlin = "2.4.0"
-composeBom = "2026.05.01"
+composeBom = "2026.06.00"
 # Kotlinx Serialization: converts Kotlin objects to/from JSON strings.
 kotlinxSerializationJson = "1.11.0"
 # DataStore: Android's modern key-value storage solution (replaces SharedPreferences).
 datastorePreferences = "1.2.1"
 # lifecycle-viewmodel-compose: lets us use ViewModel inside Composable functions.
-lifecycleViewModelCompose = "2.10.0"
+lifecycleViewModelCompose = "2.11.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
