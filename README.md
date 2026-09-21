@@ -11,7 +11,7 @@ TarotCounter guides players through a game round by round:
 3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
 4. **Compact scoreboard** — after the first round, a persistent card at the top shows each player's running total at a glance
 5. **Score history screen** — tap the bar-chart icon (always visible in the header) to open the history screen; a **segmented toggle** switches between two views: **Table** (cumulative scores per round, one row per player) and **List** (round-by-round detail log, newest first, with a coloured **●** indicator per row: green = won, red = lost, grey = skipped)
-6. **End Game / Final Score** — tap **End Game** in the bottom bar at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted in gold/amber), and three action buttons on one line: **Main Menu** (return to the landing screen), **New Game** (go to setup), and **Back to Game** (resume the current game)
+6. **End Game / Final Score** — tap **End Game** in the bottom bar at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted with a soft brass tint), and three action buttons on one line: **Main Menu** (return to the landing screen), **New Game** (go to setup), and **Back to Game** (resume the current game)
 7. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (CompactScoreboard, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
 8. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
 9. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results with a trophy icon next to the winner's name
@@ -78,7 +78,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── ScoreHistoryScreen.kt  # Score history: table view + list view with toggle
 ├── FinalScoreScreen.kt    # End-of-game results: winner card + full score table
 ├── UiComponents.kt        # Shared UI: AppButton, AppOutlinedButton, AppTextButton, AutoSizeText
-└── ui/theme/              # Material 3 theme, colors, typography
+└── ui/theme/              # "Salon" design tokens: colours (+ TarotColors), typography, shapes, spacing, contrast helper
 ```
 
 **Key design choice**: `GameModels.kt` contains only pure Kotlin with no Android or Compose imports, making it fully unit-testable on the JVM.
@@ -95,7 +95,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 |---|---|
 | Language | Kotlin 2.2.10 |
 | UI | Jetpack Compose (BOM 2024.09.00) |
-| Design system | Material 3 (custom card-game palette — dynamic color disabled; Cinzel serif font for headings) |
+| Design system | Material 3 with the "Salon" design tokens — ivory/felt-green palette with a WCAG-checked dark variant, dynamic color disabled; bundled Cormorant Garamond (display) + Figtree (UI) fonts with tabular figures |
 | Persistence | DataStore 1.1.1 + kotlinx.serialization 1.7.3 |
 | Min SDK | 24 (Android 7.0) |
 | Target SDK | 36 (Android 15) |
@@ -189,12 +189,15 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `GameModelsTest.kt` | Data models, win condition, score calculation, player score distribution, `computeFinalTotals`, `findWinners` |
 | `TakerRotationTest.kt` | Taker rotation formula for 3–5 players |
 | `AppLocaleTest.kt` | i18n string bundles: locale-specific strings, lambda formatters, enum localized names |
+| `ColorContrastTest.kt` | WCAG relative luminance and contrast ratio helpers |
+| `SalonPaletteTest.kt` | Every text/background pair of both themes ≥ 4.5:1; player tones |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
 | `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, duplicate validation, settings gear icon |
 | `SettingsScreenTest.kt` | Settings page: back navigation, theme toggle, language toggle, feedback button, section labels |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history screen: table view, list view, toggle, round indicators, back navigation |
 | `FinalScoreScreenTest.kt` | Final score screen: winner card, tie detection, score table, New Game navigation |
+| `SalonThemeTest.kt` | Theme wiring: light/dark tokens, `scoreColor()`, fonts, shapes |
 
 ## Project Structure
 
@@ -215,7 +218,7 @@ TarotCounter/
 │   ├── final-score.md        # Final score screen: winner card, End Game flow
 │   ├── game-persistence.md   # How completed games are saved and displayed
 │   ├── score-color.md        # Score colour-coding convention and scoreColor() helper
-│   ├── theme.md              # Colour palette rationale and dynamic-colour policy
+│   ├── theme.md              # "Salon" design tokens: colours, dark variant, fonts, shapes, spacing
 │   ├── app-name.md           # App name branding and locale-specific launcher labels
 │   ├── release-signing.md    # Release signing setup for local dev and CI
 │   ├── release-workflow.md   # /release-store skill: full publish workflow
@@ -239,7 +242,7 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen
 - [`docs/score-color.md`](docs/score-color.md) — score colour-coding convention: `scoreColor()` helper, where it is used, winner column
-- [`docs/theme.md`](docs/theme.md) — colour palette rationale, roles, and dynamic-colour policy
+- [`docs/theme.md`](docs/theme.md) — "Salon" design tokens: light/dark palettes, player tones, contrast guarantee, typography, shapes, spacing
 - [`docs/back-navigation.md`](docs/back-navigation.md) — system back button behaviour per screen, BackHandler implementation, confirmation dialog
 - [`docs/app-name.md`](docs/app-name.md) — app name branding, locale-specific launcher labels, and how the system name and in-app title relate
 - [`docs/release-signing.md`](docs/release-signing.md) — how to configure release signing for local builds and CI/CD pipelines

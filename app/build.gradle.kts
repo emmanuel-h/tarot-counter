@@ -247,8 +247,16 @@ afterEvaluate {
                 // Kotlin serialization plugin-generated serializer classes
                 "fr.mandarine.tarotcounter.*\$\$serializer," +
                 "fr.mandarine.tarotcounter.*\$serializer," +
-                // Material theme declarations — pure style constants, no logic
-                "fr.mandarine.tarotcounter.ui.theme.*," +
+                // Material theme declarations — pure style constants, no logic.
+                // ColorContrastKt and TarotColors (playerTone) hold real logic and
+                // are NOT excluded: SalonPaletteTest and ColorContrastTest cover them.
+                "fr.mandarine.tarotcounter.ui.theme.ColorKt*," +
+                "fr.mandarine.tarotcounter.ui.theme.ThemeKt*," +
+                "fr.mandarine.tarotcounter.ui.theme.TypeKt*," +
+                "fr.mandarine.tarotcounter.ui.theme.ShapeKt*," +
+                "fr.mandarine.tarotcounter.ui.theme.Dimens*," +
+                "fr.mandarine.tarotcounter.ui.theme.TarotColorsKt*," +
+                "fr.mandarine.tarotcounter.ui.theme.PlayerTone," +
                 // AppStrings is a pure data-holder (a data class with 60+ val fields and
                 // lambda fields).  The generated equals / hashCode / copy / componentN
                 // methods are never called by unit tests and produce 45 no-coverage mutants.

@@ -2,7 +2,6 @@ package fr.mandarine.tarotcounter
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -54,7 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import fr.mandarine.tarotcounter.ui.theme.GoldWinnerDark
+import fr.mandarine.tarotcounter.ui.theme.tarotColors
 import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -589,10 +588,10 @@ fun CompactBonusGrid(
  * Returns the semantic text color for a score value.
  *
  * Colour convention:
- *   - **Positive** (≥ 0): `MaterialTheme.colorScheme.primary`  — green, "winning"
- *   - **Negative** (< 0): `MaterialTheme.colorScheme.error`    — red, "losing"
+ *   - **Positive** (≥ 0): `MaterialTheme.tarotColors.positive` — green, "winning"
+ *   - **Negative** (< 0): `MaterialTheme.tarotColors.negative` — red, "losing"
  *
- * Both colours come from the active [MaterialTheme], so they automatically
+ * Both colours come from the active Salon theme tokens, so they automatically
  * adapt to light vs. dark mode without any hardcoded hex values.
  *
  * This helper is used by [CompactScoreboard] (GameScreen), the table in
@@ -605,8 +604,8 @@ fun CompactBonusGrid(
 @Composable
 fun scoreColor(total: Int): Color =
     // Green for winning (positive / zero), red for losing (negative).
-    if (total >= 0) MaterialTheme.colorScheme.primary
-    else MaterialTheme.colorScheme.error
+    if (total >= 0) MaterialTheme.tarotColors.positive
+    else MaterialTheme.tarotColors.negative
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared score-table building blocks
@@ -675,13 +674,11 @@ fun ScoreTableRow(
 
             val isWinnerColumn = index in winnerColumnIndices
 
-            // Winner columns: saturated amber in light mode, muted dark gold in dark mode.
+            // Winner columns get a soft brass tint from the active theme (light or
+            // dark follows the app's own toggle, not the system setting).
             // `Color.Unspecified` leaves the background transparent (no winner highlight).
-            val bgColor = when {
-                isWinnerColumn && isSystemInDarkTheme() -> GoldWinnerDark
-                isWinnerColumn                          -> MaterialTheme.colorScheme.secondary
-                else                                    -> Color.Unspecified
-            }
+            val bgColor = if (isWinnerColumn) MaterialTheme.tarotColors.winnerHighlight
+                          else Color.Unspecified
             val bgModifier = if (bgColor != Color.Unspecified) Modifier.background(bgColor)
                              else Modifier
 
