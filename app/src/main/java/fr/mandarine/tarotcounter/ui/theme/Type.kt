@@ -5,81 +5,91 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import fr.mandarine.tarotcounter.R
 
-// ── Cinzel font family ────────────────────────────────────────────────────────
-// Cinzel is a classical Roman-capitals serif font from Google Fonts.
-// It evokes the look of engraved lettering on antique playing cards, giving the
-// app a sophisticated card-game feel without sacrificing legibility.
-//
-// The file in res/font/ is a *variable* font: one TTF that contains the full
-// weight range (Regular 400 → Black 900).  We declare two named weights so
-// Compose can select the right axis value when rendering each style.
-// Using the same resource file twice with different `weight` values is the
-// standard Compose pattern for variable fonts — Compose forwards the weight
-// to the font engine automatically.
-val CinzelFontFamily = FontFamily(
-    // Regular weight (400) — used for headlineLarge / headlineMedium text
-    Font(resId = R.font.cinzel_regular, weight = FontWeight.Normal),
-    // Bold weight (700) — used when callers do .copy(fontWeight = FontWeight.Bold)
-    Font(resId = R.font.cinzel_regular, weight = FontWeight.Bold)
+// ── Font families ────────────────────────────────────────────────────────────
+// Both fonts are bundled as *static* TTF files in res/font/ (one file per weight)
+// rather than variable fonts: Android 7.x (API 24–25, our minSdk) ignores the
+// weight axis of variable fonts, so static files are the only way to get the
+// right weight on every device. Both families are licensed under the SIL OFL.
+
+/**
+ * Cormorant Garamond — an elegant Garamond display serif.
+ * Used for the "salon" voice: screen titles, player names, big numbers.
+ */
+val CormorantGaramond = FontFamily(
+    Font(resId = R.font.cormorant_garamond_semibold, weight = FontWeight.SemiBold), // 600
+    Font(resId = R.font.cormorant_garamond_bold,     weight = FontWeight.Bold),     // 700
 )
 
-// ── Typography ────────────────────────────────────────────────────────────────
-// Material 3 defines a layered type scale.  We override only the *heading*
-// styles with Cinzel and leave every body / label style on the system font
-// (FontFamily.Default) for maximum readability at smaller sizes.
-//
-// Heading styles affected (as requested in issue #2):
-//   headlineLarge   — app title on LandingScreen
-//   headlineMedium  — "Game Over" on FinalScoreScreen
-//   headlineSmall   — winner name inside the winner card
-//   titleLarge      — round header on GameScreen
-//
-// Body / label styles are intentionally NOT changed; they remain on the system
-// sans-serif font so they stay crisp and easy to read in tight spaces.
-val Typography = Typography(
-    // ── Heading styles (Cinzel) ───────────────────────────────────────────────
-    headlineLarge = TextStyle(
-        fontFamily = CinzelFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize    = 32.sp,
-        lineHeight  = 40.sp,
-        letterSpacing = 0.sp   // Cinzel's built-in spacing is already generous
-    ),
-    headlineMedium = TextStyle(
-        fontFamily = CinzelFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize    = 28.sp,
-        lineHeight  = 36.sp,
-        letterSpacing = 0.sp
-    ),
-    headlineSmall = TextStyle(
-        fontFamily = CinzelFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize    = 24.sp,
-        lineHeight  = 32.sp,
-        letterSpacing = 0.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = CinzelFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize    = 22.sp,
-        lineHeight  = 28.sp,
-        letterSpacing = 0.sp
-    ),
+/**
+ * Figtree — a clean geometric sans-serif, very legible at small sizes.
+ * Used for all UI text: body, labels, buttons.
+ */
+val Figtree = FontFamily(
+    Font(resId = R.font.figtree_regular,  weight = FontWeight.Normal),   // 400
+    Font(resId = R.font.figtree_medium,   weight = FontWeight.Medium),   // 500
+    Font(resId = R.font.figtree_semibold, weight = FontWeight.SemiBold), // 600
+)
 
-    // ── Body style (system font) — kept here for documentation clarity ────────
-    // Material 3 defaults already use FontFamily.Default for body/label styles;
-    // we list bodyLarge explicitly to make the intent clear in code.
-    bodyLarge = TextStyle(
-        fontFamily    = FontFamily.Default,
-        fontWeight    = FontWeight.Normal,
-        fontSize      = 16.sp,
-        lineHeight    = 24.sp,
-        letterSpacing = 0.5.sp
-    )
-    // bodyMedium, bodySmall, labelMedium, etc. are NOT listed here,
-    // which means Material3 will fall back to its own defaults (system font).
+// ── Tabular figures ──────────────────────────────────────────────────────────
+// By default, digits in most fonts are "proportional": a 1 is narrower than an 8,
+// so columns of scores wobble. The OpenType feature "tnum" (tabular numbers)
+// makes every digit the same width so numbers line up in columns.
+// We turn it on for *every* style below, so any score, in any style, aligns.
+private const val TABULAR_FIGURES = "tnum"
+
+/**
+ * Builds one text style of the scale. A small helper so every style shares the
+ * same tabular-figure setting and the table below stays readable.
+ */
+private fun salonStyle(
+    family: FontFamily,
+    weight: FontWeight,
+    size: TextUnit,
+    lineHeight: TextUnit,
+    letterSpacing: TextUnit = 0.sp,
+) = TextStyle(
+    fontFamily          = family,
+    fontWeight          = weight,
+    fontSize            = size,
+    lineHeight          = lineHeight,
+    letterSpacing       = letterSpacing,
+    fontFeatureSettings = TABULAR_FIGURES,
+)
+
+// ── Typography ───────────────────────────────────────────────────────────────
+// Material 3 defines 15 named styles. Every one is set here so no text falls
+// back to the system font.
+//
+//   display*  (Cormorant)  big numbers: points entered, winner name, leader score
+//   headline* (Cormorant)  app title, screen titles, section titles
+//   titleLarge (Cormorant) smaller section titles ("Past games")
+//   titleMedium/Small (Figtree) list-item titles, player names in rows
+//   body*     (Figtree)    running text
+//   label*    (Figtree)    buttons, field labels, overlines ("GAME IN PROGRESS")
+val Typography = Typography(
+    displayLarge   = salonStyle(CormorantGaramond, FontWeight.SemiBold, 56.sp, 60.sp),
+    displayMedium  = salonStyle(CormorantGaramond, FontWeight.Bold,     40.sp, 44.sp),
+    displaySmall   = salonStyle(CormorantGaramond, FontWeight.Bold,     32.sp, 36.sp),
+
+    headlineLarge  = salonStyle(CormorantGaramond, FontWeight.Bold,     28.sp, 34.sp, 0.04.em),
+    headlineMedium = salonStyle(CormorantGaramond, FontWeight.SemiBold, 26.sp, 32.sp, 0.02.em),
+    headlineSmall  = salonStyle(CormorantGaramond, FontWeight.SemiBold, 24.sp, 30.sp),
+
+    titleLarge     = salonStyle(CormorantGaramond, FontWeight.SemiBold, 22.sp, 28.sp),
+    titleMedium    = salonStyle(Figtree,           FontWeight.SemiBold, 16.sp, 24.sp),
+    titleSmall     = salonStyle(Figtree,           FontWeight.SemiBold, 14.sp, 20.sp),
+
+    bodyLarge      = salonStyle(Figtree,           FontWeight.Normal,   16.sp, 24.sp),
+    bodyMedium     = salonStyle(Figtree,           FontWeight.Normal,   14.sp, 20.sp),
+    bodySmall      = salonStyle(Figtree,           FontWeight.Normal,   13.sp, 18.sp),
+
+    labelLarge     = salonStyle(Figtree,           FontWeight.SemiBold, 15.sp, 20.sp, 0.02.em),
+    labelMedium    = salonStyle(Figtree,           FontWeight.SemiBold, 13.sp, 18.sp, 0.04.em),
+    // Used in upper case for small overlines, hence the wide letter spacing.
+    labelSmall     = salonStyle(Figtree,           FontWeight.SemiBold, 12.sp, 16.sp, 0.14.em),
 )

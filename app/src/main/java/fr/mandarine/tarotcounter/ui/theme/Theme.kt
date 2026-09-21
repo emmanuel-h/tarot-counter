@@ -4,75 +4,130 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.CompositionLocalProvider
 
-// ── Dark colour scheme — felt table at night ─────────────────────────────────
-// Primary surfaces are very dark green; accents are sage, gold, and rose.
-private val DarkColorScheme = darkColorScheme(
-    primary          = GreenLight,      // sage green — buttons, active chips
-    onPrimary        = FeltDark,        // text/icons on top of primary
-    primaryContainer = Color(0xFF1E3A20), // slightly lighter felt for containers
-    onPrimaryContainer = GreenLight,
+// ── Light colour scheme — "Salon" ────────────────────────────────────────────
+// Ivory ground, paper cards, felt-green actions, ink text.
+// Every slot is filled on purpose: any slot left out falls back to Material's
+// baseline lavender, which would leak into components like dialogs and menus.
+val LightColorScheme = lightColorScheme(
+    primary              = SalonFelt,          // primary buttons, selected states
+    onPrimary            = SalonPaperWhite,
+    primaryContainer     = SalonFeltTint,      // selected chip, success banner
+    onPrimaryContainer   = SalonFeltTintInk,
+    inversePrimary       = NightSage,
 
-    secondary        = GoldLight,       // warm gold — secondary actions
-    onSecondary      = FeltDark,
-    secondaryContainer = Color(0xFF3E2E00),
-    onSecondaryContainer = GoldLight,
+    secondary            = SalonBrassText,     // brass accent (used sparingly)
+    onSecondary          = SalonPaperWhite,
+    secondaryContainer   = SalonBrassTint,     // dealer chip
+    onSecondaryContainer = SalonBrassTintInk,
 
-    tertiary         = BurgundyLight,   // soft rose — highlights / warnings
-    onTertiary       = FeltDark,
+    tertiary             = SalonPlayerTones[2], // slate blue — rarely used
+    onTertiary           = SalonPaperWhite,
+    tertiaryContainer    = SalonTrack,
+    onTertiaryContainer  = SalonInk,
 
-    background       = FeltDark,        // full-page background
-    onBackground     = Color(0xFFE8F5E9), // off-white text on dark felt
-    surface          = Color(0xFF122614), // card/sheet surfaces — slightly lighter than background
-    onSurface        = Color(0xFFE8F5E9),
-    surfaceVariant   = Color(0xFF1A3320),
-    onSurfaceVariant = Color(0xFFB0C4B1),
+    error                = SalonNegative,      // destructive actions
+    onError              = SalonPaperWhite,
+    errorContainer       = SalonNegativeTint,
+    onErrorContainer     = SalonNegativeTintInk,
+
+    background           = SalonIvory,
+    onBackground         = SalonInk,
+    surface              = SalonPaper,         // cards, sheets
+    onSurface            = SalonInk,
+    surfaceVariant       = SalonTrack,         // segmented-control track
+    onSurfaceVariant     = SalonInkMuted,
+    surfaceTint          = SalonFelt,
+    inverseSurface       = NightFeltCard,
+    inverseOnSurface     = NightCream,
+
+    // Material components pick their background from these container levels
+    // (e.g. Card → surfaceContainerHighest, dialogs → surfaceContainerHigh).
+    surfaceContainerLowest  = SalonPaperWhite,
+    surfaceContainerLow     = SalonPaper,
+    surfaceContainer        = SalonCream,
+    surfaceContainerHigh    = SalonLinen,
+    surfaceContainerHighest = SalonTrack,
+    surfaceBright           = SalonPaper,
+    surfaceDim              = SalonHairline,
+
+    outline              = SalonHairline,      // card borders
+    outlineVariant       = SalonHairlineSoft,  // row separators
+    scrim                = SalonInk,
 )
 
-// ── Light colour scheme — parchment in daylight ──────────────────────────────
-// Primary surfaces are warm cream; accents are deep green, amber, and burgundy.
-private val LightColorScheme = lightColorScheme(
-    primary          = GreenDark,       // deep forest green — buttons, active chips
-    onPrimary        = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFC8E6C9), // light green tint for containers
-    onPrimaryContainer = Color(0xFF1B5E20),
+// ── Dark colour scheme — "Salon at night" ────────────────────────────────────
+// Deep felt ground, raised felt cards, cream text, sage actions.
+val DarkColorScheme = darkColorScheme(
+    primary              = NightSage,
+    onPrimary            = NightOnSage,
+    primaryContainer     = SalonFelt,          // the felt keeps its deep green at night
+    onPrimaryContainer   = NightFeltTintInk,
+    inversePrimary       = SalonFelt,
 
-    secondary        = GoldDark,        // rich amber — secondary actions
-    onSecondary      = Color(0xFF1C1600),
-    secondaryContainer = Color(0xFFFFECB3),
-    onSecondaryContainer = Color(0xFF5C3A00),
+    secondary            = NightBrass,
+    onSecondary          = NightFeltGround,
+    secondaryContainer   = NightBrassTint,
+    onSecondaryContainer = NightBrassTintInk,
 
-    tertiary         = BurgundyDark,    // deep burgundy — highlights
-    onTertiary       = Color(0xFFFFFFFF),
+    tertiary             = NightPlayerTones[2],
+    onTertiary           = NightFeltGround,
+    tertiaryContainer    = NightTrack,
+    onTertiaryContainer  = NightCream,
 
-    background       = ParchmentLight,  // warm parchment background
-    onBackground     = Color(0xFF1A1C19),
-    surface          = Color(0xFFFAF5ED), // slightly warmer card/sheet surfaces
-    onSurface        = Color(0xFF1A1C19),
-    surfaceVariant   = Color(0xFFEDE8D8),
-    onSurfaceVariant = Color(0xFF4A4A3A),
+    error                = NightNegative,
+    onError              = NightOnNegative,
+    errorContainer       = NightNegativeTint,
+    onErrorContainer     = NightNegativeTintInk,
+
+    background           = NightFeltGround,
+    onBackground         = NightCream,
+    surface              = NightFeltCard,
+    onSurface            = NightCream,
+    surfaceVariant       = NightTrack,
+    onSurfaceVariant     = NightCreamMuted,
+    surfaceTint          = NightSage,
+    inverseSurface       = SalonPaper,
+    inverseOnSurface     = SalonInk,
+
+    surfaceContainerLowest  = NightFeltLowest,
+    surfaceContainerLow     = NightFeltLow,
+    surfaceContainer        = NightFeltCard,
+    surfaceContainerHigh    = NightFeltHigh,
+    surfaceContainerHighest = NightTrack,
+    surfaceBright           = NightTrack,
+    surfaceDim              = NightFeltGround,
+
+    outline              = NightHairline,
+    outlineVariant       = NightHairlineSoft,
+    scrim                = NightFeltLowest,
 )
 
 // ── Theme entry-point ─────────────────────────────────────────────────────────
-// dynamicColor is intentionally false: we always apply our card-game palette
+// dynamicColor is intentionally false: we always apply the Salon palette
 // regardless of Android version. On Android 12+ the OS would otherwise replace
 // every colour with the user's wallpaper tones, making the custom theme useless.
 @Composable
 fun TarotCounterTheme(
-    // Default is false (light mode) — the user's system setting no longer drives this.
+    // Default is false (light mode) — the user's system setting does not drive this.
     // Pass `darkTheme = true` when the user has chosen dark mode via the theme toggle.
     darkTheme: Boolean = false,
-    dynamicColor: Boolean = false, // disabled — use our card-game palette consistently
+    @Suppress("UNUSED_PARAMETER")
+    dynamicColor: Boolean = false, // kept for API compatibility; always the Salon palette
     content: @Composable () -> Unit
 ) {
-    // Pick the right scheme. Dynamic color is kept as a parameter so callers
-    // (e.g. tests) can still opt in, but the default is always false.
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val tarotColors = if (darkTheme) DarkTarotColors else LightTarotColors
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography  = Typography,
-        content     = content
-    )
+    // CompositionLocalProvider makes `tarotColors` available to every composable
+    // below it through `MaterialTheme.tarotColors` (see TarotColors.kt).
+    CompositionLocalProvider(LocalTarotColors provides tarotColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography  = Typography,
+            shapes      = Shapes,
+            content     = content
+        )
+    }
 }
