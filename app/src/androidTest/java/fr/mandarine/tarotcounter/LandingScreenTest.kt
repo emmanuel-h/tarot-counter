@@ -1,5 +1,11 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -267,9 +273,8 @@ class LandingScreenTest {
         composeTestRule.onNodeWithText("Player 1").performTextInput("Alice")
         composeTestRule.onNodeWithText("Player 2").performTextInput("Alice")
 
-        // "Name already used" appears under each conflicting field.
-        // There are two duplicate slots, so the matcher finds the first occurrence by default.
-        composeTestRule.onNodeWithText("Name already used").assertIsDisplayed()
+        // "Name already used" appears under each of the two conflicting fields.
+        composeTestRule.onAllNodesWithText("Name already used").assertCountEquals(2)
     }
 
     @Test
@@ -280,7 +285,8 @@ class LandingScreenTest {
         composeTestRule.onNodeWithText("Player 2").performTextInput("ALICE")
 
         composeTestRule.onNodeWithText("Start Game").assertIsNotEnabled()
-        composeTestRule.onNodeWithText("Name already used").assertIsDisplayed()
+        // Both conflicting fields show the error.
+        composeTestRule.onAllNodesWithText("Name already used").assertCountEquals(2)
     }
 
     @Test
@@ -353,7 +359,9 @@ class LandingScreenTest {
         launchWithPastGames()
         // The winner result text should appear (e.g. "Alice +150") inside the card.
         // We use a substring check via containsText to stay locale-agnostic.
-        composeTestRule.onNodeWithText("Alice", substring = true).assertIsDisplayed()
+        // "Alice" is in both the player list and the winner line of the card: the
+        // first match must be visible.
+        composeTestRule.onAllNodesWithText("Alice", substring = true).onFirst().assertIsDisplayed()
     }
 
     // ── Spec: dealer selection section (issue #128) ───────────────────────────
@@ -413,9 +421,12 @@ class LandingScreenTest {
         launch(onStartGame = { _, dealerIndex -> capturedDealerIndex = dealerIndex })
 
         composeTestRule.onNodeWithText("Choose").performClick()
-        // There are multiple "Player 2" nodes (name field label + dealer chip).
-        // useUnmergedTree = false is fine here; the first match is the dealer chip.
-        composeTestRule.onAllNodesWithText("Player 2")[0].performClick()
+        // "Player 2" is also the name field's placeholder: match only the dealer
+        // segmented button (a radio button carrying the name).
+        composeTestRule.onNode(
+            hasText("Player 2") and
+                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
+        ).performClick()
         composeTestRule.onNodeWithText("Start Game").performClick()
 
         assertEquals(

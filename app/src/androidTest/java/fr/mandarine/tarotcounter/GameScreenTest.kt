@@ -1,11 +1,18 @@
 package fr.mandarine.tarotcounter
 
 import android.app.Application
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -48,6 +55,12 @@ class GameScreenTest {
     // Fixed player names used across most tests so assertions are deterministic.
     private val players = listOf("Alice", "Bob", "Charlie")
 
+    // Contract labels as the screen shows them in English (issue #112 translated them:
+    // "Garde" is displayed as "Guard", etc.). Reading them from the same function the
+    // UI uses keeps the tests in sync if a translation changes.
+    private fun label(contract: Contract) = contract.localizedName(AppLocale.EN)
+    private val guard = label(Contract.GARDE)
+
     /**
      * Creates a [GameViewModel] with [FakeGameStorage], initialises it with [playerNames],
      * and sets the Compose content to [GameScreen].
@@ -73,14 +86,14 @@ class GameScreenTest {
      * "choose a contract" prompt is only shown once an attacker is selected.
      */
     private fun selectAttacker(attackerName: String = "Alice") {
-        // The attacker selector shows all player names as segmented-button labels.
-        // We need to find the one in the attacker row (not the bonus grid or history).
-        // Using onAllNodesWithText and picking the first match is safe because the
-        // attacker selector is the topmost occurrence of each name before the form opens.
-        composeTestRule.onAllNodesWithText(attackerName).fetchSemanticsNodes().let {
-            require(it.isNotEmpty()) { "No node found with text '$attackerName'" }
-        }
-        composeTestRule.onAllNodesWithText(attackerName)[0].performClick()
+        // The name can appear in several places (scoreboard, round history, dealer
+        // label…). The attacker selector is a row of radio buttons, so we match only a
+        // radio button carrying the name. Contract buttons are radio buttons too, but
+        // their labels never equal a player name.
+        composeTestRule.onAllNodes(
+            hasText(attackerName) and
+                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
+        )[0].performClick()
     }
 
     /**
@@ -91,12 +104,15 @@ class GameScreenTest {
      */
     private fun selectContractAndEnterScore(
         attacker: String = "Alice",
-        contract: String = "Garde",
+        contract: String = guard,
         score: String = "45"
     ) {
         selectAttacker(attacker)
         composeTestRule.onNodeWithText(contract).performClick()
         composeTestRule.onNodeWithTag("points_input").performTextInput(score)
+        // Typing opens the soft keyboard, which can cover the bottom action bar and
+        // swallow the next tap on End Game / Confirm. Close it so tests are stable.
+        Espresso.closeSoftKeyboard()
     }
 
     // ── Spec: round header ────────────────────────────────────────────────────
@@ -128,7 +144,7 @@ class GameScreenTest {
         // Issue #131: contract buttons must not appear until the attacker is chosen.
         launchGame()
         Contract.entries.forEach { contract ->
-            composeTestRule.onNodeWithText(contract.displayName).assertDoesNotExist()
+            composeTestRule.onNodeWithText(label(contract)).assertDoesNotExist()
         }
     }
 
@@ -138,7 +154,7 @@ class GameScreenTest {
         launchGame()
         selectAttacker()
         Contract.entries.forEach { contract ->
-            composeTestRule.onNodeWithText(contract.displayName).assertIsDisplayed()
+            composeTestRule.onNodeWithText(label(contract)).assertIsDisplayed()
         }
     }
 
@@ -183,7 +199,7 @@ class GameScreenTest {
         // (issue #131).
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 
@@ -192,7 +208,7 @@ class GameScreenTest {
         // All three conditions must be met: attacker + contract + score.
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 
@@ -223,7 +239,8 @@ class GameScreenTest {
     @Test
     fun bottom_bar_buttons_remain_visible_while_contract_form_is_open() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
         composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
         composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
@@ -234,7 +251,8 @@ class GameScreenTest {
     @Test
     fun selecting_a_contract_shows_the_round_details_form() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         // The bouts field appears in the scrollable form content.
         composeTestRule.onNodeWithText("Number of bouts (oudlers)").assertIsDisplayed()
@@ -245,25 +263,33 @@ class GameScreenTest {
     @Test
     fun details_form_shows_selected_contract_in_header() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde Sans").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(label(Contract.GARDE_SANS)).performClick()
+        // The chosen contract stays highlighted while the form is open.
         composeTestRule
-            .onNodeWithText("Garde Sans", substring = true)
-            .assertIsDisplayed()
+            .onNodeWithText(label(Contract.GARDE_SANS))
+            .assertIsSelected()
     }
 
     @Test
     fun details_form_shows_all_four_chelem_options() {
         launchGame()
-        composeTestRule.onNodeWithText("Prise").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(label(Contract.PRISE)).performClick()
+        // The chelem outcomes live in a dropdown menu: open it, then look inside the popup.
+        composeTestRule.onNodeWithTag("chelem_dropdown").performClick()
         Chelem.entries.forEach { chelem ->
-            composeTestRule.onNodeWithText(chelem.displayName).assertIsDisplayed()
+            composeTestRule
+                .onNode(hasText(chelem.localizedName(AppLocale.EN)) and hasAnyAncestor(isPopup()))
+                .assertIsDisplayed()
         }
     }
 
     @Test
     fun details_form_shows_bouts_dropdown_with_0_through_3() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithTag("bouts_dropdown").assertIsDisplayed()
 
@@ -279,7 +305,8 @@ class GameScreenTest {
     @Test
     fun selecting_a_bout_value_from_dropdown_updates_selection() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithTag("bouts_dropdown").performClick()
 
@@ -294,7 +321,8 @@ class GameScreenTest {
     @Test
     fun details_form_shows_player_names_as_bonus_options() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
         players.forEach { name ->
             assertTrue(
                 "$name should appear as a bonus-assignment option",
@@ -394,21 +422,24 @@ class GameScreenTest {
     fun score_history_button_also_appears_in_round_details_form() {
         launchGame()
         composeTestRule.onNodeWithText("Skip round").performClick()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
     }
 
     @Test
     fun partner_selector_not_shown_for_3_player_game() {
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithText("Partner (called by taker)").assertDoesNotExist()
     }
 
     @Test
     fun partner_selector_is_shown_for_5_player_game() {
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithText("Partner (called by taker)").assertIsDisplayed()
     }
 
@@ -417,15 +448,17 @@ class GameScreenTest {
         // Opening the partner dropdown must list all players except the attacker.
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
         selectAttacker("Alice")
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         // Tap the dropdown field (identified by its test tag) to open the menu.
         composeTestRule.onNodeWithTag("partner_dropdown").performClick()
 
         // Alice is the attacker — she must NOT appear; the other four must.
+        // Names also appear on the attacker buttons, so only look inside the popup menu.
         for (name in listOf("Bob", "Charlie", "Dave", "Eve")) {
-            composeTestRule.onNodeWithText(name).assertIsDisplayed()
+            composeTestRule.onNode(hasText(name) and hasAnyAncestor(isPopup())).assertIsDisplayed()
         }
+        composeTestRule.onNode(hasText("Alice") and hasAnyAncestor(isPopup())).assertDoesNotExist()
     }
 
     @Test
@@ -433,15 +466,17 @@ class GameScreenTest {
         // Picking a player from the dropdown must display their name in the field.
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave", "Eve"))
         selectAttacker("Alice")
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         // Open the dropdown and pick Bob.
         composeTestRule.onNodeWithTag("partner_dropdown").performClick()
-        composeTestRule.onNodeWithText("Bob").performClick()
+        // Pick the menu item (the attacker buttons also show "Bob").
+        composeTestRule.onNode(hasText("Bob") and hasAnyAncestor(isPopup())).performClick()
 
         // The OutlinedTextField inside the dropdown now shows Bob's name.
+        // The tag sits on the dropdown box; the selected name is in its text field child.
         composeTestRule.onNodeWithTag("partner_dropdown")
-            .assert(hasText("Bob"))
+            .assert(hasAnyDescendant(hasText("Bob")))
     }
 
     // ── Spec: End Game button (bottom bar) ────────────────────────────────────
@@ -455,6 +490,8 @@ class GameScreenTest {
     @Test
     fun tapping_end_game_on_step_1_opens_final_score_screen() {
         launchGame()
+        // With zero rounds, End Game leaves the game instead: skip one round first.
+        composeTestRule.onNodeWithText("Skip round").performClick()
         composeTestRule.onNodeWithText("End Game").performClick()
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
     }
@@ -462,14 +499,18 @@ class GameScreenTest {
     @Test
     fun end_game_button_is_displayed_on_step_2() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
     }
 
     @Test
     fun tapping_end_game_on_step_2_opens_final_score_screen() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        // With zero rounds, End Game leaves the game instead: skip one round first.
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithText("End Game").performClick()
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
     }
@@ -477,6 +518,8 @@ class GameScreenTest {
     @Test
     fun final_score_screen_shows_new_game_button() {
         launchGame()
+        // With zero rounds, End Game leaves the game instead: skip one round first.
+        composeTestRule.onNodeWithText("Skip round").performClick()
         composeTestRule.onNodeWithText("End Game").performClick()
         composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
     }
@@ -495,11 +538,13 @@ class GameScreenTest {
     @Test
     fun back_arrow_on_final_score_screen_returns_to_game() {
         launchGame()
+        // With zero rounds, End Game leaves the game instead: skip one round first.
+        composeTestRule.onNodeWithText("Skip round").performClick()
         composeTestRule.onNodeWithText("End Game").performClick()
         composeTestRule
             .onNodeWithContentDescription("Back to game")
             .performClick()
-        composeTestRule.onNodeWithText("Round 1").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
     }
 
     // ── Spec: points field label (issue #114) ────────────────────────────────
@@ -510,7 +555,7 @@ class GameScreenTest {
         // so users always know what to enter without needing an external hint.
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule
             .onNodeWithText(EnStrings.attackerPointsLabel)
@@ -524,7 +569,8 @@ class GameScreenTest {
         // The trailing toggle icon must appear once the points field is shown
         // (i.e. after a contract is selected), giving the user access to swap camps.
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule
             .onNodeWithTag("camp_toggle")
@@ -537,7 +583,7 @@ class GameScreenTest {
         // label to the defenders label, confirming the mode changed.
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         // Default: attacker label is visible.
         composeTestRule
@@ -558,7 +604,7 @@ class GameScreenTest {
         // Two taps on the toggle must cycle back to attacker mode.
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithTag("camp_toggle").performClick() // → defenders
         composeTestRule.onNodeWithTag("camp_toggle").performClick() // → attacker
@@ -574,7 +620,7 @@ class GameScreenTest {
         // there is no ambiguity about which team the displayed number belongs to.
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithTag("points_input").performTextInput("45")
 
         composeTestRule.onNodeWithTag("camp_toggle").performClick()
@@ -591,7 +637,7 @@ class GameScreenTest {
         // With 1 bout the threshold is 51, so 61 pts → won (+round score in history).
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         // Switch to defender mode.
         composeTestRule.onNodeWithTag("camp_toggle").performClick()
@@ -614,7 +660,8 @@ class GameScreenTest {
     @Test
     fun entering_value_above_91_shows_error_message() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("92")
 
@@ -626,7 +673,8 @@ class GameScreenTest {
     @Test
     fun entering_value_above_91_disables_confirm_button() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("99")
 
@@ -637,7 +685,7 @@ class GameScreenTest {
     fun entering_91_does_not_show_error() {
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("91")
 
@@ -651,7 +699,7 @@ class GameScreenTest {
         // An attacker must also be selected — issue #124.
         launchGame()
         selectAttacker()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithTag("points_input").performTextInput("91")
 
@@ -666,7 +714,7 @@ class GameScreenTest {
         // Selecting triple (18) + simple (13) = 31 > 22 → error must appear.
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
         selectAttacker("Alice")
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         // The bonus grid has 4 rows × 3 players = 12 toggleable checkboxes.
         // Row order in traversal: Petit (0-2), Poignée (3-5), Double (6-8), Triple (9-11).
@@ -689,8 +737,7 @@ class GameScreenTest {
         // 3-player game: triple (18) + simple (13) = 31 > 22 → Confirm disabled.
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
         selectAttacker("Alice")
-        composeTestRule.onNodeWithText("Garde").performClick()
-        composeTestRule.onNodeWithTag("points_input").performTextInput("50")
+        composeTestRule.onNodeWithText(guard).performClick()
 
         val boxes = composeTestRule.onAllNodes(
             androidx.compose.ui.test.hasClickAction() and
@@ -698,6 +745,10 @@ class GameScreenTest {
         )
         boxes[9].performClick()  // Alice — triple (18)
         boxes[3].performClick()  // Alice — simple (13)  → total 31
+
+        // Type the points last: the soft keyboard it opens would otherwise cover
+        // the checkboxes and swallow the taps above.
+        composeTestRule.onNodeWithTag("points_input").performTextInput("50")
 
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
@@ -707,7 +758,7 @@ class GameScreenTest {
         // 4-player game: Alice simple (10) + Bob simple (10) = 20 ≤ 22 → no error.
         launchGame()   // uses default 3-player list "Alice", "Bob", "Charlie"
         selectAttacker("Alice")
-        composeTestRule.onNodeWithText("Garde").performClick()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         // 3-player row layout: rows × 3 columns.
         // Poignée row starts at index 3. Alice = index 3, Bob = index 4.
@@ -728,7 +779,8 @@ class GameScreenTest {
     @Test
     fun tapping_bonus_label_text_shows_tooltip() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithText("Petit").performClick()
 
@@ -740,7 +792,8 @@ class GameScreenTest {
     @Test
     fun tapping_bonus_label_shows_tooltip_title() {
         launchGame()
-        composeTestRule.onNodeWithText("Garde").performClick()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
 
         composeTestRule.onNodeWithText("Petit").performClick()
 
@@ -793,7 +846,7 @@ class GameScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("History").performClick()
+        composeTestRule.onNodeWithContentDescription("History").performClick()
         Espresso.pressBack()
         assertTrue("System back on history overlay should call onEndGame", endGameCalled)
     }
@@ -919,9 +972,10 @@ class GameScreenTest {
         // Core regression test for issue #124: scoring must go to the selected attacker.
         // Confirm must stay disabled when no attacker is selected.
         launchGame()
-        // Select contract and enter score, but do NOT select an attacker.
-        composeTestRule.onNodeWithText("Garde").performClick()
-        composeTestRule.onNodeWithTag("points_input").performTextInput("45")
+        // Contracts are hidden until an attacker is picked (issue #131), so fill the
+        // form, then tap the attacker again to deselect them.
+        selectContractAndEnterScore(attacker = "Alice")
+        composeTestRule.onAllNodesWithText("Alice")[0].performClick()
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 
@@ -941,7 +995,7 @@ class GameScreenTest {
         launchGame()
         selectAttacker("Charlie")
         composeTestRule
-            .onNodeWithText("Charlie", substring = true)
+            .onNodeWithText(EnStrings.chooseContract("Charlie"))
             .assertIsDisplayed()
     }
 
@@ -1052,7 +1106,7 @@ class GameScreenTest {
         // The "choose a contract" prompt includes the attacker name and is only shown
         // when an attacker is selected — so its presence proves the attacker was restored.
         launchGame()
-        selectContractAndEnterScore(attacker = "Alice", contract = "Garde", score = "45")
+        selectContractAndEnterScore(attacker = "Alice", score = "45")
         composeTestRule.onNodeWithText("Confirm round").performClick()
 
         // Undo round 1.
@@ -1063,17 +1117,17 @@ class GameScreenTest {
 
         // "Alice — choose a contract:" is only rendered when Alice is selected as attacker.
         composeTestRule
-            .onNodeWithText("Alice", substring = true)
+            .onNodeWithText(EnStrings.chooseContract("Alice"))
             .assertIsDisplayed()
         // Contract row must be visible (selectedContract was restored to Garde).
-        composeTestRule.onNodeWithText("Garde", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText(guard).assertIsSelected()
     }
 
     @Test
     fun confirming_undo_restores_points_in_form() {
         // After undo, the points field must show the taker's score from the previous round.
         launchGame()
-        selectContractAndEnterScore(attacker = "Alice", contract = "Garde", score = "45")
+        selectContractAndEnterScore(attacker = "Alice", score = "45")
         composeTestRule.onNodeWithText("Confirm round").performClick()
 
         // Undo round 1.

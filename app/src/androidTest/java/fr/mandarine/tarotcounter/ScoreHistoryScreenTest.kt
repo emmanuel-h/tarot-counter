@@ -1,5 +1,8 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -123,7 +126,9 @@ class ScoreHistoryScreenTest {
 
         // Cumulative after round 1 should match the per-round scores exactly.
         composeTestRule.onNodeWithText("+50").assertIsDisplayed()
-        composeTestRule.onNodeWithText("-25").assertIsDisplayed()
+        // Bob and Charlie share the same total, so the value appears in two cells.
+        composeTestRule.onAllNodesWithText("-25").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("-25").onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -153,7 +158,9 @@ class ScoreHistoryScreenTest {
 
         // After round 2 the last row should show the running totals.
         composeTestRule.onNodeWithText("+20").assertIsDisplayed()
-        composeTestRule.onNodeWithText("-10").assertIsDisplayed()
+        // Bob and Charlie share the same total, so the value appears in two cells.
+        composeTestRule.onAllNodesWithText("-10").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("-10").onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -227,7 +234,9 @@ class ScoreHistoryScreenTest {
             )
         )
         launchHistory(roundHistory = history)
-        composeTestRule.onNodeWithText("-25").assertIsDisplayed()
+        // Bob and Charlie share the same total, so the value appears in two cells.
+        composeTestRule.onAllNodesWithText("-25").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("-25").onFirst().assertIsDisplayed()
     }
 
     // ── Spec: back navigation ─────────────────────────────────────────────────

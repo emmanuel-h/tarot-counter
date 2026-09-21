@@ -1,5 +1,8 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.hasText
@@ -83,7 +86,9 @@ class FinalScoreScreenTest {
             )
         )
         launchFinal(roundHistory = history)
-        composeTestRule.onNodeWithText("Alice", substring = true).assertIsDisplayed()
+        // The name appears in several places (winner card, table header…): the first
+        // match — the winner card at the top — must be visible.
+        composeTestRule.onAllNodesWithText("Alice", substring = true).onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -178,7 +183,9 @@ class FinalScoreScreenTest {
         )
         launchFinal(roundHistory = history)
         composeTestRule.onNodeWithText("+50").assertIsDisplayed()
-        composeTestRule.onNodeWithText("-25").assertIsDisplayed()
+        // Bob and Charlie share the same total, so the value appears in two cells.
+        composeTestRule.onAllNodesWithText("-25").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("-25").onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -194,7 +201,9 @@ class FinalScoreScreenTest {
         )
         launchFinal(roundHistory = history)
         composeTestRule.onNodeWithText("+20").assertIsDisplayed()
-        composeTestRule.onNodeWithText("-10").assertIsDisplayed()
+        // Bob and Charlie share the same total, so the value appears in two cells.
+        composeTestRule.onAllNodesWithText("-10").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("-10").onFirst().assertIsDisplayed()
     }
 
     // ── Spec: colour coding ───────────────────────────────────────────────────
@@ -222,7 +231,9 @@ class FinalScoreScreenTest {
                 mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
         )
         launchFinal(roundHistory = history)
-        composeTestRule.onNodeWithText("-25").assertIsDisplayed()
+        // Bob and Charlie share the same total, so the value appears in two cells.
+        composeTestRule.onAllNodesWithText("-25").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("-25").onFirst().assertIsDisplayed()
     }
 
     // ── Spec: celebration polish (issue #7) ───────────────────────────────────
@@ -237,7 +248,9 @@ class FinalScoreScreenTest {
         )
         launchFinal(roundHistory = history)
         // The winner's name must be visible (star icon is decorative, no CD to query).
-        composeTestRule.onNodeWithText("Alice", substring = true).assertIsDisplayed()
+        // The name appears in several places (winner card, table header…): the first
+        // match — the winner card at the top — must be visible.
+        composeTestRule.onAllNodesWithText("Alice", substring = true).onFirst().assertIsDisplayed()
         composeTestRule.onNodeWithText("Winner").assertIsDisplayed()
     }
 

@@ -1,5 +1,6 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -206,11 +207,12 @@ class SettingsScreenTest {
         launch()
         composeTestRule.onNodeWithText("Rules").performClick()
 
-        composeTestRule.onNodeWithText("Objective").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Contracts").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Score Formula").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Score Distribution").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Bonuses").assertIsDisplayed()
+        // The dialog scrolls: bring each heading into view before checking it.
+        composeTestRule.onNodeWithText("Objective").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Contracts").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Score Formula").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Score Distribution").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bonuses").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -218,11 +220,11 @@ class SettingsScreenTest {
         launch(locale = AppLocale.FR)
         composeTestRule.onNodeWithText("Règles").performClick()
 
-        composeTestRule.onNodeWithText("Objectif").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Contrats").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Calcul du score").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Répartition des scores").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Bonus").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Objectif").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Contrats").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Calcul du score").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Répartition des scores").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bonus").performScrollTo().assertIsDisplayed()
     }
 
     @Test
