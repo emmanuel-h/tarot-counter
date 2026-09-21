@@ -1,6 +1,28 @@
 package fr.mandarine.tarotcounter
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SegmentedButtonColors
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import fr.mandarine.tarotcounter.ui.theme.Dimens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +70,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -117,6 +140,9 @@ val SwordsIcon: ImageVector by lazy {
 // 600 dp matches the Material Design "compact/medium" breakpoint guideline.
 internal val MAX_CONTENT_WIDTH = 600.dp
 
+// Opacity Material 3 applies to disabled content; reused for our custom borders.
+private const val DISABLED_ALPHA = 0.38f
+
 /**
  * Returns a [MutableFloatState] to be shared across several [AutoSizeText] instances that sit
  * inside the same fixed-width row (e.g. [SingleChoiceSegmentedButtonRow]).
@@ -138,7 +164,8 @@ internal val MAX_CONTENT_WIDTH = 600.dp
  *             shape    = SegmentedButtonDefaults.itemShape(index, items.size),
  *             selected = selection == item,
  *             onClick  = { selection = item },
- *             icon     = {}
+ *             icon     = {},
+ *             colors   = salonSegmentedButtonColors()
  *         ) {
  *             AutoSizeText(
  *                 text            = item.label,
@@ -261,7 +288,20 @@ fun AppButton(
     // same state, producing a uniform font size across the whole row.
     sharedSizeState: MutableFloatState? = null
 ) {
-    Button(onClick = onClick, modifier = modifier, enabled = enabled, colors = colors) {
+    // Salon restyle (issue #196): a 56 dp tall pill in felt green.
+    //  - heightIn(min = …) keeps the 56 dp height but lets the button grow if the
+    //    user picked a very large system font.
+    //  - CircleShape on a rectangle gives fully rounded ("pill") ends.
+    //  - The default colours already come from colorScheme.primary = felt green
+    //    (sage in dark mode), so no colour override is needed here.
+    Button(
+        onClick        = onClick,
+        modifier       = modifier.heightIn(min = Dimens.PrimaryButtonHeight),
+        enabled        = enabled,
+        shape          = CircleShape,
+        colors         = colors,
+        contentPadding = PaddingValues(horizontal = Dimens.SpaceL)
+    ) {
         AutoSizeText(text, style = textStyle, sharedSizeState = sharedSizeState)
     }
 }
@@ -282,7 +322,26 @@ fun AppOutlinedButton(
     // same state, producing a uniform font size across the whole row.
     sharedSizeState: MutableFloatState? = null
 ) {
-    OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+    // Salon restyle (issue #196): a 48 dp pill with a 1 dp hairline border.
+    // The border colour is colorScheme.outline (the Salon hairline). The label is
+    // set to colorScheme.primary (felt green) explicitly: recent Material 3
+    // versions default outlined-button text to a muted grey (onSurfaceVariant).
+    OutlinedButton(
+        onClick        = onClick,
+        modifier       = modifier.heightIn(min = Dimens.SecondaryButtonHeight),
+        enabled        = enabled,
+        shape          = CircleShape,
+        colors         = ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.primary
+        ),
+        border         = BorderStroke(
+            width = 1.dp,
+            // A disabled button keeps the hairline but fades it, like its label.
+            color = if (enabled) MaterialTheme.colorScheme.outline
+                    else MaterialTheme.colorScheme.outline.copy(alpha = DISABLED_ALPHA)
+        ),
+        contentPadding = PaddingValues(horizontal = Dimens.SpaceL)
+    ) {
         AutoSizeText(text, sharedSizeState = sharedSizeState)
     }
 }
@@ -759,4 +818,416 @@ fun PlayerChipSelector(
             )
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Salon building blocks (issue #196)
+//
+// Screens of the Salon redesign are assembled from these parts instead of raw
+// Material defaults. The pure logic behind them (initials, sizes, suit glyphs,
+// top-bar limits) lives in SalonUi.kt so it can be unit-tested.
+// Previews for every component (light + dark) are in UiComponentsPreviews.kt.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A Salon "paper" card: paper surface, 16 dp corners, 1 dp hairline border and
+ * a soft, low shadow.
+ *
+ * @param title           Optional heading drawn at the top of the card
+ *                        (Cormorant, e.g. "New game").
+ * @param contentPadding  Space between the border and the content.
+ * @param content         The card body. `ColumnScope.() -> Unit` means the lambda
+ *                        runs *inside* a Column, so children stack vertically and
+ *                        may use Column-only modifiers such as `align`.
+ */
+@Composable
+fun SalonCard(
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    contentPadding: PaddingValues = PaddingValues(Dimens.CardPadding),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier  = modifier,
+        // Shapes.medium is 16 dp in the Salon theme (ui/theme/Shape.kt).
+        shape     = MaterialTheme.shapes.medium,
+        // Material's Card defaults to surfaceContainerHighest (the segmented track
+        // colour); the Salon card is plain paper = colorScheme.surface.
+        colors    = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor   = MaterialTheme.colorScheme.onSurface
+        ),
+        border    = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier            = Modifier.padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
+        ) {
+            if (title != null) {
+                Text(
+                    text     = title,
+                    style    = MaterialTheme.typography.headlineMedium,
+                    // heading() lets screen-reader users jump from card to card.
+                    modifier = Modifier.semantics { heading() }
+                )
+            }
+            content()
+        }
+    }
+}
+
+/**
+ * A circle showing a player's initial, in the colour of their seat.
+ *
+ * The colour comes from `MaterialTheme.tarotColors.playerTone(seatIndex)`, so a
+ * player keeps the same colour on every screen (and in charts).
+ *
+ * @param name      The player's name; its first letter is drawn (see [playerInitial]).
+ * @param seatIndex 0-based seat of the player — picks the colour.
+ * @param size      [AvatarSize.S] (24 dp), [AvatarSize.M] (36 dp) or [AvatarSize.L] (56 dp).
+ * @param ringColor Optional colour of a thin ring around the circle. Used by
+ *                  [AvatarStack] to separate overlapping avatars; `null` = no ring.
+ */
+@Composable
+fun PlayerAvatar(
+    name: String,
+    seatIndex: Int,
+    modifier: Modifier = Modifier,
+    size: AvatarSize = AvatarSize.M,
+    ringColor: Color? = null
+) {
+    val tone        = MaterialTheme.tarotColors.playerTone(seatIndex)
+    val description = appStrings(LocalAppLocale.current).playerAvatar(name)
+
+    // The ring is drawn as a border *inside* the circle, so the avatar keeps
+    // its exact diameter whether or not it has a ring.
+    val ringModifier = if (ringColor != null) {
+        Modifier.border(size.stackRing, ringColor, CircleShape)
+    } else {
+        Modifier
+    }
+
+    Box(
+        modifier = modifier
+            .size(size.diameter)
+            .clip(CircleShape)
+            .background(tone.container)
+            .then(ringModifier)
+            // clearAndSetSemantics replaces the inner Text ("A") with one clear
+            // description ("Player Alice") for screen readers.
+            .clearAndSetSemantics { contentDescription = description },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text  = playerInitial(name),
+            color = tone.content,
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontSize      = size.fontSizeSp.sp,
+                lineHeight    = size.fontSizeSp.sp,
+                letterSpacing = 0.sp
+            )
+        )
+    }
+}
+
+/**
+ * A row of overlapping [PlayerAvatar]s — e.g. "who is playing" on the resume card.
+ *
+ * Players are drawn in seat order: the avatar at list index `i` gets seat `i`'s
+ * colour. Each avatar slides a third of its width under the previous one; a
+ * thin ring in [ringColor] (normally the colour of the card behind) keeps them
+ * visually separate.
+ *
+ * @param names     Player names in seat order.
+ * @param size      Avatar size; [AvatarSize.S] by default, as stacks are compact.
+ * @param ringColor Ring colour; defaults to the card surface.
+ */
+@Composable
+fun AvatarStack(
+    names: List<String>,
+    modifier: Modifier = Modifier,
+    size: AvatarSize = AvatarSize.S,
+    ringColor: Color = MaterialTheme.colorScheme.surface
+) {
+    // A *negative* spacing makes each child start before the previous one ends,
+    // which produces the overlap. Later children are drawn on top.
+    Row(
+        modifier              = modifier,
+        horizontalArrangement = Arrangement.spacedBy(-size.stackOverlap)
+    ) {
+        names.forEachIndexed { seat, name ->
+            PlayerAvatar(name = name, seatIndex = seat, size = size, ringColor = ringColor)
+        }
+    }
+}
+
+/**
+ * A decorative separator between sections: a double hairline on each side of
+ * the four card suits ♠ ♥ ♦ ♣, drawn in brass.
+ *
+ * The suits are *text* glyphs (see [SUIT_GLYPHS]), never emoji. The divider is
+ * hidden from screen readers — it carries no information.
+ */
+@Composable
+fun SuitDivider(modifier: Modifier = Modifier) {
+    val lineColor = MaterialTheme.colorScheme.outline
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clearAndSetSemantics { },
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
+    ) {
+        DoubleHairline(color = lineColor)
+        Text(
+            text  = SUIT_GLYPHS,
+            color = MaterialTheme.tarotColors.brass,
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 14.sp, lineHeight = 14.sp)
+        )
+        DoubleHairline(color = lineColor)
+    }
+}
+
+// Two parallel 1 dp lines, 3 dp apart, filling the remaining width of the Row.
+// `RowScope.` as a receiver gives access to Modifier.weight().
+@Composable
+private fun RowScope.DoubleHairline(color: Color) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .height(4.dp)
+            // drawBehind draws directly on the canvas: cheaper than two Boxes.
+            .drawBehind {
+                val stroke = 1.dp.toPx()
+                // Top line, then bottom line — each centred on its 1 dp row.
+                drawLine(color, Offset(0f, stroke / 2), Offset(size.width, stroke / 2), stroke)
+                drawLine(
+                    color,
+                    Offset(0f, size.height - stroke / 2),
+                    Offset(size.width, size.height - stroke / 2),
+                    stroke
+                )
+            }
+    )
+}
+
+/**
+ * A left-aligned section title in Cormorant, with an optional trailing action
+ * (e.g. a "See all" link) pushed to the right edge.
+ *
+ * @param title    The section title.
+ * @param trailing Optional composable drawn at the end of the row.
+ */
+@Composable
+fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    Row(
+        modifier          = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text     = title,
+            style    = MaterialTheme.typography.headlineSmall,
+            // weight(1f) takes all free space, pushing `trailing` to the right.
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() }
+        )
+        trailing?.invoke()
+    }
+}
+
+/**
+ * A signed score such as "+312" or "-48", coloured green (≥ 0) or red (< 0).
+ *
+ * Every Salon text style uses tabular figures, so scores stacked in a column
+ * line up digit by digit.
+ *
+ * @param score The score to display; formatted with [withSign].
+ * @param size  [ScoreSize.S], [ScoreSize.M] or [ScoreSize.XL].
+ */
+@Composable
+fun ScoreText(
+    score: Int,
+    modifier: Modifier = Modifier,
+    size: ScoreSize = ScoreSize.M
+) {
+    Text(
+        text     = score.withSign(),
+        modifier = modifier,
+        color    = scoreColor(score),
+        maxLines = 1,
+        style    = MaterialTheme.typography.titleMedium.copy(
+            fontSize   = size.fontSizeSp.sp,
+            lineHeight = size.fontSizeSp.sp * 1.2f
+        )
+    )
+}
+
+/**
+ * The Salon top bar: optional back arrow, title on the left, and up to
+ * [MAX_TOP_BAR_ACTIONS] icon buttons on the right. Replaces the old ScreenHeader.
+ *
+ * All buttons have 48 dp touch targets (Material's accessibility minimum).
+ *
+ * @param title                  Screen title (Cormorant).
+ * @param onBack                 Back-arrow callback; `null` hides the arrow.
+ * @param backContentDescription Screen-reader label of the back arrow;
+ *                               defaults to the localized "Back to game".
+ * @param actions                Icon buttons on the right (at most two).
+ */
+@Composable
+fun SalonTopBar(
+    title: String,
+    modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
+    backContentDescription: String? = null,
+    actions: List<TopBarAction> = emptyList()
+) {
+    requireValidTopBarActions(actions)
+    val strings = appStrings(LocalAppLocale.current)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            // Without a back arrow the title aligns with the screen content.
+            .padding(start = if (onBack != null) 0.dp else Dimens.SpaceS),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (onBack != null) {
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = backContentDescription ?: strings.backToGame
+                )
+            }
+        }
+        Text(
+            text     = title,
+            style    = MaterialTheme.typography.headlineMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = Dimens.SpaceXs)
+                .semantics { heading() }
+        )
+        for (action in actions) {
+            IconButton(onClick = action.onClick, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    imageVector        = action.icon,
+                    contentDescription = action.contentDescription,
+                    tint               = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Salon colours for every [SegmentedButton]: the selected segment is filled
+ * felt green (sage at night) with light text; the others are paper with a
+ * hairline border.
+ *
+ * Pass it to each segment: `SegmentedButton(…, colors = salonSegmentedButtonColors())`.
+ */
+@Composable
+fun salonSegmentedButtonColors(): SegmentedButtonColors {
+    val scheme = MaterialTheme.colorScheme
+    return SegmentedButtonDefaults.colors(
+        activeContainerColor   = scheme.primary,
+        activeContentColor     = scheme.onPrimary,
+        activeBorderColor      = scheme.primary,
+        inactiveContainerColor = scheme.surface,
+        inactiveContentColor   = scheme.onSurface,
+        inactiveBorderColor    = scheme.outline
+    )
+}
+
+/**
+ * A Salon text field: paper-white fill, 12 dp corners, a hairline border that
+ * turns felt green on focus, and an optional leading slot (e.g. an avatar).
+ *
+ * @param placeholder    Grey hint shown while the field is empty.
+ * @param leadingContent Optional composable at the start of the field.
+ * @param isError        Draws the border and supporting text in the error colour.
+ * @param supportingText Optional message under the field (e.g. "Name already used").
+ */
+@Composable
+fun SalonTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String? = null,
+    leadingContent: (@Composable () -> Unit)? = null,
+    isError: Boolean = false,
+    supportingText: String? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+) {
+    val scheme = MaterialTheme.colorScheme
+    OutlinedTextField(
+        value           = value,
+        onValueChange   = onValueChange,
+        modifier        = modifier,
+        singleLine      = true,
+        isError         = isError,
+        keyboardOptions = keyboardOptions,
+        textStyle       = MaterialTheme.typography.bodyLarge,
+        // Shapes.small is 12 dp in the Salon theme.
+        shape           = MaterialTheme.shapes.small,
+        placeholder     = placeholder?.let { { Text(it) } },
+        leadingIcon     = leadingContent,
+        supportingText  = supportingText?.let { { Text(it) } },
+        colors          = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor   = scheme.surfaceContainerLowest,
+            unfocusedContainerColor = scheme.surfaceContainerLowest,
+            disabledContainerColor  = scheme.surfaceContainerLowest,
+            errorContainerColor     = scheme.surfaceContainerLowest,
+            focusedBorderColor      = scheme.primary,
+            unfocusedBorderColor    = scheme.outline
+        )
+    )
+}
+
+/**
+ * A [SalonTextField] for a player's name, with that player's [PlayerAvatar] in
+ * the leading slot. While the name is empty, the avatar shows the initial of
+ * the [placeholder] (e.g. "P" for "Player 1").
+ *
+ * @param seatIndex   0-based seat — picks the avatar colour.
+ * @param placeholder Fallback name shown when the field is empty.
+ */
+@Composable
+fun PlayerNameField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    seatIndex: Int,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+    supportingText: String? = null
+) {
+    SalonTextField(
+        value          = value,
+        onValueChange  = onValueChange,
+        modifier       = modifier,
+        placeholder    = placeholder,
+        isError        = isError,
+        supportingText = supportingText,
+        // Names start with a capital letter: the keyboard shifts automatically.
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+        leadingContent = {
+            PlayerAvatar(
+                name      = value.ifBlank { placeholder },
+                seatIndex = seatIndex,
+                size      = AvatarSize.M
+            )
+        }
+    )
 }

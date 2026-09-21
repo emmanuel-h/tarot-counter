@@ -132,8 +132,9 @@ Use `SingleChoiceSegmentedButtonRow` + `SegmentedButton` for **mutually exclusiv
 **Required conventions:**
 - `icon = {}` on every `SegmentedButton` — the filled segment already signals selection.
 - `AutoSizeText` (not `Text`) for every label.
-- `modifier = Modifier.padding(horizontal = 2.dp)` inside each label.
+- `modifier = Modifier.padding(horizontal = 1.dp)` inside each label.
 - `sharedSizeState = rememberSharedAutoSizeState(locale)` so all labels display at the same font size.
+- `colors = salonSegmentedButtonColors()` on every `SegmentedButton` — the selected segment is filled felt green (sage in dark mode) with light text; unselected segments are paper with a hairline border.
 
 ```kotlin
 val labelSize = rememberSharedAutoSizeState(locale)
@@ -144,11 +145,12 @@ SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             shape    = SegmentedButtonDefaults.itemShape(index, items.size),
             selected = selection == item,
             onClick  = { selection = if (selection == item) null else item },
-            icon     = {}
+            icon     = {},
+            colors   = salonSegmentedButtonColors()
         ) {
             AutoSizeText(
                 text            = item.label,
-                modifier        = Modifier.padding(horizontal = 2.dp),
+                modifier        = Modifier.padding(horizontal = 1.dp),
                 sharedSizeState = labelSize
             )
         }
@@ -197,6 +199,145 @@ ScoreTableRow(
 ```
 
 The data for each row is produced by `buildScoreTableData()` in `GameModels.kt`.
+
+---
+
+## Salon components (issue #196)
+
+The shared building blocks of the "Salon" redesign. Screens of the redesign (#197–#203) are assembled from these parts instead of raw Material defaults. The composables live in `UiComponents.kt`; the pure logic they rely on (initials, sizes, suit glyphs, top-bar limit) lives in `SalonUi.kt` and is unit-tested by `SalonUiTest`. Every component has a light **and** dark `@Preview` in `UiComponentsPreviews.kt` (the `ThemeModeProvider` preview parameter renders each one in both themes).
+
+```
+SalonCard                               PlayerAvatar      AvatarStack
+┌──────────────────────────────────┐     (A) S 24 dp       (A)(B)(C)(D)
+│ New game             (title)     │     (B) M 36 dp
+│ …content…                        │     (C) L 56 dp
+└──────────────────────────────────┘
+SuitDivider   ═══════════  ♠ ♥ ♦ ♣  ═══════════
+SectionHeader Who took?                        See all
+ScoreText     +96 (S)   -48 (M)   +312 (XL)
+SalonTopBar   ←  Round 5                   [chart][gear]
+PlayerNameField ┌──────────────────────────────────┐
+                │ (A)  Alice                       │
+                └──────────────────────────────────┘
+```
+
+### SalonCard
+
+```kotlin
+@Composable
+fun SalonCard(
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    contentPadding: PaddingValues = PaddingValues(Dimens.CardPadding),
+    content: @Composable ColumnScope.() -> Unit
+)
+```
+
+Paper surface (`colorScheme.surface`), 16 dp corners (`shapes.medium`), 1 dp hairline border (`colorScheme.outline`) and a soft 1 dp elevation. The optional `title` is drawn in Cormorant (`headlineMedium`) and marked as a heading for screen readers. Children are stacked with a 16 dp gap.
+
+```kotlin
+SalonCard(title = strings.newGame, modifier = Modifier.fillMaxWidth()) {
+    AppButton(text = strings.startGame, onClick = onStart, modifier = Modifier.fillMaxWidth())
+}
+```
+
+### PlayerAvatar and AvatarStack
+
+```kotlin
+@Composable
+fun PlayerAvatar(name: String, seatIndex: Int, modifier: Modifier = Modifier,
+                 size: AvatarSize = AvatarSize.M, ringColor: Color? = null)
+
+@Composable
+fun AvatarStack(names: List<String>, modifier: Modifier = Modifier,
+                size: AvatarSize = AvatarSize.S,
+                ringColor: Color = MaterialTheme.colorScheme.surface)
+```
+
+A circle holding the player's initial, filled with `MaterialTheme.tarotColors.playerTone(seatIndex)`, so a player has the same colour everywhere (including charts). Sizes: `AvatarSize.S` 24 dp (stacks), `M` 36 dp, `L` 56 dp.
+
+- **Initial** — `playerInitial(name)`: the first *grapheme* of the trimmed name, upper-cased (`"élodie"` → `"É"`, a letter with a combining accent is kept whole); a blank name gives `"?"`.
+- **Accessibility** — the circle's content description is the localized `strings.playerAvatar(name)` ("Player Alice" / "Joueur Alice"); the raw initial is hidden from screen readers.
+- **AvatarStack** — list index = seat index. Each avatar overlaps the previous one by a third of its diameter (`AvatarSize.stackOverlap`) and gets a thin ring (`stackRing`, 1.5 dp for S, 2 dp otherwise) in the colour of the card behind, so the circles stay distinct. On a felt-green card, pass `ringColor = MaterialTheme.tarotColors.felt`.
+
+### SuitDivider
+
+```kotlin
+@Composable
+fun SuitDivider(modifier: Modifier = Modifier)
+```
+
+A double hairline on each side of `♠ ♥ ♦ ♣` in brass. The suits are **text** glyphs: each is followed by U+FE0E (text presentation selector, see `SUIT_GLYPHS`) so Android never swaps in colour emoji. Decorative — hidden from screen readers. Use it between the major sections of a screen.
+
+### SectionHeader
+
+```kotlin
+@Composable
+fun SectionHeader(title: String, modifier: Modifier = Modifier,
+                  trailing: (@Composable () -> Unit)? = null)
+```
+
+A left-aligned Cormorant title (`headlineSmall`, marked as a heading) with an optional trailing composable pushed to the right edge, e.g. a "See all" `AppTextButton`. It replaces the section headings of the redesigned screens (`FormLabel` remains for small form-field labels until the round-entry redesign, #199).
+
+### ScoreText
+
+```kotlin
+@Composable
+fun ScoreText(score: Int, modifier: Modifier = Modifier, size: ScoreSize = ScoreSize.M)
+```
+
+A signed score (`Int.withSign()`: `+312`, `-48`, `+0`) coloured with `scoreColor()` (green ≥ 0, red < 0). Sizes: `ScoreSize.S` 15 sp (history rows), `M` 17 sp (standings), `XL` 30 sp (leader / winner). All Salon text styles use tabular figures, so scores line up in columns.
+
+### SalonTopBar
+
+```kotlin
+@Composable
+fun SalonTopBar(
+    title: String,
+    modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
+    backContentDescription: String? = null,   // defaults to strings.backToGame
+    actions: List<TopBarAction> = emptyList() // at most MAX_TOP_BAR_ACTIONS (2)
+)
+
+class TopBarAction(val icon: ImageVector, val contentDescription: String, val onClick: () -> Unit)
+```
+
+A 64 dp bar: optional back arrow, the title on the left (Cormorant `headlineMedium`, one line, ellipsised, marked as a heading), and up to two icon buttons on the right. All buttons have 48 dp touch targets. Passing three or more actions throws `IllegalArgumentException` (`requireValidTopBarActions`). **Replaces the old `ScreenHeader`**, which has been removed; Settings, Score history and Final score now use `SalonTopBar(title = …, onBack = onBack)`.
+
+```kotlin
+SalonTopBar(
+    title   = strings.roundHeader(5),
+    onBack  = onBack,
+    actions = listOf(TopBarAction(Icons.AutoMirrored.Filled.ShowChart, strings.scoreHistory) { onHistory() })
+)
+```
+
+### salonSegmentedButtonColors
+
+```kotlin
+@Composable
+fun salonSegmentedButtonColors(): SegmentedButtonColors
+```
+
+Salon colours for `SegmentedButton`: selected = `colorScheme.primary` fill + `onPrimary` text (felt green with light text; sage with dark text at night); unselected = paper with a hairline border. Pass it to **every** `SegmentedButton` (see [SingleChoiceSegmentedButtonRow](#singlechoicesegmentedbuttonrow)).
+
+### SalonTextField and PlayerNameField
+
+```kotlin
+@Composable
+fun SalonTextField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier,
+                   placeholder: String? = null, leadingContent: (@Composable () -> Unit)? = null,
+                   isError: Boolean = false, supportingText: String? = null,
+                   keyboardOptions: KeyboardOptions = KeyboardOptions.Default)
+
+@Composable
+fun PlayerNameField(value: String, onValueChange: (String) -> Unit, seatIndex: Int,
+                    placeholder: String, modifier: Modifier = Modifier,
+                    isError: Boolean = false, supportingText: String? = null)
+```
+
+A single-line text field with a paper-white fill (`surfaceContainerLowest`), 12 dp corners, a hairline border that turns felt green on focus, and an optional leading slot. `PlayerNameField` puts the player's `PlayerAvatar` (M) in that slot — while the field is empty the avatar shows the placeholder's initial (e.g. "P" for "Player 1") — and capitalises words on the keyboard. It will replace the raw `OutlinedTextField` of the setup screen in the Home redesign (#197).
 
 ---
 
@@ -334,7 +475,7 @@ fun AppButton(
 )
 ```
 
-A filled `Button` with an auto-sizing label. Use `textStyle` for prominent call-to-action buttons that need a larger starting size, and `colors` to override the fill color (e.g. for destructive actions):
+A filled `Button` with an auto-sizing label. **Salon style:** a pill (`CircleShape`) at least 56 dp tall (`Dimens.PrimaryButtonHeight`), filled with `colorScheme.primary` — felt green, sage in dark mode. Use `textStyle` for prominent call-to-action buttons that need a larger starting size, and `colors` to override the fill color (e.g. for destructive actions):
 
 ```kotlin
 // Standard button
@@ -373,7 +514,7 @@ fun AppOutlinedButton(
 )
 ```
 
-An `OutlinedButton` with an auto-sizing label. Use for secondary actions alongside a filled `AppButton`.
+An `OutlinedButton` with an auto-sizing label. **Salon style:** a pill at least 48 dp tall (`Dimens.SecondaryButtonHeight`) with a 1 dp hairline border (`colorScheme.outline`, faded when disabled) and a felt-green label. Use for secondary actions alongside a filled `AppButton`.
 
 ```kotlin
 AppOutlinedButton(text = strings.backToGame, onClick = onBack)
@@ -393,7 +534,7 @@ fun AppTextButton(
 )
 ```
 
-A `TextButton` with an auto-sizing label. Typically used for dialog actions.
+A `TextButton` with an auto-sizing label (API and look unchanged by the Salon redesign). Typically used for dialog actions.
 
 ```kotlin
 AlertDialog(

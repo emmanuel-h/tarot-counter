@@ -10,6 +10,14 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertEquals
@@ -534,4 +542,143 @@ class UiComponentsTest {
         composeTestRule.onNodeWithText("-75").assertIsDisplayed()
         composeTestRule.onNodeWithText("-50").assertIsDisplayed()
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Salon components (issue #196)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Renders content inside the theme and a locale, like every real screen.
+    private fun setSalonContent(
+        locale: AppLocale = AppLocale.EN,
+        content: @androidx.compose.runtime.Composable () -> Unit
+    ) {
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    LocalAppLocale provides locale
+                ) { content() }
+            }
+        }
+    }
+
+    @Test
+    fun salonCard_shows_title_and_content() {
+        setSalonContent {
+            SalonCard(title = "New game") { androidx.compose.material3.Text("Body") }
+        }
+        composeTestRule.onNodeWithText("New game").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Body").assertIsDisplayed()
+    }
+
+    @Test
+    fun playerAvatar_has_localized_description_in_english() {
+        setSalonContent { PlayerAvatar(name = "alice", seatIndex = 0) }
+        composeTestRule.onNodeWithContentDescription("Player alice").assertIsDisplayed()
+    }
+
+    @Test
+    fun playerAvatar_has_localized_description_in_french() {
+        setSalonContent(AppLocale.FR) { PlayerAvatar(name = "Chloé", seatIndex = 2) }
+        composeTestRule.onNodeWithContentDescription("Joueur Chloé").assertIsDisplayed()
+    }
+
+    @Test
+    fun playerAvatar_sizes_match_the_design() {
+        setSalonContent {
+            androidx.compose.foundation.layout.Column {
+                PlayerAvatar(name = "S", seatIndex = 0, size = AvatarSize.S)
+                PlayerAvatar(name = "M", seatIndex = 1, size = AvatarSize.M)
+                PlayerAvatar(name = "L", seatIndex = 2, size = AvatarSize.L)
+            }
+        }
+        composeTestRule.onNodeWithContentDescription("Player S").assertWidthIsEqualTo(24.dp)
+        composeTestRule.onNodeWithContentDescription("Player M").assertWidthIsEqualTo(36.dp)
+        composeTestRule.onNodeWithContentDescription("Player L").assertWidthIsEqualTo(56.dp)
+    }
+
+    @Test
+    fun playerAvatar_initial_text_is_merged_into_description() {
+        // The raw initial "A" must not appear as a separate node for screen readers.
+        setSalonContent { PlayerAvatar(name = "Alice", seatIndex = 0) }
+        composeTestRule.onNodeWithText("A").assertDoesNotExist()
+    }
+
+    @Test
+    fun avatarStack_shows_every_player() {
+        val names = listOf("Alice", "Bruno", "Chloé", "David", "Émile")
+        setSalonContent { AvatarStack(names = names) }
+        for (name in names) {
+            composeTestRule.onNodeWithContentDescription("Player $name").assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun sectionHeader_shows_title_and_trailing_action() {
+        var clicked = false
+        setSalonContent {
+            SectionHeader(title = "Last rounds") {
+                AppTextButton(text = "See all", onClick = { clicked = true })
+            }
+        }
+        composeTestRule.onNodeWithText("Last rounds").assertIsDisplayed()
+        composeTestRule.onNodeWithText("See all").performClick()
+        assertTrue(clicked)
+    }
+
+    @Test
+    fun scoreText_shows_signed_values() {
+        setSalonContent {
+            androidx.compose.foundation.layout.Column {
+                ScoreText(score = 312, size = ScoreSize.XL)
+                ScoreText(score = -48)
+                ScoreText(score = 0, size = ScoreSize.S)
+            }
+        }
+        composeTestRule.onNodeWithText("+312").assertIsDisplayed()
+        composeTestRule.onNodeWithText("-48").assertIsDisplayed()
+        composeTestRule.onNodeWithText("+0").assertIsDisplayed()
+    }
+
+    @Test
+    fun appButton_is_56dp_tall() {
+        setSalonContent { AppButton(text = "Start game", onClick = {}) }
+        composeTestRule.onNodeWithText("Start game", useUnmergedTree = false)
+            .assertHeightIsAtLeast(56.dp)
+    }
+
+    @Test
+    fun appOutlinedButton_is_at_least_48dp_tall() {
+        setSalonContent { AppOutlinedButton(text = "Skip round", onClick = {}) }
+        composeTestRule.onNodeWithText("Skip round").assertHeightIsAtLeast(48.dp)
+    }
+
+    @Test
+    fun playerNameField_accepts_input_and_shows_avatar() {
+        var value by androidx.compose.runtime.mutableStateOf("")
+        setSalonContent {
+            PlayerNameField(
+                value         = value,
+                onValueChange = { value = it },
+                seatIndex     = 0,
+                placeholder   = "Player 1"
+            )
+        }
+        // Empty field: the avatar falls back to the placeholder name.
+        composeTestRule.onNodeWithContentDescription("Player Player 1").assertIsDisplayed()
+        composeTestRule.onNode(hasSetTextAction()).performTextInput("Alice")
+        assertEquals("Alice", value)
+        composeTestRule.onNodeWithContentDescription("Player Alice").assertIsDisplayed()
+    }
+
+    @Test
+    fun playerNameField_shows_supporting_text_on_error() {
+        setSalonContent {
+            PlayerNameField(
+                value = "Alice", onValueChange = {}, seatIndex = 1, placeholder = "Player 2",
+                isError = true, supportingText = "Name already used"
+            )
+        }
+        composeTestRule.onNodeWithText("Name already used").assertIsDisplayed()
+    }
 }
+

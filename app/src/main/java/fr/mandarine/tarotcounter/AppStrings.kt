@@ -127,6 +127,10 @@ data class AppStrings(
     // ── Final Score Screen ────────────────────────────────────────────────────
     val mainMenu: String,
     val backToGame: String,
+
+    // ── Shared components ─────────────────────────────────────────────────────
+    // Screen-reader description of a player's avatar circle, e.g. "Player Alice".
+    val playerAvatar: (name: String) -> String,
     val gameOver: String,
     val winner: String,
     // "+N pts" score label shown below the winner name.
@@ -278,6 +282,7 @@ val EnStrings = AppStrings(
 
     mainMenu              = "Main Menu",
     backToGame            = "Back to game",
+    playerAvatar          = { name -> "Player $name" },
     gameOver              = "Game Over",
     winner                = "Winner",
     scoreDisplay          = { formattedScore -> "$formattedScore pts" },
@@ -400,6 +405,7 @@ val FrStrings = AppStrings(
 
     mainMenu              = "Menu principal",
     backToGame            = "Retour",
+    playerAvatar          = { name -> "Joueur $name" },
     gameOver              = "Fin de partie",
     winner                = "Gagnant·e",
     scoreDisplay          = { formattedScore -> "$formattedScore pts" },

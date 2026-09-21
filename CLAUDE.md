@@ -49,6 +49,15 @@ All shared UI building blocks live in `UiComponents.kt`. **Never use raw Materia
 | `AppOutlinedButton` | `OutlinedButton` |
 | `AppTextButton` | `TextButton` |
 | `AutoSizeText` | `Text` inside `SegmentedButton` / `FilterChip` / any fixed-width slot |
+| `SalonCard` | `Card` / `ElevatedCard` / `OutlinedCard` |
+| `SalonTopBar` | Hand-built title rows, `TopAppBar` (the old `ScreenHeader` is gone) |
+| `SectionHeader` | Ad-hoc `Text` section titles |
+| `ScoreText` | `Text(score.withSign())` + manual colour |
+| `PlayerAvatar` / `AvatarStack` | Hand-drawn initial circles |
+| `SuitDivider` | `HorizontalDivider` between major sections |
+| `SalonTextField` / `PlayerNameField` | `OutlinedTextField` / `TextField` |
+
+Salon style: `AppButton` is a 56 dp felt-green pill, `AppOutlinedButton` a 48 dp hairline pill. Pure logic of the Salon components (initials, sizes, suit glyphs) lives in `SalonUi.kt`; light + dark previews in `UiComponentsPreviews.kt`. See `docs/ui-components.md`.
 
 - `AutoSizeText` reads the ambient `LocalTextStyle` (set by the enclosing composable) as its maximum font size and shrinks by 10 % per frame until the text fits or reaches `minFontSize` (default 8 sp).
 - `AppButton` accepts an optional `textStyle` parameter (e.g. `MaterialTheme.typography.titleMedium`) to use a larger starting size for prominent call-to-action buttons.
@@ -59,6 +68,7 @@ Use `SingleChoiceSegmentedButtonRow` + `SegmentedButton` whenever the user picks
 
 Mandatory conventions:
 1. Pass `icon = {}` to every `SegmentedButton` — suppress the checkmark; the filled segment already communicates selection.
+   Also pass `colors = salonSegmentedButtonColors()` so the selected segment is filled felt green.
 2. Use `AutoSizeText` (not `Text`) for every label.
 3. Use `modifier = Modifier.padding(horizontal = 1.dp)` inside each label to keep text away from rounded corners.
 4. **Share the font size** across all segments via `rememberSharedAutoSizeState(locale)` so every label displays at the same — smallest needed — size:
@@ -72,7 +82,8 @@ SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             shape    = SegmentedButtonDefaults.itemShape(index, items.size),
             selected = selection == item,
             onClick  = { selection = if (selection == item) null else item },
-            icon     = {}
+            icon     = {},
+            colors   = salonSegmentedButtonColors()
         ) {
             AutoSizeText(
                 text            = item.label,

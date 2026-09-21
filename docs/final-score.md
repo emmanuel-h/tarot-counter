@@ -14,7 +14,7 @@ The game can be ended at any time — even before the first round is played.
 ## Layout
 
 ```
-← Game Over          ← shared ScreenHeader (back arrow + title in one row)
+← Game Over          ← shared SalonTopBar (back arrow + title in one row)
 
 [ Trophy icon (72dp, gold) ]
 
@@ -83,7 +83,7 @@ Both tokens adapt automatically to light and dark themes. The same `scoreColor()
 
 | Action | Where | What it does |
 |---|---|---|
-| Back arrow (top-left) | `ScreenHeader` | Returns to the active game round. No state is lost. |
+| Back arrow (top-left) | `SalonTopBar` | Returns to the active game round. No state is lost. |
 | **Back to Game** | `OutlinedButton` (bottom-left) | Same as the back arrow — resumes the current game. |
 | **Main Menu** | `OutlinedButton` (bottom-centre) | Navigates to the landing screen. |
 | **New Game** | `Button` (bottom-right, primary) | Navigates to the setup screen. All game state is discarded. |
@@ -97,7 +97,7 @@ The back arrow and "Back to Game" button serve the same purpose: letting the use
 ## Related Files
 
 - `FinalScoreScreen.kt` — Composable implementation
-- `ScreenHeader.kt` — Shared back-arrow + title header used by this screen and `ScoreHistoryScreen`
+- `UiComponents.kt` → `SalonTopBar` — Shared back-arrow + title bar used by this screen, `ScoreHistoryScreen` and `SettingsScreen`
 - `GameModels.kt` — `computeFinalTotals()` and `findWinners()` pure functions
 - `GameScreen.kt` — bottom-bar **End Game** button (OutlinedButton), `showFinalScore` state, routing
 - `FinalScoreScreenTest.kt` — UI tests

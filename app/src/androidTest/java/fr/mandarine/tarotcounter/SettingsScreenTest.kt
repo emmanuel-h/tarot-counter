@@ -84,7 +84,7 @@ class SettingsScreenTest {
         var called = false
         launch(onBack = { called = true })
 
-        // ScreenHeader renders a back arrow with contentDescription = strings.backToGame.
+        // SalonTopBar renders a back arrow with contentDescription = strings.backToGame.
         composeTestRule.onNodeWithContentDescription("Back to game").performClick()
 
         assert(called) { "Expected onBack to be called when the back arrow is tapped" }
