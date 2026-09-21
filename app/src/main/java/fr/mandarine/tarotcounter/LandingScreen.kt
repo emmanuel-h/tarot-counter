@@ -38,6 +38,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale as JavaLocale
 
 // LandingScreen lets the user configure how many players there are and enter their names.
 // It also shows:
@@ -480,8 +480,11 @@ private fun PastGameCard(game: SavedGame, strings: AppStrings) {
     }
 
     // Format the timestamp as a readable date (e.g. "23/03/2026").
-    // `JavaLocale.getDefault()` ensures the format follows the user's regional settings.
-    val dateStr = SimpleDateFormat("dd/MM/yyyy", JavaLocale.getDefault())
+    // The device locale comes from `LocalConfiguration`, which Compose observes:
+    // if the user changes the system language, this card recomposes with it.
+    // (`Locale.getDefault()` would be read once and never trigger a recomposition.)
+    val deviceLocale = LocalConfiguration.current.locales[0]
+    val dateStr = SimpleDateFormat("dd/MM/yyyy", deviceLocale)
         .format(Date(game.datestamp))
 
     val roundCount = game.rounds.size

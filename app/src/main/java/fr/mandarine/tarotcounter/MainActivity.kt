@@ -13,10 +13,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
-import java.util.Locale
 
 // Represents which screen is currently shown in the app.
 // SETUP    = the player name entry screen.
@@ -59,7 +59,10 @@ class MainActivity : ComponentActivity() {
             //   3. If the system locale is neither French nor English, default to English.
             // `savedLocale` is null only before the first DataStore read completes
             // (typically a few milliseconds); the system fallback prevents any flash.
-            val systemLocale = if (Locale.getDefault().language == "fr") AppLocale.FR
+            // The system locale is read from `LocalConfiguration`, which Compose
+            // observes, so a system language change recomposes the UI.
+            val systemLanguage = LocalConfiguration.current.locales[0].language
+            val systemLocale = if (systemLanguage == "fr") AppLocale.FR
                                else AppLocale.EN
             val currentLocale = savedLocale ?: systemLocale
 
