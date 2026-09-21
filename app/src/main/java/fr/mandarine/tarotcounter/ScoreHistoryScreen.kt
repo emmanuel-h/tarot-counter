@@ -86,7 +86,7 @@ fun ScoreHistoryScreen(
             .padding(horizontal = 24.dp, vertical = 8.dp)
     ) {
         // ── Screen header: back arrow + title ─────────────────────────────────
-        ScreenHeader(title = strings.scoreHistory, onBack = onBack)
+        SalonTopBar(title = strings.scoreHistory, onBack = onBack)
 
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider()
@@ -110,6 +110,8 @@ fun ScoreHistoryScreen(
         ) {
             modes.forEachIndexed { index, mode ->
                 SegmentedButton(
+                    // Salon colours: selected segment filled felt green (issue #196).
+                    colors   = salonSegmentedButtonColors(),
                     shape    = SegmentedButtonDefaults.itemShape(index, modes.size),
                     selected = viewMode == mode,
                     onClick  = { viewMode = mode },

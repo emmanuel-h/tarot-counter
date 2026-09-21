@@ -234,7 +234,8 @@ afterEvaluate {
                 "fr.mandarine.tarotcounter.FinalScoreScreenKt*," +
                 "fr.mandarine.tarotcounter.ScoreHistoryScreenKt*," +
                 "fr.mandarine.tarotcounter.UiComponentsKt*," +
-                "fr.mandarine.tarotcounter.ScreenHeaderKt*," +
+                "fr.mandarine.tarotcounter.UiComponentsPreviewsKt*," +
+                "fr.mandarine.tarotcounter.ThemeModeProvider*," +
                 "fr.mandarine.tarotcounter.SettingsScreenKt*," +
                 "fr.mandarine.tarotcounter.RulesScreenKt*," +
                 // BonusRow is a composable compiled to its own class (lives in UiComponents.kt)

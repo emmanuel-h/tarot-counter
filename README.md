@@ -73,17 +73,20 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── GameViewModel.kt       # StateFlows for games, locale, theme; save/load coroutines
 ├── LandingScreen.kt       # Player setup UI + Past Games list
 ├── GameScreen.kt          # Round management, taker rotation, details form, history, End Game button
-├── ScreenHeader.kt        # Shared back-arrow header composable
 ├── SettingsScreen.kt      # Settings page: theme, language, feedback
 ├── ScoreHistoryScreen.kt  # Score history: table view + list view with toggle
 ├── FinalScoreScreen.kt    # End-of-game results: winner card + full score table
-├── UiComponents.kt        # Shared UI: AppButton, AppOutlinedButton, AppTextButton, AutoSizeText
+├── UiComponents.kt        # Shared UI: App* buttons, AutoSizeText, Salon components (SalonCard, PlayerAvatar, SalonTopBar…)
+├── UiComponentsPreviews.kt # Light + dark @Previews of every Salon component
+├── SalonUi.kt             # Pure logic behind the Salon components (initials, sizes, suit glyphs)
 └── ui/theme/              # "Salon" design tokens: colours (+ TarotColors), typography, shapes, spacing, contrast helper
 ```
 
 **Key design choice**: `GameModels.kt` contains only pure Kotlin with no Android or Compose imports, making it fully unit-testable on the JVM.
 
 **Button convention**: never use raw `Button` / `OutlinedButton` / `TextButton` — always use `AppButton` / `AppOutlinedButton` / `AppTextButton` from `UiComponents.kt`. These wrappers automatically shrink labels to fit any screen width or translation length. See [`docs/ui-components.md`](docs/ui-components.md) for details.
+
+**Salon components**: screens are assembled from shared "Salon" building blocks — `SalonCard` (paper card), `PlayerAvatar` / `AvatarStack` (coloured initial circles, one colour per seat), `SuitDivider` (♠ ♥ ♦ ♣ separator), `SectionHeader`, `ScoreText` (signed, coloured, tabular score), `SalonTopBar` (title + back arrow + up to two icon actions), `SalonTextField` / `PlayerNameField`. Buttons are pills (56 dp felt-green primary, 48 dp hairline outline) and every `SegmentedButton` uses `salonSegmentedButtonColors()` (selected segment filled felt green).
 
 **Tablet & landscape support**: every screen wraps its content in a `Box(contentAlignment = TopCenter)` and constrains the inner column to `MAX_CONTENT_WIDTH = 600 dp` via `widthIn`. On phones the column fills the screen normally; on 10-inch tablets in landscape the content is centered with comfortable margins on each side.
 
@@ -191,6 +194,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `AppLocaleTest.kt` | i18n string bundles: locale-specific strings, lambda formatters, enum localized names |
 | `ColorContrastTest.kt` | WCAG relative luminance and contrast ratio helpers |
 | `SalonPaletteTest.kt` | Every text/background pair of both themes ≥ 4.5:1; player tones |
+| `SalonUiTest.kt` | Salon component logic: player initials, avatar/score sizes, suit glyphs, top-bar action limit |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
 | `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, duplicate validation, settings gear icon |
 | `SettingsScreenTest.kt` | Settings page: back navigation, theme toggle, language toggle, feedback button, section labels |
@@ -198,6 +202,8 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ScoreHistoryScreenTest.kt` | Score history screen: table view, list view, toggle, round indicators, back navigation |
 | `FinalScoreScreenTest.kt` | Final score screen: winner card, tie detection, score table, New Game navigation |
 | `SalonThemeTest.kt` | Theme wiring: light/dark tokens, `scoreColor()`, fonts, shapes |
+| `SalonTopBarTest.kt` | Salon top bar: title, localized back arrow, actions, 48 dp touch targets |
+| `UiComponentsTest.kt` | Shared components: App* buttons, bonus grid, chip selector, score rows, Salon card/avatar/stack/header/score/text field |
 
 ## Project Structure
 
@@ -210,7 +216,7 @@ TarotCounter/
 │   │   └── androidTest/    # Instrumented tests (device/emulator)
 │   └── build.gradle.kts
 ├── docs/
-│   ├── ui-components.md      # Shared UI components: AppButton, AutoSizeText guideline
+│   ├── ui-components.md      # Shared UI components: App* buttons, AutoSizeText, Salon components
 │   ├── game-flow.md          # Game mechanics specification
 │   ├── player-setup.md       # Setup screen behaviour
 │   ├── settings.md           # Settings page: theme, language, feedback
@@ -234,7 +240,7 @@ TarotCounter/
 
 More detailed documentation lives in [`docs/`](docs/):
 
-- [`docs/ui-components.md`](docs/ui-components.md) — shared UI building blocks: `AppButton`, `AutoSizeText`, and the button convention
+- [`docs/ui-components.md`](docs/ui-components.md) — shared UI building blocks: `AppButton`, `AutoSizeText`, the button convention, and the Salon components (`SalonCard`, `PlayerAvatar`, `SalonTopBar`…)
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
 - [`docs/settings.md`](docs/settings.md) — settings page: theme toggle, language toggle, feedback button, navigation wiring

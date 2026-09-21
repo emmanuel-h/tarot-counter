@@ -89,10 +89,10 @@ fun SettingsScreen(
         ) {
 
             // ── Back arrow + screen title ─────────────────────────────────────
-            // ScreenHeader renders a back arrow (← ) on the leading edge followed
-            // by the page title in headlineSmall style — the same pattern used by
+            // SalonTopBar renders a back arrow (← ) on the leading edge followed
+            // by the page title in Cormorant — the same bar used by
             // FinalScoreScreen and ScoreHistoryScreen.
-            ScreenHeader(title = strings.settingsTitle, onBack = onBack)
+            SalonTopBar(title = strings.settingsTitle, onBack = onBack)
 
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider()
@@ -115,6 +115,8 @@ fun SettingsScreen(
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth(0.5f)) {
                 themeOptions.forEachIndexed { index, (themeOption, label) ->
                     SegmentedButton(
+                        // Salon colours: selected segment filled felt green (issue #196).
+                        colors   = salonSegmentedButtonColors(),
                         shape    = SegmentedButtonDefaults.itemShape(index, themeOptions.size),
                         selected = theme == themeOption,
                         // Calling the callback even for the already-selected option is safe:
@@ -152,6 +154,8 @@ fun SettingsScreen(
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth(0.5f)) {
                 localeOptions.forEachIndexed { index, (localeOption, label) ->
                     SegmentedButton(
+                        // Salon colours: selected segment filled felt green (issue #196).
+                        colors   = salonSegmentedButtonColors(),
                         shape    = SegmentedButtonDefaults.itemShape(index, localeOptions.size),
                         selected = locale == localeOption,
                         onClick  = { onLocaleChange(localeOption) },

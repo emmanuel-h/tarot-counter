@@ -484,6 +484,8 @@ fun GameScreen(
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 displayNames.forEachIndexed { index, name ->
                     SegmentedButton(
+                        // Salon colours: selected segment filled felt green (issue #196).
+                        colors   = salonSegmentedButtonColors(),
                         shape    = SegmentedButtonDefaults.itemShape(index, displayNames.size),
                         selected = selectedAttacker == name,
                         onClick  = {
@@ -531,6 +533,8 @@ fun GameScreen(
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     Contract.entries.forEachIndexed { index, c ->
                         SegmentedButton(
+                            // Salon colours: selected segment filled felt green (issue #196).
+                            colors   = salonSegmentedButtonColors(),
                             // shape draws the correct rounded corners: round on the outer ends,
                             // straight on the inner edges between segments.
                             shape    = SegmentedButtonDefaults.itemShape(

@@ -133,10 +133,9 @@ fun FinalScoreScreen(
     ) {
 
         // ── Screen header: back arrow + title ─────────────────────────────────
-        // ScreenHeader is a shared composable (ScreenHeader.kt) that renders the
-        // back arrow and screen title in a Row — the same pattern as ScoreHistoryScreen,
-        // now unified into one place so both screens look identical at the top.
-        ScreenHeader(title = strings.gameOver, onBack = onBack)
+        // SalonTopBar (UiComponents.kt) is the shared Salon top bar: back arrow,
+        // then the title in Cormorant — identical on every overlay screen.
+        SalonTopBar(title = strings.gameOver, onBack = onBack)
 
         // ── Decorative trophy icon ─────────────────────────────────────────────
         // Enlarged to 72dp and tinted gold (secondary) to make the game-ending moment

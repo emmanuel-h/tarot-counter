@@ -193,6 +193,8 @@ fun LandingScreen(
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth(0.6f)) {
             playerCountOptions.forEachIndexed { index, n ->
                 SegmentedButton(
+                    // Salon colours: selected segment filled felt green (issue #196).
+                    colors   = salonSegmentedButtonColors(),
                     shape    = SegmentedButtonDefaults.itemShape(index, playerCountOptions.size),
                     selected = selectedPlayers == n,
                     onClick  = {
@@ -281,6 +283,8 @@ fun LandingScreen(
         val dealerModeSize = rememberSharedAutoSizeState(locale)
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth(0.6f)) {
             SegmentedButton(
+                // Salon colours: selected segment filled felt green (issue #196).
+                colors   = salonSegmentedButtonColors(),
                 shape    = SegmentedButtonDefaults.itemShape(0, 2),
                 selected = useRandomDealer,
                 onClick  = { useRandomDealer = true },
@@ -293,6 +297,8 @@ fun LandingScreen(
                 )
             }
             SegmentedButton(
+                // Salon colours: selected segment filled felt green (issue #196).
+                colors   = salonSegmentedButtonColors(),
                 shape    = SegmentedButtonDefaults.itemShape(1, 2),
                 selected = !useRandomDealer,
                 onClick  = { useRandomDealer = false },
@@ -316,6 +322,8 @@ fun LandingScreen(
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 resolvedNames.forEachIndexed { index, name ->
                     SegmentedButton(
+                        // Salon colours: selected segment filled felt green (issue #196).
+                        colors   = salonSegmentedButtonColors(),
                         shape    = SegmentedButtonDefaults.itemShape(index, resolvedNames.size),
                         selected = selectedDealerIndex == index,
                         onClick  = { selectedDealerIndex = index },
