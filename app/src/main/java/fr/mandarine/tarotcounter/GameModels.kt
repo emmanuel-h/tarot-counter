@@ -566,3 +566,21 @@ data class RoundResult(
     val won: Boolean?,                        // null = skipped, true = taker won, false = taker lost
     val playerScores: Map<String, Int> = emptyMap()  // empty for skipped rounds
 )
+
+// The player(s) currently in the lead of an unfinished game, and their score.
+// `names` holds several players when they are tied for first place.
+data class Leaders(val names: List<String>, val score: Int)
+
+// Returns who leads a game after the given rounds, or null when no round has been
+// scored yet (no rounds at all, or only skipped rounds) — there is no leader then.
+//
+// Used by the "Game in progress" card on the home screen ("Alice leads +312").
+fun currentLeaders(playerNames: List<String>, rounds: List<RoundResult>): Leaders? {
+    // A skipped round has an empty playerScores map; if every round is like that,
+    // all totals are 0 and naming everybody "leader" would be meaningless.
+    if (rounds.none { it.playerScores.isNotEmpty() }) return null
+    val totals = computeFinalTotals(playerNames, rounds)
+    val names  = findWinners(totals)
+    // findWinners only returns names present in totals, so the lookup never fails.
+    return Leaders(names = names, score = totals.getValue(names.first()))
+}

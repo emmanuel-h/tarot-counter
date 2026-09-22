@@ -40,7 +40,11 @@ val Figtree = FontFamily(
 // so columns of scores wobble. The OpenType feature "tnum" (tabular numbers)
 // makes every digit the same width so numbers line up in columns.
 // We turn it on for *every* style below, so any score, in any style, aligns.
-private const val TABULAR_FIGURES = "tnum"
+//
+// "lnum" (lining numbers) is added too: Cormorant Garamond draws *old-style*
+// figures by default, where "1" looks like a small-caps "I" and 3, 4, 5, 7, 9
+// dip below the line — charming in prose, confusing in "Round 1" or a score.
+private const val TABULAR_FIGURES = "tnum, lnum"
 
 /**
  * Builds one text style of the scale. A small helper so every style shares the

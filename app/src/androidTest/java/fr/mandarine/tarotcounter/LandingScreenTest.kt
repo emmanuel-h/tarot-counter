@@ -5,13 +5,13 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
@@ -68,6 +68,33 @@ class LandingScreenTest {
         }
     }
 
+    /**
+     * The name field of seat [index] (0-based). Fields are found by test tag because
+     * their "Player N" placeholder disappears as soon as the user types.
+     */
+    private fun field(index: Int) = composeTestRule.onNodeWithTag("player_name_field_$index")
+
+    /** One scored round, so saved/in-progress games have a real winner/leader. */
+    private val scoredRound = RoundResult(
+        roundNumber = 1, takerName = "Alice", contract = Contract.GARDE, details = null,
+        won = true, playerScores = mapOf("Alice" to 150, "Bob" to -75, "Charlie" to -75)
+    )
+
+    /** Launches LandingScreen with a game in progress, so the felt resume card appears. */
+    private fun launchWithInProgress(onResume: (InProgressGame) -> Unit = {}) {
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                LandingScreen(
+                    inProgressGame = InProgressGame(
+                        gameId = "g", playerNames = listOf("Alice", "Bob", "Charlie"),
+                        currentRound = 2, startingIndex = 0, rounds = listOf(scoredRound)
+                    ),
+                    onResumeGame = onResume
+                )
+            }
+        }
+    }
+
     /** Launches LandingScreen with a list of past games so the history section appears. */
     private fun launchWithPastGames() {
         composeTestRule.setContent {
@@ -78,7 +105,7 @@ class LandingScreenTest {
                             id = "test-1",
                             datestamp = System.currentTimeMillis(),
                             playerNames = listOf("Alice", "Bob", "Charlie"),
-                            rounds = emptyList(),
+                            rounds = listOf(scoredRound),
                             finalScores = mapOf("Alice" to 150, "Bob" to -75, "Charlie" to -75)
                         )
                     )
@@ -116,8 +143,7 @@ class LandingScreenTest {
     }
 
     // ── Spec: settings button is large/consistent with other action buttons ────
-    // The settings button uses OutlinedIconButton (same as HistoryButton in GameScreen)
-    // which renders with a visible border and a minimum 40 dp touch target (issue #161).
+    // The settings button lives in the SalonTopBar, whose icon buttons are 48 dp.
     @Test
     fun settings_button_has_minimum_touch_target_size() {
         launch()
@@ -126,9 +152,9 @@ class LandingScreenTest {
             .getBoundsInRoot()
         val width  = bounds.right - bounds.left
         val height = bounds.bottom - bounds.top
-        // OutlinedIconButton provides at least a 40 dp touch area.
-        assert(width >= 40.dp && height >= 40.dp) {
-            "Expected settings button to be at least 40×40 dp " +
+        // SalonTopBar icon buttons provide a 48 dp touch area.
+        assert(width >= 48.dp && height >= 48.dp) {
+            "Expected settings button to be at least 48×48 dp " +
                 "(actual: ${width}×${height})"
         }
     }
@@ -206,9 +232,7 @@ class LandingScreenTest {
         val buttonBounds = composeTestRule
             .onNodeWithText("Start Game")
             .getBoundsInRoot()
-        val fieldBounds = composeTestRule
-            .onNodeWithText("Player 3")
-            .getBoundsInRoot()
+        val fieldBounds = field(2).getBoundsInRoot()
 
         // The button's top edge should be below the last name-field's bottom edge.
         assert(buttonBounds.top > fieldBounds.bottom) {
@@ -249,8 +273,8 @@ class LandingScreenTest {
     fun start_game_button_is_enabled_with_unique_names() {
         launch()
         // Type distinct names into the first two fields; third stays blank ("Player 3").
-        composeTestRule.onNodeWithText("Player 1").performTextInput("Alice")
-        composeTestRule.onNodeWithText("Player 2").performTextInput("Bob")
+        field(0).performTextInput("Alice")
+        field(1).performTextInput("Bob")
 
         // No duplicates → button should be enabled.
         composeTestRule.onNodeWithText("Start Game").assertIsEnabled()
@@ -260,8 +284,8 @@ class LandingScreenTest {
     fun start_game_button_is_disabled_when_two_typed_names_match() {
         launch()
         // Enter the same name in both fields — a clear duplicate.
-        composeTestRule.onNodeWithText("Player 1").performTextInput("Alice")
-        composeTestRule.onNodeWithText("Player 2").performTextInput("Alice")
+        field(0).performTextInput("Alice")
+        field(1).performTextInput("Alice")
 
         // Duplicate detected → button must be disabled.
         composeTestRule.onNodeWithText("Start Game").assertIsNotEnabled()
@@ -270,8 +294,8 @@ class LandingScreenTest {
     @Test
     fun error_message_is_shown_for_duplicate_names() {
         launch()
-        composeTestRule.onNodeWithText("Player 1").performTextInput("Alice")
-        composeTestRule.onNodeWithText("Player 2").performTextInput("Alice")
+        field(0).performTextInput("Alice")
+        field(1).performTextInput("Alice")
 
         // "Name already used" appears under each of the two conflicting fields.
         composeTestRule.onAllNodesWithText("Name already used").assertCountEquals(2)
@@ -281,8 +305,8 @@ class LandingScreenTest {
     fun duplicate_detection_is_case_insensitive() {
         launch()
         // "alice" and "ALICE" resolve to the same lowercase name.
-        composeTestRule.onNodeWithText("Player 1").performTextInput("alice")
-        composeTestRule.onNodeWithText("Player 2").performTextInput("ALICE")
+        field(0).performTextInput("alice")
+        field(1).performTextInput("ALICE")
 
         composeTestRule.onNodeWithText("Start Game").assertIsNotEnabled()
         // Both conflicting fields show the error.
@@ -294,7 +318,7 @@ class LandingScreenTest {
         launch()
         // The first field is left blank (resolves to "Player 1").
         // Typing "Player 1" in the second field creates a duplicate.
-        composeTestRule.onNodeWithText("Player 2").performTextInput("Player 1")
+        field(1).performTextInput("Player 1")
 
         composeTestRule.onNodeWithText("Start Game").assertIsNotEnabled()
     }
@@ -302,45 +326,65 @@ class LandingScreenTest {
     @Test
     fun fixing_duplicate_re_enables_start_game_button() {
         launch()
-        composeTestRule.onNodeWithText("Player 1").performTextInput("Alice")
-        composeTestRule.onNodeWithText("Player 2").performTextInput("Alice")
+        field(0).performTextInput("Alice")
+        field(1).performTextInput("Alice")
 
         // Button disabled while duplicate exists.
         composeTestRule.onNodeWithText("Start Game").assertIsNotEnabled()
 
         // Fix the duplicate by changing the second name.
-        composeTestRule.onNodeWithText("Player 2").performTextClearance()
-        composeTestRule.onNodeWithText("Player 2").performTextInput("Bob")
+        field(1).performTextClearance()
+        field(1).performTextInput("Bob")
 
         // No more duplicates → button enabled again.
         composeTestRule.onNodeWithText("Start Game").assertIsEnabled()
     }
 
-    // ── Spec: decorative card-suit header (issue #5) ──────────────────────────
+    // ── Spec: Salon layout (issue #197) ───────────────────────────────────────
 
     @Test
-    fun card_suit_symbols_are_shown_above_title() {
+    fun new_game_card_title_is_displayed() {
         launch()
-        // The four French tarot suit symbols should appear on screen.
-        composeTestRule.onNodeWithText("♠  ♥  ♦  ♣").assertIsDisplayed()
+        composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
     }
 
     @Test
-    fun card_suit_symbols_are_above_app_title() {
+    fun player_avatars_are_shown_in_name_fields() {
         launch()
-        // The suit symbols must appear above the title — same spatial check used for
-        // the "Start Game" button position test.
-        val suitBounds = composeTestRule
-            .onNodeWithText("♠  ♥  ♦  ♣")
-            .getBoundsInRoot()
-        val titleBounds = composeTestRule
-            .onNodeWithText("Tarot Counter")
-            .getBoundsInRoot()
+        // Blank fields: each avatar falls back to the placeholder name.
+        composeTestRule.onNodeWithContentDescription("Player Player 1").assertIsDisplayed()
+        field(0).performTextInput("Alice")
+        composeTestRule.onNodeWithContentDescription("Player Alice").assertIsDisplayed()
+    }
 
-        assert(suitBounds.bottom <= titleBounds.top) {
-            "Expected suit symbols (bottom=${suitBounds.bottom}) to be above " +
-                "app title (top=${titleBounds.top})"
-        }
+    @Test
+    fun no_resume_card_without_game_in_progress() {
+        launch()
+        composeTestRule.onNodeWithTag("resume_card").assertDoesNotExist()
+    }
+
+    @Test
+    fun resume_card_shows_round_players_and_leader() {
+        launchWithInProgress()
+        composeTestRule.onNodeWithText("GAME IN PROGRESS").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
+        composeTestRule.onNodeWithText("3 players · Alice leads +150").assertIsDisplayed()
+    }
+
+    @Test
+    fun resume_card_is_above_new_game_card() {
+        launchWithInProgress()
+        val resume  = composeTestRule.onNodeWithTag("resume_card").getBoundsInRoot()
+        val newGame = composeTestRule.onNodeWithText("New Game").getBoundsInRoot()
+        assert(resume.bottom < newGame.top) { "Resume card must sit above the New game card" }
+    }
+
+    @Test
+    fun tapping_resume_calls_onResumeGame() {
+        var resumed: InProgressGame? = null
+        launchWithInProgress(onResume = { resumed = it })
+        composeTestRule.onNodeWithText("Resume").performClick()
+        assertEquals("g", resumed?.gameId)
     }
 
     // ── Spec: "Past Games" section heading weight (issue #5) ─────────────────
@@ -355,13 +399,19 @@ class LandingScreenTest {
     // ── Spec: past game card shows winner name (issue #5) ─────────────────────
 
     @Test
-    fun past_game_card_shows_winner_line() {
+    fun past_game_row_shows_winner_score_and_details() {
         launchWithPastGames()
-        // The winner result text should appear (e.g. "Alice +150") inside the card.
-        // We use a substring check via containsText to stay locale-agnostic.
-        // "Alice" is in both the player list and the winner line of the card: the
-        // first match must be visible.
-        composeTestRule.onAllNodesWithText("Alice", substring = true).onFirst().assertIsDisplayed()
+        // Row: winner name, winner score, then "date · 3 players · 1 round".
+        composeTestRule.onNodeWithText("Alice").assertIsDisplayed()
+        composeTestRule.onNodeWithText("+150").assertIsDisplayed()
+        composeTestRule.onNodeWithText("3 players · 1 round", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun past_game_row_is_at_least_48dp_tall() {
+        launchWithPastGames()
+        val bounds = composeTestRule.onNodeWithTag("past_game_test-1").getBoundsInRoot()
+        assert(bounds.bottom - bounds.top >= 48.dp) { "Past game rows must be ≥ 48 dp tall" }
     }
 
     // ── Spec: dealer selection section (issue #128) ───────────────────────────

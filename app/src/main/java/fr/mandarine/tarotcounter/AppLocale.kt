@@ -22,3 +22,11 @@ enum class AppLocale { EN, FR }
 // The default value is EN so that Previews and tests that don't set a provider
 // still compile and render correctly.
 val LocalAppLocale = staticCompositionLocalOf { AppLocale.EN }
+
+// The java.util.Locale matching each app language — used to format dates
+// ("Sat 13 Sep" / "sam. 13 sept.") in the app's language rather than the device's.
+val AppLocale.javaLocale: java.util.Locale
+    get() = when (this) {
+        AppLocale.EN -> java.util.Locale.ENGLISH
+        AppLocale.FR -> java.util.Locale.FRENCH
+    }
