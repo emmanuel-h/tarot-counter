@@ -580,158 +580,31 @@ fun GameScreen(
                 }
             }
 
-            val contract = selectedContract
-            if (contract != null) {
-
+            // ── Bonuses: three rows, each opening a bottom sheet (issue #200) ──
+            if (selectedContract != null) {
                 Spacer(Modifier.height(Dimens.SpaceL))
-                HorizontalDivider()
-                Spacer(Modifier.height(12.dp))
-
-                // ── Player-assigned bonuses (compact grid) ─────────────────────
-                // Petit au bout stays single-select (only one player captures the
-                // Petit on the last trick). The three Poignée rows are now multi-select:
-                // any number of players can each show their own trump hand (issue #149).
-                CompactBonusGrid(
-                    playerNames     = displayNames,
-                    bonusLabels     = listOf(
-                        strings.petit,
-                        strings.poignee,
-                        strings.doublePoignee,
-                        strings.triplePoignee
-                    ),
-                    bonusTooltips   = listOf(
-                        strings.petitTooltipBody,
-                        // Invoke with the actual player count so the tooltip shows the
-                        // correct trump threshold (8/10/13 for 5 players, 10/13/15 for 4, 13/15/18 for 3).
-                        strings.poigneeTooltipBody(displayNames.size),
-                        strings.doublePoigneeTooltipBody(displayNames.size),
-                        strings.triplePoigneeTooltipBody(displayNames.size)
-                    ),
-                    petitAuBout     = petitAuBout,   onPetit         = { petitAuBout = it },
-                    // Each poignée callback receives (playerName, isNowChecked).
-                    // Adding a player: `poignees + name`; removing: `poignees - name`.
-                    poignees        = poignees,       onPoignee       = { name, checked ->
-                        poignees = if (checked) poignees + name else poignees - name
+                BonusesSection(
+                    playerNames    = displayNames,
+                    taker          = attacker,
+                    partner        = if (displayNames.size == 5) selectedPartner else null,
+                    petitAuBout    = petitAuBout,
+                    onPetitAuBout  = { petitAuBout = it },
+                    poignees       = PoigneeDeclarations(poignees, doublePoignees, triplePoignees),
+                    onPoignees     = { declared ->
+                        poignees       = declared.simple
+                        doublePoignees = declared.double
+                        triplePoignees = declared.triple
                     },
-                    doublePoignees  = doublePoignees, onDoublePoignee = { name, checked ->
-                        doublePoignees = if (checked) doublePoignees + name else doublePoignees - name
-                    },
-                    triplePoignees  = triplePoignees, onTriplePoignee = { name, checked ->
-                        triplePoignees = if (checked) triplePoignees + name else triplePoignees - name
+                    atoutError     = atoutError,
+                    atoutErrorText = strings.atoutCountError(totalDeclaredAtouts, TOTAL_ATOUTS_IN_DECK),
+                    chelem         = chelem,
+                    chelemPlayer   = chelemPlayer,
+                    onChelem       = { outcome, player ->
+                        chelem       = outcome
+                        chelemPlayer = player
                     }
                 )
-
-                // ── Atout count validation error ──────────────────────────────
-                // Shown when the combined minimum trump thresholds across all
-                // declared poignées exceed the 22 trumps in the deck.
-                if (atoutError) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text     = strings.atoutCountError(totalDeclaredAtouts, TOTAL_ATOUTS_IN_DECK),
-                        style    = MaterialTheme.typography.bodySmall,
-                        color    = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("atout_count_error")
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(12.dp))
-
-                // ── Chelem (grand slam) ────────────────────────────────────────
-                var chelemExpanded by remember { mutableStateOf(false) }
-
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier              = Modifier.fillMaxWidth()
-                ) {
-                    ExposedDropdownMenuBox(
-                        expanded         = chelemExpanded,
-                        onExpandedChange = { chelemExpanded = !chelemExpanded },
-                        modifier         = Modifier
-                            .weight(1f)
-                            .testTag("chelem_dropdown")
-                    ) {
-                        OutlinedTextField(
-                            // Show the placeholder "Chelem" when no outcome is selected.
-                            value         = if (chelem == Chelem.NONE)
-                                                strings.chelemPlaceholder
-                                            else
-                                                chelem.localizedName(locale),
-                            onValueChange = {},
-                            readOnly      = true,
-                            trailingIcon  = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = chelemExpanded)
-                            },
-                            colors        = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                            singleLine    = true,
-                            modifier      = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
-                            expanded         = chelemExpanded,
-                            onDismissRequest = { chelemExpanded = false }
-                        ) {
-                            for (c in Chelem.entries) {
-                                DropdownMenuItem(
-                                    text           = { Text(c.localizedName(locale)) },
-                                    onClick        = {
-                                        // Reset the associated player when a different
-                                        // chelem option is selected.
-                                        if (chelem != c) chelemPlayer = null
-                                        chelem         = c
-                                        chelemExpanded = false
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                )
-                            }
-                        }
-                    }
-                    // ⓘ icon explains the chelem bonus amounts.
-                    BonusInfoIcon(
-                        title = strings.chelemLabel,
-                        body  = strings.chelemTooltipBody
-                    )
-                }
-
-                // ── Chelem player selector ─────────────────────────────────────
-                // Only shown when a non-NONE chelem outcome is selected.
-                if (chelem != Chelem.NONE) {
-                    Spacer(Modifier.height(8.dp))
-                    val chelemCandidates = buildList {
-                        // The selected attacker can always call chelem.
-                        selectedAttacker?.let { add(it) }
-                        // In a 5-player game the partner can also call chelem.
-                        if (displayNames.size == 5) selectedPartner?.let { add(it) }
-                    }
-                    PlayerChipSelector(
-                        label          = strings.chelemPlayerLabel,
-                        noneLabel      = strings.noneOption,
-                        selectedPlayer = chelemPlayer,
-                        playerNames    = chelemCandidates,
-                        onSelect       = { chelemPlayer = it }
-                    )
-                    // Informational note: the chelem caller plays first this round.
-                    // Using ?.let instead of !! for idiomatic null-safe access:
-                    // this only renders when chelemPlayer is non-null AND the chelem
-                    // type is one that was announced (realized or not).
-                    if (chelem == Chelem.ANNOUNCED_REALIZED || chelem == Chelem.ANNOUNCED_NOT_REALIZED) {
-                        chelemPlayer?.let { player ->
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text  = strings.chelemPlaysFirst(player),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Dimens.SpaceM))
             }
             // end inline round details
           } // end round entry
