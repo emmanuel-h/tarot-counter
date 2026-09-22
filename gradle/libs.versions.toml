@@ -1,6 +1,8 @@
 [versions]
 agp = "9.4.1"
 coreKtx = "1.19.0"
+# core-splashscreen: backport of the Android 12 splash screen API to every supported version.
+coreSplashscreen = "1.2.0"
 junit = "4.13.2"
 # kotlinx-coroutines-test: runTest, UnconfinedTestDispatcher, Dispatchers.setMain for ViewModel tests.
 kotlinxCoroutinesTest = "1.11.0"
@@ -19,6 +21,7 @@ lifecycleViewModelCompose = "2.11.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

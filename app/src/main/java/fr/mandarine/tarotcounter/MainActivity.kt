@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -33,6 +34,9 @@ class MainActivity : ComponentActivity() {
     // onCreate is called when the app starts (or when the activity is created).
     // savedInstanceState holds data saved from a previous run (e.g. screen rotation).
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Shows the Salon splash screen (icon on ivory, issue #205) while the app
+        // starts, then switches to the normal theme. Must run before super.onCreate.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         // Makes the app draw behind the system bars (status bar, navigation bar)
