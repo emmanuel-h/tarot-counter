@@ -163,18 +163,12 @@ class GameViewModel internal constructor(
     //             This is explicitly passed by the UI — it is NOT derived from the
     //             dealer rotation, because any player can bid regardless of who deals.
     fun recordPlayed(takerName: String, contract: Contract, details: RoundDetails) {
-        val won      = takerWon(details.bouts, details.points)
-        val score    = calculateRoundScore(contract, details.bouts, details.points)
-        val base     = computePlayerScores(
-            allPlayers  = _displayNames,
-            takerName   = takerName,
-            partnerName = details.partnerName,
-            won         = won,
-            roundScore  = score
-        )
-        // 3/4-player: every non-taker is a defender; 5-player: exactly 3 defenders.
-        val numDef   = if (details.partnerName != null) 3 else _displayNames.size - 1
-        val scores   = applyBonuses(base, contract, details, takerName, won, numDef)
+        // previewRound (GameModels.kt) holds the scoring: win check, base score,
+        // distribution and bonuses. The round-entry view uses the same function for
+        // its live result, so what the user sees is exactly what gets recorded.
+        val preview = previewRound(_displayNames, takerName, contract, details)
+        val won     = preview.won
+        val scores  = preview.playerScores
         roundHistory.add(RoundResult(currentRound, takerName, contract, details, won, scores))
         currentRound++
         saveInProgressGame(buildProgressSnapshot())

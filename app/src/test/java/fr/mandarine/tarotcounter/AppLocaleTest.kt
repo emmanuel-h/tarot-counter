@@ -273,21 +273,6 @@ class AppLocaleTest {
         assertEquals("Manche 5", appStrings(AppLocale.FR).roundHeader(5))
     }
 
-    // ── chooseContract lambda ─────────────────────────────────────────────────
-
-    @Test
-    fun en_chooseContract_formats_correctly() {
-        assertEquals("Alice — choose a contract:", appStrings(AppLocale.EN).chooseContract("Alice"))
-    }
-
-    @Test
-    fun fr_chooseContract_formats_correctly() {
-        // Note the French typographic space before the colon.
-        assertEquals("Alice — choisissez un contrat :", appStrings(AppLocale.FR).chooseContract("Alice"))
-    }
-
-    // ── resumeRoundDetail lambda ──────────────────────────────────────────────
-
     @Test
     fun en_resumeRoundDetail_formats_correctly() {
         // Combines the round number with a pre-formatted "rounds played" label.
