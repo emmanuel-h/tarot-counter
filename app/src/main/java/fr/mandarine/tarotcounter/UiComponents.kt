@@ -1,6 +1,10 @@
 package fr.mandarine.tarotcounter
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.LaunchedEffect
+import kotlin.math.roundToInt
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.ColumnScope
@@ -601,18 +605,36 @@ fun SectionHeader(
  * Every Salon text style uses tabular figures, so scores stacked in a column
  * line up digit by digit.
  *
- * @param score The score to display; formatted with [withSign].
- * @param size  [ScoreSize.S], [ScoreSize.M] or [ScoreSize.XL].
+ * @param score   The score to display; formatted with [withSign].
+ * @param size    [ScoreSize.S], [ScoreSize.M] or [ScoreSize.XL].
+ * @param animate When true, a change of [score] counts up/down to the new value
+ *                (issue #204) instead of jumping; instant with reduced motion.
+ * @param countFrom With [animate], the value shown on the first frame, so a text
+ *                that appears mid-update (e.g. a row that just became the leader
+ *                row) still counts from the previous total. Null = start at [score].
  */
 @Composable
 fun ScoreText(
     score: Int,
     modifier: Modifier = Modifier,
-    size: ScoreSize = ScoreSize.M
+    size: ScoreSize = ScoreSize.M,
+    animate: Boolean = false,
+    countFrom: Int? = null
 ) {
+    val shown = if (animate) {
+        // Animatable holds the number currently shown; remember keeps it across
+        // recompositions and starts it at `countFrom` (or the score itself).
+        val animatable = remember { Animatable((countFrom ?: score).toFloat()) }
+        val millis = scoreAnimationMillis(LocalReducedMotion.current)
+        // Every time `score` changes, glide from the current value to the new one.
+        LaunchedEffect(score) { animatable.animateTo(score.toFloat(), tween(millis)) }
+        animatable.value.roundToInt()
+    } else score
+
     Text(
-        text     = score.withSign(),
+        text     = shown.withSign(),
         modifier = modifier,
+        // Colour follows the final score, so it never flickers mid-count.
         color    = scoreColor(score),
         maxLines = 1,
         style    = MaterialTheme.typography.titleMedium.copy(

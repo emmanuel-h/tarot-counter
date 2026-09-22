@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -82,6 +84,8 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalAppLocale provides currentLocale,
                     LocalAppTheme  provides currentTheme,
+                    // "Remove animations" (accessibility) turns every transition off.
+                    LocalReducedMotion provides rememberSystemReducedMotion(),
                 ) {
 
                     // Track which screen is visible. `by` delegation means we read/write
@@ -92,9 +96,24 @@ class MainActivity : ComponentActivity() {
                     // It handles padding so our content doesn't go under system bars.
                     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
 
-                        when (currentScreen) {
+                        // Every screen gets the system-bar padding, and those insets are
+                        // marked as consumed so imePadding() inside a screen only adds the
+                        // keyboard height *beyond* the navigation bar (no double gap).
+                        val screenModifier = Modifier
+                            .padding(innerPadding)
+                            .consumeWindowInsets(innerPadding)
+                        val reducedMotion = LocalReducedMotion.current
+
+                        // AnimatedContent cross-fades ("fade through") between screens
+                        // whenever currentScreen changes (instant with reduced motion).
+                        AnimatedContent(
+                            targetState    = currentScreen,
+                            transitionSpec = { fadeThrough(reducedMotion) },
+                            label          = "screen"
+                        ) { screen ->
+                        when (screen) {
                             Screen.SETUP -> LandingScreen(
-                                modifier       = Modifier.padding(innerPadding),
+                                modifier       = screenModifier,
                                 pastGames      = pastGames,
                                 inProgressGame = inProgressGame,
                                 // Start a fresh game: resolve display names (blank entries become
@@ -124,7 +143,7 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToSettings = { currentScreen = Screen.SETTINGS }
                             )
                             Screen.SETTINGS -> SettingsScreen(
-                                modifier      = Modifier.padding(innerPadding),
+                                modifier      = screenModifier,
                                 // Persist the user's theme choice and re-render the whole UI.
                                 onThemeChange = { gameViewModel.setTheme(it) },
                                 // Persist the user's language choice and trigger a recomposition
@@ -138,9 +157,10 @@ class MainActivity : ComponentActivity() {
                                 // Called when the user presses "New Game" on FinalScoreScreen.
                                 // The game is already saved at this point — just navigate away.
                                 onEndGame = { currentScreen = Screen.SETUP },
-                                modifier  = Modifier.padding(innerPadding)
+                                modifier  = screenModifier
                             )
                         }
+                        }   // end AnimatedContent
                     }
                 }
             }
