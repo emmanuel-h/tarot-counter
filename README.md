@@ -9,7 +9,7 @@ TarotCounter guides players through a game round by round:
 1. **Home / setup** — a Salon top bar shows the app name with a **⚙** settings button. If a game is in progress, a felt-green **resume card** comes first: round number, avatar stack, current leader and score, **Resume** button. A **New Game** card groups the setup: choose 3, 4 or 5 players, enter optional names (each field shows the seat's coloured avatar), and choose the **first dealer** (random or a specific player). Duplicate names are flagged inline in real time, and Start stays disabled until every name is unique.
 2. **Game screen, between rounds**: the scores come first. A dealer chip sits under the "Round N" title (with undo and history icon buttons). After round 1 comes a ranked **Standings** card: rank, avatar, name, a small ▲/▼ trend since the last round, and the score; leaders are highlighted in brass. Then **"Who took?"**: one large avatar tile per player (3 / 2×2 / 3+2). Then **Last rounds**: the latest 3, with **See all** opening the history. The bottom bar holds **End Game** (red text) and **Skip round**.
 3. **Round entry**: tapping a taker tile opens "ROUND 5 · Chloé takes" (the back arrow changes the taker). Pick one of four **contract cards** (name + ×multiplier), then the **bouts** chips (0–3, with "needs 41"). Enter the **points** in a large number field with an **Attack | Defense** toggle; defense points are converted with `takerPoints = 91 − defenderPoints`. A **live result** pill ("Made by 6 → Chloé +124" / "Short by 4 → …") updates as you type, bonuses included. Then choose the partner (avatar chips, 5 players) and bonuses, and tap **Confirm round**.
-4. **Score history screen** — tap the chart icon in the top bar (or **See all** under *Last rounds*) to open the history screen; a **segmented toggle** switches between two views: **Table** (cumulative scores per round, one row per player) and **List** (round-by-round detail log, newest first, with a coloured **●** indicator per row: green = won, red = lost, grey = skipped)
+4. **Score history screen**: open it from the chart icon, **See all** or **See all rounds**. A **Table | List** toggle switches views. The **Table** has a pinned header of avatars and names, running totals, brass-tinted leader column(s), and scrolls sideways for 5 players on narrow phones. The **List** shows one card per round, newest first: an "R4" badge, taker avatar, contract, bouts and points, a Won/Lost chip and the taker's score change; skipped rounds are muted. Before the first round, an empty state is shown.
 5. **End Game / Game Over**: tap **End Game** at any point to see the results. A felt-green **winner card** shows the trophy, the winner (or every co-winner on a tie), their score, and the rounds and player counts. Below it come a **ranking** with avatars and a **Score over time** line chart (one line per player in their colour, zero baseline, round ticks). **See all rounds** opens the round-by-round table. The actions are stacked: **New Game**, **Main Menu**, **Back to game**.
 6. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (standings, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
 7. **Auto-save & Resume** — the game state is saved after every round. If the app is closed mid-game, the resume card appears at the top of the home screen the next time it is opened.
@@ -75,7 +75,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── LandingScreen.kt       # Player setup UI + Past Games list
 ├── GameScreen.kt          # Game screen: standings, "Who took?" tiles, last rounds, round entry, bottom bar
 ├── SettingsScreen.kt      # Settings page: theme, language, feedback
-├── ScoreHistoryScreen.kt  # Score history: table view + list view with toggle
+├── ScoreHistoryScreen.kt  # Score history: sticky-header table + round cards, with toggle
 ├── FinalScoreScreen.kt    # Game over: winner card, ranking, score-over-time chart
 ├── UiComponents.kt        # Shared UI: App* buttons, AutoSizeText, Salon components (SalonCard, PlayerAvatar, SalonTopBar…)
 ├── UiComponentsPreviews.kt # Light + dark @Previews of every Salon component
@@ -85,6 +85,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── Bonuses.kt             # Bonus logic: poignée declarations, chelem candidates
 ├── BonusSheets.kt         # Bonus rows + bottom sheets (Petit au bout, Poignée, Chelem)
 ├── ScoreChart.kt          # Game over chart data: cumulative series, bounds, x labels
+├── ScoreHistoryLogic.kt   # Score history layout logic: sideways scroll, leader columns
 └── ui/theme/              # "Salon" design tokens: colours (+ TarotColors), typography, shapes, spacing, contrast helper
 ```
 
@@ -201,6 +202,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ColorContrastTest.kt` | WCAG relative luminance and contrast ratio helpers |
 | `SalonPaletteTest.kt` | Every text/background pair of both themes ≥ 4.5:1; player tones |
 | `SalonUiTest.kt` | Salon component logic: player initials, avatar/score sizes, suit glyphs, top-bar action limit |
+| `ScoreHistoryLogicTest.kt` | Score history: when the table scrolls sideways, leader columns |
 | `ScoreChartTest.kt` | Game over chart data: cumulative series, y bounds (zero included), x-axis labels |
 | `BonusesTest.kt` | Bonus sheet logic: one poignée level per player, declarants order, chelem candidates, announced chelems |
 | `RoundPreviewTest.kt` | Live round result: win/short margin, distribution (3 and 5 players), bonuses, zero-sum |
@@ -210,7 +212,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `LandingScreenTest.kt` | Home screen: top bar, resume card, New Game card (player count, name fields with avatars, duplicate validation, dealer), past-game rows |
 | `SettingsScreenTest.kt` | Settings page: back navigation, theme toggle, language toggle, feedback button, section labels |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
-| `ScoreHistoryScreenTest.kt` | Score history screen: table view, list view, toggle, round indicators, back navigation |
+| `ScoreHistoryScreenTest.kt` | Score history: table (header avatars, totals, sideways scroll), round cards, empty state, toggle, back navigation |
 | `FinalScoreScreenTest.kt` | Game over: winner card, tie, ranking order, chart description, See all rounds, stacked actions, leave confirmation |
 | `SalonThemeTest.kt` | Theme wiring: light/dark tokens, `scoreColor()`, fonts, shapes |
 | `SalonTopBarTest.kt` | Salon top bar: title, localized back arrow, actions, 48 dp touch targets |

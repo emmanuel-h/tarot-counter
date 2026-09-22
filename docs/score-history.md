@@ -2,66 +2,84 @@
 
 ## Purpose
 
-The score history screen shows the full history of a game in one of two display modes:
+The score history screen shows the full history of a game in one of two views, switched with a segmented toggle:
 
-- **Table view** (default) — cumulative score table, one row per completed round.
-- **List view** — round-by-round detail list, newest round first (previously shown at the bottom of the game screen).
+- **Table** (default): cumulative totals, one row per completed round.
+- **List**: one card per round with its details, newest first.
 
-Users can switch between the two modes at any time using the segmented toggle at the top of the screen.
+## How to access
 
-## How to Access
+- From the game screen: the chart icon in the top bar, or **See all** under *Last rounds*.
+- From the Game Over screen: **See all rounds**. There, the back arrow returns to Game Over.
 
-A bar-chart icon button (⬛) is always visible in the top-left corner of the game screen. Tapping it opens the score history screen. Tapping the back arrow returns to the game without losing any state.
+The back arrow returns to where the screen was opened from, without losing any state.
 
-## View Modes
-
-### Table view (default)
+## Layout (Salon restyle, issue #202)
 
 ```
-| Round | Alice | Bob  | Charlie |
-|-------|-------|------|---------|
-|   1   |  +50  | -25  |  -25   |
-|   2   |  +20  | -10  |  -10   |
-|   3   |  +80  | -40  |  -40   |
+┌──────────────────────────────┐
+│ ←  Score history             │  SalonTopBar
+│ (    Table    |    List    ) │  segmented toggle (felt when selected)
+│ ┌──────────────────────────┐ │
+│ │ Round  (1)    (2)    (3) │ │  sticky header: avatar + name per player
+│ │      Player 1 Player 2 … │ │  leader column(s) tinted brass
+│ │   1   +116    -58    -58 │ │  hairline rows, tabular figures,
+│ │   2   +116    -58    -58 │ │  green ≥ 0 / red < 0
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
 ```
 
-- **Rows** — one per completed round, oldest first (top = round 1).
-- **Columns** — one per player, in setup order, plus a "Round" column on the left.
-- **Cell values** — the player's **running total** after that round (not the per-round delta). Positive values are prefixed with `+`. Positive scores appear in green (`primary`) and negative in red (`error`) — see `ScoreColor.kt`.
-- **Skipped rounds** — appear as rows where all scores are unchanged from the previous row.
+The top bar and the toggle stay in place. Only the table or the list scrolls, so the table header stays pinned (`LazyColumn` + `stickyHeader`).
+
+### Table view
+
+- **Rows**: one per completed round, oldest first. Each cell holds the player's **running total** after that round (from `buildScoreTableData()`), not the round delta. Skipped rounds repeat the previous totals.
+- **Header**: pinned while scrolling. It shows each player's avatar and name above their column.
+- **Leader column(s)**: the current leader, or every tied leader, gets a low-opacity brass tint over the whole column (`leaderColumns()`). It replaces the old saturated orange.
+- **Hairlines** separate the rows. Numbers use the theme's tabular figures, so digits line up.
+- **Width**: columns share the card width equally. If a player column would be narrower than 64 dp (`historyTableScrolls()`), for example 5 players on a narrow phone, every column keeps 64 dp and the table scrolls **horizontally** instead.
 
 ### List view
 
 ```
-●  Round 2: Bob — Prise · 0 bouts · 50 pts — Lost (-31)
-●  Round 1: Alice — Garde · 2 bouts · 56 pts — Won (+80)
+┌──────────────────────────────────────┐
+│ (R2)  Skipped                        │  muted
+└──────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ (R1) (1) Player 1 · Guard       +116 │  taker avatar, contract, taker delta
+│          0 bouts · 60 pts  [Won]     │  Won = felt tint, Lost = red tint
+└──────────────────────────────────────┘
 ```
 
-Rounds are displayed **newest first**. Each row begins with a coloured **●** indicator:
+Each round is a `SalonCard` showing:
 
-| Colour       | Outcome |
-|--------------|---------|
-| Green (primary) | Won  |
-| Red (error)  | Lost    |
-| Grey (muted) | Skipped |
+- a round badge ("R4" / "M4")
+- the taker's avatar and name, and the contract
+- "N bouts · N pts"
+- a **Won** or **Lost** chip
+- the taker's score change
 
-The `RoundHistoryRow` composable (in `GameScreen.kt`) handles this layout — it was moved here from the bottom of the game screen as part of issue #136.
+Skipped rounds show "Skipped" in a muted colour. The chips carry the test tags `round_indicator_won` / `round_indicator_lost`, and the skipped label carries `round_indicator_skipped`.
+
+### Empty state
+
+Before the first round, both views show a muted chart icon and "No rounds played yet. Scores appear here after the first round."
+
+## Pure logic
+
+| Function | File | Purpose |
+|---|---|---|
+| `buildScoreTableData(playerNames, rounds)` | `GameModels.kt` | Running totals per round, formatted with a sign |
+| `historyTableScrolls(availableWidthDp, playerCount)` | `ScoreHistoryLogic.kt` | Whether the table must scroll sideways |
+| `leaderColumns(playerNames, rounds)` | `ScoreHistoryLogic.kt` | Which columns get the brass tint |
+
+These are covered by `GameModelsTest` and `ScoreHistoryLogicTest`.
 
 ## Toggle
 
-The view toggle is a `SingleChoiceSegmentedButtonRow` with two segments:
+| Segment (EN) | Segment (FR) | View |
+|---|---|---|
+| Table | Tableau | Cumulative score table |
+| List | Liste | Round cards |
 
-| Segment label (EN) | Segment label (FR) | View shown |
-|--------------------|--------------------|------------|
-| Table              | Tableau            | Cumulative score table |
-| List               | Liste              | Round-by-round detail list |
-
-The toggle defaults to **Table** every time the screen is opened (state is not persisted across sessions).
-
-## Scrolling
-
-Both views scroll vertically as part of the outer `Column`. For table view specifically, all columns share the available width equally via `weight(1f)` so there is no horizontal scroll (issue #129).
-
-## Navigation
-
-The screen is rendered as a local overlay inside `GameScreen` (controlled by a `showScoreHistory` boolean state). No changes to `Navigation.kt` or `MainActivity` were needed; all routing is contained within `GameScreen.kt`.
+The toggle defaults to **Table** every time the screen opens.

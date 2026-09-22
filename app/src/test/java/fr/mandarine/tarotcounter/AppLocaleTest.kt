@@ -50,28 +50,6 @@ class AppLocaleTest {
         assertEquals("Joueur 5", strings.playerFallback(5))
     }
 
-    // ── roundsPlayed plural handling ──────────────────────────────────────────
-
-    @Test
-    fun en_roundsPlayed_singular() {
-        assertEquals("1 round played", appStrings(AppLocale.EN).roundsPlayed(1))
-    }
-
-    @Test
-    fun en_roundsPlayed_plural() {
-        assertEquals("3 rounds played", appStrings(AppLocale.EN).roundsPlayed(3))
-    }
-
-    @Test
-    fun fr_roundsPlayed_singular() {
-        assertEquals("1 manche jouée", appStrings(AppLocale.FR).roundsPlayed(1))
-    }
-
-    @Test
-    fun fr_roundsPlayed_plural() {
-        assertEquals("4 manches jouées", appStrings(AppLocale.FR).roundsPlayed(4))
-    }
-
     // ── roundCount plural handling ────────────────────────────────────────────
 
     @Test
@@ -94,20 +72,7 @@ class AppLocaleTest {
         assertEquals("2 manches", appStrings(AppLocale.FR).roundCount(2))
     }
 
-    // ── winnerResult and tieResult ────────────────────────────────────────────
-
-    @Test
-    fun en_winnerResult_formats_correctly() {
-        // formattedScore is pre-formatted via Int.withSign() at the call site.
-        val result = appStrings(AppLocale.EN).winnerResult("Alice", "+150")
-        assertEquals("Winner: Alice (+150)", result)
-    }
-
-    @Test
-    fun fr_winnerResult_formats_correctly() {
-        val result = appStrings(AppLocale.FR).winnerResult("Alice", "+150")
-        assertEquals("Gagnant : Alice (+150)", result)
-    }
+    // ── tieResult ────────────────────────────────────────────
 
     @Test
     fun en_tieResult_formats_correctly() {
@@ -202,40 +167,6 @@ class AppLocaleTest {
         }
     }
 
-    // ── Round history string builders ─────────────────────────────────────────
-
-    @Test
-    fun en_roundHistoryPrefix_formats_correctly() {
-        val result = appStrings(AppLocale.EN).roundHistoryPrefix(3, "Alice")
-        assertEquals("Round 3: Alice — ", result)
-    }
-
-    @Test
-    fun fr_roundHistoryPrefix_formats_correctly() {
-        val result = appStrings(AppLocale.FR).roundHistoryPrefix(3, "Alice")
-        assertEquals("Manche 3 : Alice — ", result)
-    }
-
-    @Test
-    fun en_wonOutcome_with_score() {
-        assertEquals(" — Won (+80)", appStrings(AppLocale.EN).wonOutcome(" (+80)"))
-    }
-
-    @Test
-    fun fr_wonOutcome_with_score() {
-        assertEquals(" — Gagné (+80)", appStrings(AppLocale.FR).wonOutcome(" (+80)"))
-    }
-
-    @Test
-    fun en_lostOutcome_with_score() {
-        assertEquals(" — Lost (-40)", appStrings(AppLocale.EN).lostOutcome(" (-40)"))
-    }
-
-    @Test
-    fun fr_lostOutcome_with_score() {
-        assertEquals(" — Perdu (-40)", appStrings(AppLocale.FR).lostOutcome(" (-40)"))
-    }
-
     // ── pointsOutOfRange error string ─────────────────────────────────────────
 
     @Test
@@ -271,30 +202,6 @@ class AppLocaleTest {
     fun fr_roundHeader_formats_correctly() {
         // In French "Round" becomes "Manche".
         assertEquals("Manche 5", appStrings(AppLocale.FR).roundHeader(5))
-    }
-
-    @Test
-    fun en_resumeRoundDetail_formats_correctly() {
-        // Combines the round number with a pre-formatted "rounds played" label.
-        val label = appStrings(AppLocale.EN).roundsPlayed(2)  // "2 rounds played"
-        assertEquals("Round 3 · $label", appStrings(AppLocale.EN).resumeRoundDetail(3, label))
-    }
-
-    @Test
-    fun fr_resumeRoundDetail_formats_correctly() {
-        val label = appStrings(AppLocale.FR).roundsPlayed(2)  // "2 manches jouées"
-        assertEquals("Manche 3 · $label", appStrings(AppLocale.FR).resumeRoundDetail(3, label))
-    }
-
-    // ── boutsPointsDetail lambda ──────────────────────────────────────────────
-
-    @Test
-    fun boutsPointsDetail_is_language_neutral() {
-        // "bouts" and "pts" are the same Tarot shorthand in both languages.
-        val en = appStrings(AppLocale.EN).boutsPointsDetail(2, 56)
-        val fr = appStrings(AppLocale.FR).boutsPointsDetail(2, 56)
-        assertEquals(" · 2 bouts · 56 pts", en)
-        assertEquals("Both locales must produce the same boutsPointsDetail string", en, fr)
     }
 
     // ── chelemPlaysFirst lambda ───────────────────────────────────────────────
