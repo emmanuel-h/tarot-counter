@@ -270,7 +270,7 @@ fun AvatarStack(names: List<String>, modifier: Modifier = Modifier,
 
 A circle holding the player's initial, filled with `MaterialTheme.tarotColors.playerTone(seatIndex)`, so a player has the same colour everywhere (including charts). Sizes: `AvatarSize.S` 24 dp (stacks), `M` 36 dp, `L` 56 dp.
 
-- **Initial** — `playerInitial(name)`: the first *grapheme* of the trimmed name, upper-cased (`"élodie"` → `"É"`, a letter with a combining accent is kept whole); a blank name gives `"?"`.
+- **Initial** — `playerInitial(name)`: the first *grapheme* of the trimmed name, upper-cased (`"élodie"` → `"É"`, a letter with a combining accent is kept whole); a blank name gives `"?"`. A name of several words ending in a number shows that number (`"Player 3"` → `"3"`), so the default names don't all show the same letter.
 - **Accessibility** — the circle's content description is the localized `strings.playerAvatar(name)` ("Player Alice" / "Joueur Alice"); the raw initial is hidden from screen readers.
 - **AvatarStack** — list index = seat index. Each avatar overlaps the previous one by a third of its diameter (`AvatarSize.stackOverlap`) and gets a thin ring (`stackRing`, 1.5 dp for S, 2 dp otherwise) in the colour of the card behind, so the circles stay distinct. On a felt-green card, pass `ringColor = MaterialTheme.tarotColors.felt`.
 

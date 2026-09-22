@@ -22,7 +22,8 @@ After setting up players on the setup screen, the user taps **Start Game** to be
 | Game session state (`currentRound`, `roundHistory`) | `GameViewModel` |
 | `recordPlayed(takerName, contract, details)`, `recordSkipped`, `endGame` | `GameViewModel` |
 | Dealer rotation (`currentDealer`) | `GameViewModel` |
-| Attacker selection, contract selection, overlay visibility | `GameScreen` (local `remember` state) |
+| Taker selection, round-entry visibility (`roundEntryOpen`), contract selection, overlay visibility | `GameScreen` (local `remember` state) |
+| Standings, taker grid layout, last rounds | `Standings.kt` (pure, unit-tested) |
 | Sub-composables (`CompactBonusGrid`, `PlayerChipSelector`, etc.) | `UiComponents.kt` |
 
 The game is divided into **rounds**. Each round has two distinct roles:
@@ -32,13 +33,58 @@ The game is divided into **rounds**. Each round has two distinct roles:
   - **Round 2+**: players take turns dealing in the order they were entered on the setup screen, cycling back to the first player after the last one.
 - **Attacker (taker / preneur)** — the player who wins the bidding and takes the contract. *Any* player can bid for the contract regardless of who deals. The player with the highest bid becomes the attacker and their score is affected by the round outcome.
 
-The current dealer's name is shown at the top of the round section for reference. The user then selects the attacker by tapping any player's name in the segmented-button row.
+The game screen has **two views** (Salon redesign, issue #198):
 
-Everything is presented on **a single scrollable page**: the compact scoreboard, the dealer label, the attacker selector, the contract chips, the inline details form, and the round history log are all visible without navigating to a separate screen.
+1. **Between rounds** — the scores come first, then choosing the taker is a single tap:
 
-#### Attacker selection
+```
+┌──────────────────────────────┐
+│ Round 5            [↶] [📈]  │  SalonTopBar: undo (after round 1) + history
+│        (Dealer: David)       │  brass dealer chip
+│ ┌──────────────────────────┐ │  Standings card (after round 1)
+│ │ ((A)) LEADING      +312  │ │  leader row: brass ring, brass tint, XL score
+│ │       Alice          ▲   │ │
+│ │ 2  (B) Bruno     ▼   −48 │ │  rank · avatar · name · trend · score
+│ │ 3  (C) Chloé     ▼   −96 │ │
+│ └──────────────────────────┘ │
+│ Who took?      Tap the taker │
+│ ┌─────┐ ┌─────┐              │  one tile per player: 3 / 2×2 / 3+2
+│ │ (A) │ │ (B) │              │
+│ └─────┘ └─────┘              │
+│ ══════════ ♠ ♥ ♦ ♣ ═════════ │
+│ Last rounds          See all │  latest 3 rounds, newest first
+│ R4 Bruno · Guard · Lost −162 │
+├──────────────────────────────┤
+│ End Game  [   Skip round   ] │
+└──────────────────────────────┘
+```
 
-A segmented-button row listing every player's name is shown above the contract chips. The user taps the player who won the bidding to select them as the attacker. Tapping the same player again deselects them. The **Confirm round** button stays disabled until an attacker is selected (in addition to a contract and a score).
+2. **Round entry**: opened by tapping a taker tile. The top bar reads "Alice takes" with a back arrow, labelled "Change taker", that returns to view 1. The arrow keeps the chosen taker, highlighted in felt green, and everything already entered in the form. The view holds the contract selector and the details form (restyled in #199). Its bottom bar is `End Game  [ Confirm round ]`.
+
+#### Standings
+
+`computeStandings(playerNames, rounds)` in `Standings.kt` ranks players by cumulative total:
+
+- Best total first; tied players keep seat order.
+- Ties share a rank, and the next rank is skipped (1, 1, 3). This is called *competition ranking*.
+- Every player sharing the best total is a **leader**, once at least one round has been scored. Leader rows get a brass tint, a brass ring around a large avatar, a "LEADING" overline and an XL `ScoreText`.
+- The small **trend arrow** shows the last round's change for each player: ▲ in green for a gain, ▼ in red for a loss. Nothing shows for a zero change, a skipped round, or before round 1.
+
+The card appears after the first recorded round. It replaces the former compact scoreboard.
+
+#### "Who took?" tiles
+
+Each tile shows the player's avatar and name. Tapping a tile opens the round entry for that taker. `takerGridColumns(playerCount)` picks the grid:
+
+- 3 players: one row of 3
+- 4 players: 2 × 2
+- 5 players: 3 + 2 (the last row keeps the same tile width)
+
+Picking a **different** taker than before resets the contract and the whole form (issue #124: points always go to the selected taker).
+
+#### Last rounds
+
+`lastRounds(rounds)` returns the latest 3 rounds, newest first. A played round reads "R4  Bruno · Guard · Lost" with the taker's delta; a skipped round reads "Skipped", muted. **See all** opens the Score History screen.
 
 #### Contract selection
 
@@ -184,45 +230,40 @@ The partner (5-player) does not participate in the poignée bonus exchange. The 
 
 The minimum number of trumps needed to declare each type differs per player count — see the [Poignée thresholds table](#poignée-trump-thresholds) in the Inline round details section above.
 
-## Compact Scoreboard
+## Header and bottom bar
 
-After the first round is completed the game screen shows a persistent **compact scoreboard** at the top of the page — one column per player with their name and running total. This stays visible at all times without opening a separate screen.
-
-Each player column carries `Modifier.weight(1f)` so all columns share the card width equally. Player names that are too long for their column are truncated with an ellipsis ("…") rather than overflowing their neighbours — this is important in 5-player games on narrow screens.
-
-```
-Scores
-┌─────────────────────────┐
-│ Alice   Bob    Charlie  │
-│  +80    -40     -40     │
-└─────────────────────────┘
-```
-
-The full round-by-round detail log is available on the **Score History screen** (opened via the bar-chart icon in the header) in **List view** — see `docs/score-history.md`.
+The full round-by-round detail log is available on the **Score History screen** (history icon in the top bar, or **See all** under *Last rounds*) in **List view** — see `docs/score-history.md`.
 
 #### Header
 
-The game screen header has three zones:
+A `SalonTopBar`, fixed above the scrolling content:
 
-| Left | Center | Right |
-|------|--------|-------|
-| **Previous** (undo) icon button — only shown after at least one round has been recorded. A 48 dp spacer is shown instead before the first round, keeping the round number centred. | **Round N** — the current round number, always centred. | **History** icon button (bar-chart icon) — opens the full score history overlay. Always visible. |
+| View | Title | Actions |
+|------|-------|---------|
+| Between rounds | **Round N** | **Undo** (↶, shown once at least one round is recorded) and **History** (chart icon), both 48 dp icon buttons with content descriptions |
+| Round entry | **"Alice takes"** | Back arrow (content description "Change taker") returning to "Who took?" |
 
-**Previous (undo) button** — located top-left. Tapping it opens a confirmation dialog before removing the last round. The confirmation prevents accidental data loss. Once confirmed, `GameViewModel.undoLastRound()` removes the last `RoundResult` from `roundHistory`, decrements `currentRound`, and persists the updated in-progress snapshot so a resume after a crash stays consistent.
+**Undo**: tapping it opens a confirmation dialog before the last round is removed, so nothing is lost by accident. Once confirmed:
 
-The **History** icon button opens a full scrollable score table overlay (with running cumulative totals) for detailed review.
+- `GameViewModel.undoLastRound()` removes the last `RoundResult`, decrements `currentRound` and saves the updated in-progress snapshot.
+- The form is refilled from the removed round. An undone *played* round reopens the round entry with its values; an undone *skipped* round returns to "Who took?".
 
 #### Bottom action bar
 
-A persistent three-button bar at the bottom of the screen, always visible regardless of scroll position (issues #32, #89). All three buttons sit on a single horizontal row and each receives an equal share of the width via `Modifier.weight(1f)`.
+The bar is pinned under the scrolling content, above a hairline, so it is always visible.
 
-| Button | Style | Behaviour |
-|--------|-------|-----------|
-| **End Game** | Filled — error container (red) | Ends the current game. **If the points field is non-empty** (pending points entered but not yet confirmed), a confirmation dialog appears first so the user can cancel and continue entering data (issue #150). Once confirmed (or if the field was empty): **if at least one round has been played**, the game is saved and the Final Score screen is shown; **if no rounds have been played**, the game is cancelled silently — the in-progress entry is cleared and the user returns to the setup screen (issue #90). The red color signals that this action terminates the game. |
-| **Skip round** | Outlined | Records the current round as skipped (no contract, no score) and advances to the next one. The outlined style marks it as a secondary/neutral action. |
-| **Confirm round** | Filled — primary | Saves the contract, score, and all bonus details, then advances to the next round. **Disabled** until both a contract is selected *and* a non-empty score is entered. Also disabled while the points field contains an invalid value (> 91). |
+| View | Buttons |
+|------|---------|
+| Between rounds | **End Game** (red text button) · **Skip round** (outlined, fills the rest) |
+| Round entry | **End Game** (red text button) · **Confirm round** (primary, fills the rest) |
 
-The bar is a direct child of the outer (non-scrollable) `Column`, which also owns `imePadding()` so the bar and the scroll area shift up together when the keyboard opens.
+| Button | Behaviour |
+|--------|-----------|
+| **End Game** | Ends the current game. It is a red *text* button: always reachable, but the least prominent, so it is hard to hit by accident. **If the points field is non-empty**, a confirmation dialog appears first (issue #150). Then, if at least one round has been played, the game is saved and the Final Score screen is shown. If no round has been played, the game is cancelled silently and the user returns to the setup screen (issue #90). |
+| **Skip round** | Records the round as skipped (no contract, no score) and advances to the next one. |
+| **Confirm round** | Saves the contract, score and bonuses, advances to the next round and returns to the between-rounds view. **Disabled** until a contract is selected and a valid score (0–91) is entered, and while trump declarations exceed 22. |
+
+The bar is a direct child of the outer (non-scrollable) `Column`, which also owns `imePadding()`, so the bar and the scroll area shift up together when the keyboard opens.
 
 ## Data Model
 

@@ -24,10 +24,17 @@ import java.text.BreakIterator
  *   `Char`s but one grapheme. [BreakIterator] finds grapheme boundaries for us,
  *   so we never cut a character in half.
  * - The result is upper-cased ("élodie" → "É").
+ * - A name of several words ending in a number returns that number: the default
+ *   names "Player 3" / "Joueur 3" would otherwise all show the same "P"/"J".
  */
 fun playerInitial(name: String): String {
     val trimmed = name.trim()
     if (trimmed.isEmpty()) return "?"
+
+    // split(Regex("\\s+")) cuts on any run of spaces: "Player  3" → ["Player", "3"].
+    val words = trimmed.split(Regex("\\s+"))
+    val last  = words.last()
+    if (words.size > 1 && last.all { it.isDigit() }) return last
 
     // getCharacterInstance() iterates over user-perceived characters (graphemes).
     val iterator = BreakIterator.getCharacterInstance()

@@ -56,6 +56,23 @@ class SalonUiTest {
         assertEquals("𝒜", playerInitial(scriptA))
     }
 
+    @Test
+    fun `default player names show their number`() {
+        assertEquals("3", playerInitial("Player 3"))
+        assertEquals("12", playerInitial("Joueur  12"))
+    }
+
+    @Test
+    fun `a name that is only a number keeps its first character`() {
+        // One word: no "last word is a number" rule, just the first grapheme.
+        assertEquals("4", playerInitial("42"))
+    }
+
+    @Test
+    fun `a trailing word with letters is not treated as a number`() {
+        assertEquals("A", playerInitial("Alice B2"))
+    }
+
     // ── AvatarSize ────────────────────────────────────────────────────────────
 
     @Test
