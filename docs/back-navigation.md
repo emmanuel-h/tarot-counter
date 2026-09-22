@@ -12,6 +12,7 @@ The Android system back button (hardware key or gesture swipe) is handled consis
 | Game screen — between rounds | Navigate directly to landing page (no dialog) |
 | Score history overlay | Navigate directly to landing page (no dialog) |
 | Final Score screen | Show a confirmation dialog first |
+| Round table opened from Final Score ("See all rounds") | Close the table, back to Game Over |
 
 The **back arrow** in the screen header is a separate affordance and is unaffected: it continues to navigate one level up within the game flow (e.g. history → game, final score → game).
 

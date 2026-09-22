@@ -1,104 +1,94 @@
-# Final Score Screen
+# Final Score (Game Over) Screen
 
 ## Purpose
 
-The Final Score Screen is shown when the user taps **End Game** at any point during a game. It summarises the results and declares the winner.
+The Game Over screen is shown when the user taps **End Game** during a game (after at least one round). It celebrates the winner, ranks every player, and shows how the scores evolved.
 
-## Accessing the Screen
-
-- **Step 1 (contract selection):** An "End Game" button is always visible in the top-right button row, next to the "History" button (if rounds exist).
-- **Step 2 (round details form):** The same "End Game" button appears in the header of the form, alongside "History" (when available).
-
-The game can be ended at any time — even before the first round is played.
-
-## Layout
+## Layout (Salon redesign, issue #201)
 
 ```
-← Game Over          ← shared SalonTopBar (back arrow + title in one row)
-
-[ Trophy icon (72dp, gold) ]
-
-╔══════════════════════════╗  ← gold/amber secondaryContainer; scale-in animation
-║         Winner           ║  ← "Winner" label (or "It's a tie!")
-║   ★ Alice                ║  ← Star icon + winner name in bold headline
-║         +200 pts         ║  ← Final cumulative score
-╚══════════════════════════╝
-
-Round | Alice  | Bob   | Charlie
-  1   |  +50   |  -25  |  -25
-  2   |  +200  |  -100 |  -100
-        ↑ winner column highlighted
-
-[ Back to game ]  [ Main Menu ]  [ New Game ]
-    outlined          outlined      filled
+┌──────────────────────────────┐
+│ ←  Game Over                 │  SalonTopBar (back arrow = back to game)
+│ ┌── felt card ─────────────┐ │  FeltCard, scale-in + fade-in once
+│ │         [trophy]         │ │  brass trophy
+│ │          WINNER          │ │  "IT'S A TIE!" on a tie
+│ │        Player 1          │ │  every co-winner, joined with " & "
+│ │          +167            │ │  brass score
+│ │   2 rounds · 3 players   │ │
+│ └──────────────────────────┘ │
+│ ┌──────────────────────────┐ │  ranking card
+│ │ 1 (1) Player 1     +167  │ │  leaders: brass rank + tint
+│ │ 2 (3) Player 3       -7  │ │
+│ │ 3 (2) Player 2     -160  │ │
+│ └──────────────────────────┘ │
+│              See all rounds  │  → round-by-round table
+│ Score over time              │
+│ +167 ┤      ╱‾‾‾‾‾           │  one line per player, player tone
+│   +0 ┼──────────── (dashed)  │  zero baseline
+│ -160 ┤         ╲___          │
+│        1          2          │  round ticks + a few labels
+│ ● Player 1 ● Player 2 …      │  colour key
+│ [          New Game        ] │  primary
+│ [          Main Menu       ] │  outlined
+│          Back to game        │  text button
+└──────────────────────────────┘
 ```
 
-## Winner Determination
+## Winner card
 
-1. Each player's scores from all completed rounds are summed using `computeFinalTotals()` in `GameModels.kt`.
-2. The player(s) with the highest total are returned by `findWinners()`.
-3. If exactly one player has the highest score, they are shown as the winner.
-4. If two or more players share the highest score, the card shows **"It's a tie!"** with all co-winner names.
+1. `computeFinalTotals()` (`GameModels.kt`) sums each player's round scores.
+2. `findWinners()` returns the player(s) with the highest total.
+3. One winner: the card shows a "WINNER" overline, the name and the score. Two or more tied: it shows "IT'S A TIE!" and every co-winner's name.
 
-## Empty State
+The card is a `FeltCard`: a deep felt-green ground with ivory text. The trophy, the overline and the score use `tarotColors.brassOnFelt`. Screen readers read the card as a single announcement (`mergeDescendants`).
 
-If the user ends the game before any round is played, the score table is replaced by a **"No rounds played"** message. The winner card shows a three-way tie at 0 in this case (or however many players there are).
+## Ranking
 
-## Table Columns
+The ranking comes from `computeStandings()` (`Standings.kt`, shared with the game screen). It uses competition ranks, so tied players share a rank (1, 1, 3). Each row shows the rank, avatar, name and `ScoreText`. Leader rows get a brass rank and a soft brass tint.
 
-| Column | Width | Content |
-|---|---|---|
-| Round | 64 dp | Round number |
-| Player (×N) | 80 dp | Cumulative score after that round |
+## Score over time chart
 
-The **winner's column** is highlighted with a soft brass tint (`tarotColors.winnerHighlight`) and bold text throughout the table, making it easy to track the winner's score progression.
+A Compose `Canvas` draws one line per player, in that player's tone (the same colour as their avatar). It also draws a dashed zero baseline, a tick for every round, and the highest and lowest values on the left. A legend under the chart repeats the colours with names. For screen readers, the canvas is described as "Line chart of every player's cumulative score over N rounds".
 
-## Winner Card Visual Polish (issue #7)
+The data comes from pure functions in `ScoreChart.kt`, covered by `ScoreChartTest`:
 
-The winner card was enhanced to feel more celebratory:
+| Function | Purpose |
+|---|---|
+| `cumulativeSeries(playerNames, rounds)` | For each player, the total after each round, starting at 0. Skipped rounds repeat the previous total. |
+| `chartBounds(series)` | The y-axis range. It always includes 0; a flat chart gets −1..1. |
+| `xAxisLabels(roundCount)` | Which round numbers to print: every round up to 6, otherwise a stepped subset. The first and last rounds are always included, with at most `MAX_X_LABELS` labels. |
 
-| Element | Before | After |
-|---|---|---|
-| Trophy icon size | 48dp | 72dp |
-| Trophy icon tint | `primary` (green) | `secondary` (gold/amber) |
-| Winner card color | `primaryContainer` | `secondaryContainer` (gold/amber) |
-| Winner name | Plain text | Star icon (`Icons.Default.Star`) + name inline |
-| New Game button text | `labelLarge` (default) | `titleMedium` for more visual weight |
-| Winner card entry | Instant | Scale-in (80%→100%) + fade-in animation |
+## Round-by-round table
 
-The tie scenario ("It's a tie!") does not show the star icon, since there is no single champion.
+The full table (cumulative totals per round, winner columns highlighted) is no longer on this screen. **See all rounds** opens the Score History screen on top of Game Over. Its back arrow, or the system back button, returns to Game Over, not to the game.
 
-## Score Colour Coding
+## Empty state
 
-Score cells throughout the table use semantic colours for instant legibility:
+If no round was played, the ranking and the chart are replaced by "No rounds played". This is rare: ending a game with no rounds normally cancels it silently.
 
-| Score | Colour token | Visual |
-|---|---|---|
-| Positive (≥ 0) | `MaterialTheme.tarotColors.positive` | Green |
-| Negative (< 0) | `MaterialTheme.tarotColors.negative` | Red |
+## Score colour coding
 
-Both tokens adapt automatically to light and dark themes. The same `scoreColor()` helper (defined in `UiComponents.kt`) is used by `CompactScoreboard` (GameScreen), `FinalScoreScreen`, and `ScoreHistoryScreen` so the convention is consistent everywhere scores appear.
+`ScoreText` and the history table use `scoreColor()`: green (`tarotColors.positive`) for totals ≥ 0 and red (`tarotColors.negative`) below 0. The winner card's score is the exception: it is always brass, which reads well on the felt.
 
 ## Navigation
 
 | Action | Where | What it does |
 |---|---|---|
-| Back arrow (top-left) | `SalonTopBar` | Returns to the active game round. No state is lost. |
-| **Back to Game** | `OutlinedButton` (bottom-left) | Same as the back arrow — resumes the current game. |
-| **Main Menu** | `OutlinedButton` (bottom-centre) | Navigates to the landing screen. |
-| **New Game** | `Button` (bottom-right, primary) | Navigates to the setup screen. All game state is discarded. |
+| Back arrow (top-left) | `SalonTopBar` | Returns to the active game. No state is lost. |
+| **New Game** | Primary button | Navigates to the setup screen. |
+| **Main Menu** | Outlined button | Navigates to the landing screen. |
+| **Back to game** | Text button | Same as the back arrow. |
+| **See all rounds** | Text link under the ranking | Opens the round-by-round table. |
+| System back | — | Shows a "Leave the game?" confirmation (issue #38). |
 
-All three bottom buttons appear on the same horizontal line with equal widths (`Modifier.weight(1f)`) and an 8 dp gap between them (`Arrangement.spacedBy`). A `rememberSharedAutoSizeState` is shared across all three labels so they always display at the same font size — the smallest needed by the longest label. This ensures they fit on all supported screen sizes (min SDK 24, down to ~360 dp wide) without overflow.
+The buttons are stacked full width in order of importance. **Main Menu** and **New Game** both go to the landing screen today; "New Game" could later pre-fill the same players.
 
-The back arrow and "Back to Game" button serve the same purpose: letting the user dismiss the final score screen if they tapped **End Game** by mistake.
+There is no PDF export in the app, so the redesign had none to keep.
 
-**Main Menu** and **New Game** both navigate to the landing/setup screen; they are currently wired to the same `onEndGame` callback. The distinction is semantic — in future, "New Game" could pre-fill the same player list while "Main Menu" always starts blank.
+## Related files
 
-## Related Files
-
-- `FinalScoreScreen.kt` — Composable implementation
-- `UiComponents.kt` → `SalonTopBar` — Shared back-arrow + title bar used by this screen, `ScoreHistoryScreen` and `SettingsScreen`
-- `GameModels.kt` — `computeFinalTotals()` and `findWinners()` pure functions
-- `GameScreen.kt` — bottom-bar **End Game** button (OutlinedButton), `showFinalScore` state, routing
-- `FinalScoreScreenTest.kt` — UI tests
-- `GameModelsTest.kt` — Unit tests for `computeFinalTotals` and `findWinners`
+- `FinalScoreScreen.kt`: the screen, `WinnerCard`, `RankingCard`, `ScoreChart`, `ChartLegend`
+- `ScoreChart.kt`: pure chart data (`ScoreChartTest`)
+- `Standings.kt`: `computeStandings()` (`StandingsTest`)
+- `GameModels.kt`: `computeFinalTotals()` and `findWinners()` (`GameModelsTest`)
+- `FinalScoreScreenTest.kt`: UI tests
