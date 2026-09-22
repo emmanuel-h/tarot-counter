@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        Night variants (system dark mode). The in-app theme is the user's choice
+        (Settings), but before Compose starts only the system setting is known,
+        so dark-mode devices get the "Salon at night" felt ground.
+    -->
+    <style name="Theme.TarotCounter" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/night_felt_ground</item>
+    </style>
+
+    <style name="Theme.TarotCounter.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/night_felt_ground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.TarotCounter</item>
+    </style>
+</resources>

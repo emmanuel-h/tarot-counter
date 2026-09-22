@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.TarotCounter" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        App theme. The window background is the Salon ivory so the first frame
+        (before Compose draws) already has the right colour — no white flash.
+    -->
+    <style name="Theme.TarotCounter" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/salon_ivory</item>
+    </style>
+
+    <!--
+        Launch theme (issue #205), used only while the app starts. The
+        core-splashscreen library shows the app icon on the Salon background,
+        then MainActivity.installSplashScreen() switches to postSplashScreenTheme.
+    -->
+    <style name="Theme.TarotCounter.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/salon_ivory</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.TarotCounter</item>
+    </style>
 </resources>
