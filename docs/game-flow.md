@@ -24,7 +24,8 @@ After setting up players on the setup screen, the user taps **Start Game** to be
 | Dealer rotation (`currentDealer`) | `GameViewModel` |
 | Taker selection, round-entry visibility (`roundEntryOpen`), contract selection, overlay visibility | `GameScreen` (local `remember` state) |
 | Standings, taker grid layout, last rounds | `Standings.kt` (pure, unit-tested) |
-| Sub-composables (`CompactBonusGrid`, `PlayerChipSelector`, etc.) | `UiComponents.kt` |
+| Shared components (`SalonCard`, `PlayerAvatar`, …) | `UiComponents.kt` |
+| Bonus rows and bottom sheets | `BonusSheets.kt` (logic in `Bonuses.kt`) |
 
 The game is divided into **rounds**. Each round has two distinct roles:
 
@@ -104,7 +105,7 @@ Round entry turns scoring into a guided panel that shows the result **before** t
 │ │ ✓ Made by 6 → Chloé +124   │ │  live result pill
 │ └────────────────────────────┘ │
 │ Partner called by the taker  │  5 players only: avatar chips
-│ Bonuses · Chelem             │  (restyled in #200)
+│ Bonuses                      │  3 rows → bottom sheets (#200)
 ├──────────────────────────────┤
 │ End Game  [  Confirm round  ]│
 └──────────────────────────────┘
@@ -129,11 +130,7 @@ Once a contract is chosen, the rest of the form appears:
 | Points | Large number field + **Attack \| Defense** toggle | Points scored by the selected camp, 0–91, digits only. Switching camp clears the field so a value is never read for the wrong team. In Defense mode the app converts on confirm: `takerPoints = 91 − defenderPoints`. Values above 91 show an error and disable Confirm. For screen readers, the field is described as "Attacker (0-91)" or "Defenders (0-91)". |
 | Live result | Pill under the number | Appears once a valid number is typed: "Made by 6 → Chloé +124" in a felt tint, or "Short by 4 → Chloé −174" in a red tint. It updates as any field changes, bonuses included. |
 | Partner | Avatar chips (5 players only) | Every player except the taker. Tapping the selected partner again clears the choice. |
-| Petit au bout | Checkbox per player | Player who captured the 1 of trump on the last trick |
-| Poignée | Checkbox per player | Player who showed a simple Poignée (see thresholds below) |
-| Double poignée | Checkbox per player | Player who showed a double Poignée (see thresholds below) |
-| Triple poignée | Checkbox per player | Player who showed a triple Poignée (see thresholds below) |
-| Chelem | Self-labelled dropdown + player selector | Grand slam outcome and who called it |
+| Bonuses | Three rows that open bottom sheets | Petit au bout, Poignée, Chelem (see below) |
 
 **`previewRound(playerNames, takerName, contract, details)`** (`GameModels.kt`) computes the live result. It returns a `RoundPreview`:
 
@@ -143,6 +140,25 @@ Once a contract is chosen, the rest of the form appears:
 
 `GameViewModel.recordPlayed()` calls the same function, so the pill always shows exactly what will be recorded. `RoundPreviewTest` covers it.
 
+#### Bonus rows and sheets (issue #200)
+
+```
+Bonuses
+┌──────────────────────────────────┐
+│ Petit au bout          None    › │
+│ Poignée           (1) Alice    › │   red + message when trumps > 22
+│ Chelem                 None    › │
+└──────────────────────────────────┘
+```
+
+Tapping a row opens a modal bottom sheet. Each sheet has a title, one explanation line and a **Done** button.
+
+| Sheet | Choice | Notes |
+|-------|--------|-------|
+| Petit au bout | None or one player | Picking closes the sheet. |
+| Poignée | Per player: None / Simple / Double / Triple | One level per player (`PoigneeDeclarations.withLevel` removes the player from the other levels), several players may declare. The explanation line gives this game's thresholds (`poigneeThresholds`). The atout error ("Too many trumps declared") is shown in the sheet **and** on the row; Confirm stays disabled while it lasts. |
+| Chelem | Outcome, then who called it | Candidates come from `chelemCandidates`: the taker, plus the partner in a 5-player game. Changing the outcome resets the player. An announced chelem with a player shows "*Alice plays first this round.*" |
+
 **Poignée trump thresholds** vary with the number of players (official FFT rules, R-RO201206.pdf):
 
 | Players | Simple Poignée | Double Poignée | Triple Poignée |
@@ -151,14 +167,9 @@ Once a contract is chosen, the rest of the form appears:
 | 4       | 10 trumps      | 13 trumps      | 15 trumps      |
 | 5       |  8 trumps      | 10 trumps      | 13 trumps      |
 
-The tooltip shown next to each Poignée label in the UI automatically displays the correct threshold for the current game's player count.
+The Poignée sheet's explanation line always shows the thresholds for the current game's player count.
 
-The four player-assigned bonuses are displayed in a compact grid. Each row shows a **label** with an ⓘ info icon immediately next to it (not pushed to the edge), and one **checkbox per player**. Tapping anywhere on the label row (the text or the icon) opens a tooltip describing the bonus and its point value — the entire row is the tap target, not only the small icon.
-
-- **Petit au bout** row — single-select: at most one player can capture the Petit on the last trick.
-- **Poignée / Double poignée / Triple poignée** rows — multi-select (issue #149): any number of players can each independently show their own trump hand. Each declaration contributes its own bonus to the winning camp. Ticking a checked box removes that player; ticking an unchecked box adds them.
-
-**Atout count validation**: the total of minimum trump thresholds across all declared poignées must not exceed the 22 atout cards in the deck. If the combined declarations are impossible (e.g. triple [15] + simple [10] = 25 > 22 for a 4-player game), a red error message is shown below the grid and the **Confirm** button is disabled until the over-declaration is corrected.
+**Atout count validation**: the minimum trump thresholds of all declared poignées must add up to at most the 22 trumps in the deck. If the declarations are impossible (e.g. triple [15] + simple [10] = 25 > 22 in a 4-player game), a red message appears in the Poignée sheet and under the Poignée row, and **Confirm** stays disabled until the declarations are corrected.
 
 **Partner selection** is only shown in 5-player games. The taker secretly calls a partner; their identity affects score distribution at the end of the round.
 
@@ -239,7 +250,6 @@ The partner (5-player) does not participate in this exchange. The result is alwa
 
 A poignée (trump show) grants a flat bonus **per defender**, always awarded to the **winning camp** regardless of who declared it.
 
-| Poignée type   | Bonus per defender |
 |----------------|--------------------|
 | Simple         | 20 pts             |
 | Double         | 30 pts             |
