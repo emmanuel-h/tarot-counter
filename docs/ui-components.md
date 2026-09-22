@@ -242,7 +242,7 @@ A left-aligned Cormorant title (`headlineSmall`, marked as a heading) with an op
 fun ScoreText(score: Int, modifier: Modifier = Modifier, size: ScoreSize = ScoreSize.M)
 ```
 
-A signed score (`Int.withSign()`: `+312`, `-48`, `+0`) coloured with `scoreColor()` (green ≥ 0, red < 0). Sizes: `ScoreSize.S` 15 sp (history rows), `M` 17 sp (standings), `XL` 30 sp (leader / winner). All Salon text styles use tabular figures, so scores line up in columns.
+A signed score (`Int.withSign()`: `+312`, `-48`, `+0`) coloured with `scoreColor()`. With `animate = true` a new score counts from the previous one (`countFrom` sets the start of a freshly shown text; instant with reduced motion, see `docs/motion-accessibility.md`) (green ≥ 0, red < 0). Sizes: `ScoreSize.S` 15 sp (history rows), `M` 17 sp (standings), `XL` 30 sp (leader / winner). All Salon text styles use tabular figures, so scores line up in columns.
 
 ### SalonTopBar
 
