@@ -584,3 +584,44 @@ fun currentLeaders(playerNames: List<String>, rounds: List<RoundResult>): Leader
     // findWinners only returns names present in totals, so the lookup never fails.
     return Leaders(names = names, score = totals.getValue(names.first()))
 }
+
+// The outcome of a round as it would be recorded, computed *before* confirming it.
+// Drives the live result pill of the round-entry view ("Made by 6 → Chloé +186").
+//
+//   won          : true when the taker reached the points required by their bouts.
+//   margin       : |points − required| — how many points the contract was made or
+//                  missed by (0 means made exactly).
+//   playerScores : every player's delta for the round, bonuses included — exactly
+//                  what GameViewModel.recordPlayed() will store.
+data class RoundPreview(
+    val won: Boolean,
+    val margin: Int,
+    val playerScores: Map<String, Int>
+)
+
+// Computes a round's result from the form values. This is the single scoring path:
+// GameViewModel.recordPlayed() calls it too, so the preview can never disagree with
+// the score that is finally recorded.
+fun previewRound(
+    playerNames: List<String>,
+    takerName: String,
+    contract: Contract,
+    details: RoundDetails
+): RoundPreview {
+    val won   = takerWon(details.bouts, details.points)
+    val score = calculateRoundScore(contract, details.bouts, details.points)
+    val base  = computePlayerScores(
+        allPlayers  = playerNames,
+        takerName   = takerName,
+        partnerName = details.partnerName,
+        won         = won,
+        roundScore  = score
+    )
+    // 3/4-player: every non-taker is a defender; 5-player with a partner: exactly 3.
+    val numDefenders = if (details.partnerName != null) 3 else playerNames.size - 1
+    return RoundPreview(
+        won          = won,
+        margin       = abs(details.points - requiredPoints(details.bouts)),
+        playerScores = applyBonuses(base, contract, details, takerName, won, numDefenders)
+    )
+}

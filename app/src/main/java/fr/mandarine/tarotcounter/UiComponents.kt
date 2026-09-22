@@ -65,15 +65,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -87,53 +83,6 @@ import kotlinx.coroutines.launch
 //       Always use AppButton / AppOutlinedButton / AppTextButton so that every
 //       button label automatically shrinks to fit its container.
 // ─────────────────────────────────────────────────────────────────────────────
-
-// ── Custom vector icon ────────────────────────────────────────────────────────
-//
-// Material Icons Extended 1.7.x does not include a crossed-swords icon, so we
-// embed the path data from the Material Symbols Outlined "swords" glyph here.
-//
-// The icon uses `by lazy` so the ImageVector is built at most once per process
-// and reused across all recompositions.
-//
-// Source: https://fonts.google.com/icons — Material Symbols Outlined "swords",
-// FILL 0, wght 400, GRAD 0, opsz 24.  The original SVG uses a 960 × 960
-// viewport with the Y-origin at −960 (i.e. viewBox="0 -960 960 960"), so
-// addGroup applies a +960 Y-translation to remap it into Android's (0,0)…
-// (960,960) space.  SolidColor(Color.Black) is the nominal fill; the Icon
-// composable tints it with LocalContentColor at render time, so the literal
-// fill colour never appears on screen.
-//
-// The shield counterpart uses Icons.Default.Shield from Material Icons Extended.
-
-/** Crossed swords — used to indicate "attacker (taker)" mode. */
-val SwordsIcon: ImageVector by lazy {
-    // Parse the raw SVG path string from Material Symbols into Compose PathNodes.
-    // This avoids hand-translating ~30 SVG commands into PathBuilder calls.
-    val nodes = PathParser().parsePathString(
-        "M762-96 645-212l-88 88-28-28q-23-23-23-57t23-57l169-169q-23-23 57-23t57 23l28 28" +
-        "-88 88 116 117q12 12 12 28t-12 28l-50 50q-12 12-28 12t-28-12Zm118-628L426-270l5 4" +
-        "q23 23 23 57t-23 57l-28 28-88-88L198-96q-12 12-28 12t-28-12l-50-50q-12-12-12-28" +
-        "t12-28l116-117-88-88 28-28q23-23 57-23t57 23l4 5 454-454h160v160Z" +
-        "M334-583l24-23 23-24-23 24-24 23Z" +
-        "m-56 57L80-724v-160h160l198 198-57 56-174-174h-47v47l174 174-56 57Z" +
-        "m92 199 430-430v-47h-47L323-374l47 47Z" +
-        "m0 0-24-23-23-24 23 24 24 23Z"
-    ).toNodes()
-
-    ImageVector.Builder(
-        name           = "Swords",
-        defaultWidth   = 24.dp,
-        defaultHeight  = 24.dp,
-        viewportWidth  = 960f,   // Material Symbols uses a 960 × 960 viewport
-        viewportHeight = 960f
-    )
-        // Shift the origin: SVG Y-axis runs from −960 to 0; Android's runs 0 to 960.
-        .addGroup(translationY = 960f)
-        .addPath(pathData = nodes, fill = SolidColor(Color.Black))
-        .clearGroup()
-        .build()
-}
 
 // Maximum content width for all screens.
 // On large screens (e.g. 10-inch tablets in landscape) the content is constrained
@@ -1132,6 +1081,10 @@ fun ScoreText(
  * @param actions                Icon buttons on the right (at most two).
  * @param titleStyle             Text style of the title; the home screen passes
  *                               `headlineLarge` to show the app name as a wordmark.
+ * @param overline               Optional small brass line above the title, shown in
+ *                               upper case (e.g. "ROUND 5" above "Chloé takes").
+ * @param titleLeading           Optional composable between the back arrow and the
+ *                               title (e.g. the taker's avatar).
  */
 @Composable
 fun SalonTopBar(
@@ -1140,7 +1093,9 @@ fun SalonTopBar(
     onBack: (() -> Unit)? = null,
     backContentDescription: String? = null,
     actions: List<TopBarAction> = emptyList(),
-    titleStyle: TextStyle = MaterialTheme.typography.headlineMedium
+    titleStyle: TextStyle = MaterialTheme.typography.headlineMedium,
+    overline: String? = null,
+    titleLeading: (@Composable () -> Unit)? = null
 ) {
     requireValidTopBarActions(actions)
     val strings = appStrings(LocalAppLocale.current)
@@ -1148,7 +1103,8 @@ fun SalonTopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
+            // At least 64 dp; a bit taller when an overline is stacked above the title.
+            .heightIn(min = 64.dp)
             // Without a back arrow the title aligns with the screen content.
             .padding(start = if (onBack != null) 0.dp else Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically
@@ -1161,16 +1117,30 @@ fun SalonTopBar(
                 )
             }
         }
-        Text(
-            text     = title,
-            style    = titleStyle,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        if (titleLeading != null) {
+            Box(modifier = Modifier.padding(start = Dimens.SpaceXs)) { titleLeading() }
+        }
+        // Title block: optional brass overline stacked above the title.
+        Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = Dimens.SpaceXs)
-                .semantics { heading() }
-        )
+                .padding(horizontal = Dimens.SpaceS.takeIf { titleLeading != null } ?: Dimens.SpaceXs)
+        ) {
+            if (overline != null) {
+                Text(
+                    text  = overline.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.tarotColors.brassText
+                )
+            }
+            Text(
+                text     = title,
+                style    = titleStyle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { heading() }
+            )
+        }
         for (action in actions) {
             IconButton(onClick = action.onClick, modifier = Modifier.size(48.dp)) {
                 Icon(
