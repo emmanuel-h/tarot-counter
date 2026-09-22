@@ -1,6 +1,23 @@
 package fr.mandarine.tarotcounter
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Style
+import androidx.compose.material3.Surface
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import fr.mandarine.tarotcounter.ui.theme.Dimens
+import fr.mandarine.tarotcounter.ui.theme.tarotColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,11 +38,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -33,7 +47,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -54,7 +67,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
@@ -96,6 +108,11 @@ fun GameScreen(
     // Any player can be the attacker, regardless of who is dealing this round.
     // This resets to null at the start of each new round (see LaunchedEffect below).
     var selectedAttacker by remember { mutableStateOf<String?>(null) }
+
+    // True while the round-entry view is shown (contract, bouts, points, bonuses).
+    // Tapping a "Who took?" tile opens it; its back arrow closes it again while
+    // keeping the taker and the form, so a mis-tap never loses what was typed.
+    var roundEntryOpen by remember { mutableStateOf(false) }
 
     // The contract selected by tapping one of the contract chips.
     // null = no contract selected yet (details form is hidden).
@@ -181,8 +198,10 @@ fun GameScreen(
     // recomposition.
     LaunchedEffect(currentRound) {
         if (currentRound > previousRound) {
-            // Normal forward advance — a new round started; clear the attacker.
+            // Normal forward advance — a new round started; clear the attacker
+            // and show the between-rounds view (standings + "Who took?").
             selectedAttacker = null
+            roundEntryOpen   = false
         }
         // If currentRound decreased (undo), leave the attacker alone.
         // LaunchedEffect(restoredRound) will write the correct value.
@@ -232,6 +251,9 @@ fun GameScreen(
         val details = round.details
         selectedAttacker = round.takerName
         selectedContract = round.contract
+        // A played round reopens the entry view so only the wrong value needs fixing;
+        // an undone *skipped* round goes back to the "Who took?" view.
+        roundEntryOpen   = round.contract != null
         bouts            = details?.bouts         ?: 0
         // RoundDetails always stores taker points (already converted from
         // defenders' mode on confirm), so we restore as attacker points with
@@ -283,6 +305,11 @@ fun GameScreen(
     // `enabled = !showFinalScore` defers to the Final Score screen's own handler when
     // that overlay is visible (deeper handlers have higher priority in Compose).
     BackHandler(enabled = !showFinalScore) { onEndGame() }
+    // In the round-entry view, system back first returns to "Who took?" (the taker
+    // and the form are kept). Declared after the handler above, so it wins.
+    BackHandler(enabled = !showFinalScore && !showScoreHistory && roundEntryOpen) {
+        roundEntryOpen = false
+    }
 
     // ── Overlay screens ───────────────────────────────────────────────────────
     // These replace the whole content when active; the main game column is not rendered.
@@ -394,118 +421,64 @@ fun GameScreen(
             .fillMaxHeight()
             .imePadding()
     ) {
-        // Inner scrollable column: weight(1f) takes all vertical space above
-        // the bottom action bar. Never use fillMaxSize() with weight().
+        // ── Top bar (fixed, does not scroll) ─────────────────────────────────
+        // Between rounds: "Round 5" with undo + history icon buttons.
+        // Round entry:    "Chloé takes" with a back arrow to change the taker.
+        val attacker = selectedAttacker
+        if (roundEntryOpen && attacker != null) {
+            SalonTopBar(
+                title                  = strings.takerTakes(attacker),
+                onBack                 = { roundEntryOpen = false },
+                backContentDescription = strings.changeTaker,
+                modifier               = Modifier.padding(horizontal = Dimens.SpaceXs)
+            )
+        } else {
+            SalonTopBar(
+                title    = strings.roundHeader(currentRound),
+                modifier = Modifier.padding(start = Dimens.SpaceS, end = Dimens.SpaceXs),
+                actions  = buildList {
+                    // Undo only makes sense once a round has been recorded.
+                    if (roundHistory.isNotEmpty()) {
+                        add(TopBarAction(Icons.AutoMirrored.Filled.Undo, strings.undoPreviousRound) {
+                            showUndoConfirm = true
+                        })
+                    }
+                    add(TopBarAction(Icons.AutoMirrored.Filled.ShowChart, strings.history) {
+                        showScoreHistory = true
+                    })
+                }
+            )
+        }
+
+        // Inner scrollable column: weight(1f) takes all vertical space between the
+        // top bar and the bottom action bar. Never use fillMaxSize() with weight().
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(horizontal = Dimens.ScreenMargin, vertical = Dimens.SpaceS),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // ── Header: history button | centred round number ────────────────
-            // Box lets us layer two Rows: one for the side buttons (SpaceBetween)
-            // and one for the centered title, so the title is truly centered
-            // regardless of the buttons' widths.
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                // Centered round label — always in the middle of the full width.
-                Text(
-                    text = strings.roundHeader(currentRound),
-                    style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center
-                )
-                // Side buttons sit in a Row that spans the full width.
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Previous (undo) button — top-left; only shown once at least one round
-                    // has been recorded. Before any round is played there is nothing to undo.
-                    if (roundHistory.isNotEmpty()) {
-                        UndoPreviousRoundButton(onClick = { showUndoConfirm = true })
-                    } else {
-                        // Invisible placeholder keeps the round number centred when no
-                        // previous round exists yet.
-                        Spacer(Modifier.size(48.dp))
-                    }
-                    // History button — top-right; always visible so the user can review
-                    // scores at any point (even before the first round, where only headers show).
-                    HistoryButton(onClick = { showScoreHistory = true })
-                }
-            }
-
-            // ── Compact scoreboard ────────────────────────────────────────────
-            // Shown after the first round so the user always has the current standings
-            // in view without leaving the page.
-            if (roundHistory.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                CompactScoreboard(
-                    displayNames = displayNames,
-                    roundHistory = roundHistory,
-                    scoresLabel  = strings.scores
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(12.dp))
-
-            // ── Dealer info (context) ────────────────────────────────────────
-            // Shows who is dealing this round. The dealer distributes the cards
-            // but does not automatically become the attacker.
-            Text(
-                text  = strings.dealerLabel(currentDealer),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.Start)
+          if (!roundEntryOpen || attacker == null) {
+            // ── Between rounds: scores first, then "Who took?" ─────────────────
+            BetweenRoundsContent(
+                currentDealer = currentDealer,
+                displayNames  = displayNames,
+                roundHistory  = roundHistory,
+                selectedTaker = selectedAttacker,
+                strings       = strings,
+                locale        = locale,
+                onTakerChosen = { name ->
+                    // A different taker invalidates the contract (and so the whole form).
+                    if (name != selectedAttacker) selectedContract = null
+                    selectedAttacker = name
+                    roundEntryOpen   = true
+                },
+                onSeeAll      = { showScoreHistory = true }
             )
-            Spacer(Modifier.height(8.dp))
-
-            // ── Attacker selector ────────────────────────────────────────────
-            // The attacker is the player who wins the bidding — any player can bid,
-            // regardless of who is dealing. The user taps a player's name to select
-            // them as the attacker for this round. Tapping again deselects.
-            Text(
-                text  = strings.attackerLabel,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(Modifier.height(8.dp))
-
-            // Shared font size so all player-name segments shrink together.
-            // Keyed on locale so labels re-measure when the language changes.
-            val attackerLabelSize = rememberSharedAutoSizeState(locale)
-
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                displayNames.forEachIndexed { index, name ->
-                    SegmentedButton(
-                        // Salon colours: selected segment filled felt green (issue #196).
-                        colors   = salonSegmentedButtonColors(),
-                        shape    = SegmentedButtonDefaults.itemShape(index, displayNames.size),
-                        selected = selectedAttacker == name,
-                        onClick  = {
-                            // Tapping the already-selected attacker deselects them.
-                            selectedAttacker = if (selectedAttacker == name) null else name
-                            // Deselect the contract too — changing the attacker invalidates
-                            // the current contract choice (a different player may pick differently).
-                            selectedContract = null
-                        },
-                        icon     = {}
-                    ) {
-                        AutoSizeText(
-                            text            = name,
-                            modifier        = Modifier.padding(horizontal = 1.dp),
-                            sharedSizeState = attackerLabelSize
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
+          } else {
+            // ── Round entry (restyled in issue #199) ──────────────────────────
 
             // ── Contract selection ────────────────────────────────────────────
             // Only shown once an attacker has been selected — the attacker's name
@@ -953,194 +926,420 @@ fun GameScreen(
                 Spacer(Modifier.height(16.dp))
             }
             // end inline round details
+          } // end round entry
 
         }  // end inner scrollable Column
 
         // ── Bottom action bar ─────────────────────────────────────────────────
-        // Three buttons on a single horizontal line, always pinned below the
-        // scrollable content. Each button gets an equal share of the row width
-        // via weight(1f).
+        // Pinned under the scrollable content, above a hairline.
+        //   Between rounds: [End game]  [      Skip round      ]
+        //   Round entry:    [End game]  [    Confirm round     ]
+        // "End game" is a red text button: available, but visually the least
+        // prominent, so it is hard to hit by accident.
         HorizontalDivider()
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = Dimens.ScreenMargin, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment     = Alignment.CenterVertically
         ) {
-            // End Game: filled button with error container color (red) so the user
-            // immediately understands that clicking this terminates the game.
-            //
-            // If no rounds have been played yet, ending the game cancels it entirely:
-            // the in-progress entry is cleared and the user is sent back to the setup
-            // screen without recording anything (issue #90).
-            // If at least one round was played, the game is saved and the Final Score
-            // screen is shown as usual.
-            AppButton(
-                text     = strings.endGame,
-                onClick  = {
-                    // If the user has already typed something in the points field,
-                    // they may be mid-entry — show a confirmation dialog first so
-                    // they cannot accidentally lose unsaved round data (issue #150).
+            // If no rounds have been played yet, ending the game cancels it entirely
+            // (issue #90). With pending points, a confirmation dialog protects the
+            // user's unsaved entry first (issue #150).
+            AppTextButton(
+                text         = strings.endGame,
+                contentColor = MaterialTheme.colorScheme.error,
+                onClick      = {
                     if (pointsText.isNotBlank()) {
                         showEndGameConfirm = true
                     } else if (roundHistory.isEmpty()) {
-                        // Zero rounds played — cancel silently, nothing to record.
                         viewModel.clearInProgressGame()
                         onEndGame()
                     } else {
                         viewModel.endGame()
                         showFinalScore = true
                     }
-                },
-                modifier = Modifier.weight(1f),
-                colors   = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor   = MaterialTheme.colorScheme.onErrorContainer
-                )
-            )
-            // Skip Round: outlined button — secondary/neutral action visually distinct
-            // from the filled primary (Confirm) and filled error (End Game) buttons.
-            AppOutlinedButton(
-                text     = strings.skipRound,
-                onClick  = { viewModel.recordSkipped() },
-                modifier = Modifier.weight(1f)
-            )
-            // Confirm: primary filled button — the main action.
-            // Disabled until an attacker is selected, a contract is selected,
-            // a score has been entered, and the points value is valid (≤ 91).
-            AppButton(
-                text     = strings.confirmRound,
-                enabled  = selectedAttacker != null && selectedContract != null && pointsText.isNotBlank() && !pointsError && !atoutError,
-                modifier = Modifier.weight(1f),
-                onClick  = {
-                    // Guards: both are checked by `enabled`, but Kotlin requires
-                    // smart-cast-safe references for use inside the lambda.
-                    val attacker = selectedAttacker ?: return@AppButton
-                    val contract = selectedContract ?: return@AppButton
-                    // Parse the typed points; default to 0 if empty, clamp to 0–91.
-                    val enteredPoints = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0
-                    // When the user entered defenders' points, convert to taker's points.
-                    val points = if (defenderMode) 91 - enteredPoints else enteredPoints
-                    viewModel.recordPlayed(
-                        attacker,
-                        contract,
-                        RoundDetails(
-                            bouts          = bouts,
-                            points         = points,
-                            partnerName    = if (displayNames.size == 5) selectedPartner else null,
-                            petitAuBout    = petitAuBout,
-                            // Always write to the new multi-player list fields.
-                            // Leave the legacy nullable fields null so they are not
-                            // double-counted by `effectivePoignees` in old code paths.
-                            poignees       = poignees.toList(),
-                            doublePoignees = doublePoignees.toList(),
-                            triplePoignees = triplePoignees.toList(),
-                            chelem         = chelem,
-                            chelemPlayer   = if (chelem == Chelem.NONE) null else chelemPlayer
-                        )
-                    )
-                    // Deselect contract → LaunchedEffect resets all form fields.
-                    selectedContract = null
-                    // Dismiss the keyboard if it was open.
-                    keyboardController?.hide()
                 }
             )
+            if (roundEntryOpen && selectedAttacker != null) {
+                // Confirm: the main action, disabled until the round is valid
+                // (contract chosen, points entered and ≤ 91, trump declarations ≤ 22).
+                AppButton(
+                    text     = strings.confirmRound,
+                    enabled  = selectedContract != null && pointsText.isNotBlank() && !pointsError && !atoutError,
+                    modifier = Modifier.weight(1f),
+                    onClick  = {
+                        // Guards: both are checked by `enabled`, but Kotlin needs
+                        // smart-cast-safe references inside the lambda.
+                        val taker    = selectedAttacker ?: return@AppButton
+                        val contract = selectedContract ?: return@AppButton
+                        // Parse the typed points; default to 0 if empty, clamp to 0–91.
+                        val enteredPoints = pointsText.toIntOrNull()?.coerceIn(0, 91) ?: 0
+                        // Defenders' points are converted to the taker's: 91 − x.
+                        val points = if (defenderMode) 91 - enteredPoints else enteredPoints
+                        viewModel.recordPlayed(
+                            taker,
+                            contract,
+                            RoundDetails(
+                                bouts          = bouts,
+                                points         = points,
+                                partnerName    = if (displayNames.size == 5) selectedPartner else null,
+                                petitAuBout    = petitAuBout,
+                                // Always write the multi-player list fields; the legacy
+                                // nullable fields stay null so nothing is double-counted.
+                                poignees       = poignees.toList(),
+                                doublePoignees = doublePoignees.toList(),
+                                triplePoignees = triplePoignees.toList(),
+                                chelem         = chelem,
+                                chelemPlayer   = if (chelem == Chelem.NONE) null else chelemPlayer
+                            )
+                        )
+                        // Deselect contract → LaunchedEffect resets all form fields;
+                        // closing the entry view brings the updated standings back.
+                        selectedContract = null
+                        roundEntryOpen   = false
+                        keyboardController?.hide()
+                    }
+                )
+            } else {
+                // Skip round: records a round with no contract (nobody took).
+                AppOutlinedButton(
+                    text     = strings.skipRound,
+                    onClick  = { viewModel.recordSkipped() },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }  // end outer Column
     }  // end Box
 }
 
-// ── Compact scoreboard ────────────────────────────────────────────────────────
-
-// Displays all players and their cumulative scores in a compact horizontal card.
-// Each player gets a column: their name on top, their running total below.
-// Always visible at the top of the game page after the first round.
+// ── Between rounds (Salon game screen, issue #198) ───────────────────────────
+//
+//   ┌──────────────────────────────┐
+//   │        (Dealer: David)       │  brass chip
+//   │ ┌── Standings ─────────────┐ │  ranked; leader row tinted brass
+//   │ │ 1 (A) Alice LEADING  +312│ │
+//   │ │ 2 (B) Bruno      ▼    −48│ │
+//   │ └──────────────────────────┘ │
+//   │ Who took?      Tap the taker │
+//   │ ┌────┐ ┌────┐ ┌────┐         │  avatar tiles (3 / 2×2 / 3+2)
+//   │ │(A) │ │(B) │ │(C) │         │
+//   │ └────┘ └────┘ └────┘         │
+//   │ ═════════ ♠ ♥ ♦ ♣ ═════════  │
+//   │ Last rounds          See all │
+//   │ R4 Bruno · Garde · Lost  −162│
+//   └──────────────────────────────┘
 @Composable
-private fun CompactScoreboard(
+private fun BetweenRoundsContent(
+    currentDealer: String,
     displayNames: List<String>,
     roundHistory: List<RoundResult>,
-    scoresLabel: String
+    selectedTaker: String?,
+    strings: AppStrings,
+    locale: AppLocale,
+    onTakerChosen: (String) -> Unit,
+    onSeeAll: () -> Unit
 ) {
-    Text(
-        text  = scoresLabel,
-        style = MaterialTheme.typography.titleSmall,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(Modifier.height(4.dp))
+    Column(
+        modifier            = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)
+    ) {
+        // The dealer deals the cards; any player may take, so this is context only.
+        DealerChip(
+            text     = strings.dealerLabel(currentDealer),
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
 
-    // Delegate total computation to the tested helper so both places stay in sync.
-    val totals = computeFinalTotals(displayNames, roundHistory)
+        // Standings appear once there is something to rank.
+        if (roundHistory.isNotEmpty()) {
+            StandingsCard(
+                standings    = computeStandings(displayNames, roundHistory),
+                leadingLabel = strings.leading,
+                title        = strings.standings
+            )
+        }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SectionHeader(title = strings.whoTook) {
+                Text(
+                    text  = strings.tapTheTaker,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            TakerTiles(
+                names         = displayNames,
+                selectedTaker = selectedTaker,
+                onTakerChosen = onTakerChosen
+            )
+        }
+
+        if (roundHistory.isNotEmpty()) {
+            SuitDivider()
+            LastRoundsLog(
+                rounds   = lastRounds(roundHistory),
+                strings  = strings,
+                locale   = locale,
+                onSeeAll = onSeeAll
+            )
+        }
+    }
+}
+
+// A small brass pill: "Dealer: David", with a playing-cards icon.
+@Composable
+private fun DealerChip(text: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.testTag("dealer_chip"),
+        shape    = CircleShape,
+        // secondaryContainer is the brass tint; onSecondaryContainer its dark brass ink.
+        color    = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp, horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            modifier              = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            for (name in displayNames) {
-                val total = totals[name] ?: 0
+            Icon(
+                imageVector        = Icons.Default.Style,
+                contentDescription = null, // the text says it all
+                modifier           = Modifier.size(14.dp)
+            )
+            Text(text = text, style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
 
-                // weight(1f) divides the row width equally across all players.
-                // Without this, each Column is unconstrained and the Text can grow
-                // as wide as it wants, preventing TextOverflow.Ellipsis from firing.
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text      = name,
-                        style     = MaterialTheme.typography.labelMedium,
-                        maxLines  = 1,
-                        overflow  = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text      = total.withSign(),
-                        style     = MaterialTheme.typography.titleMedium,
-                        // Green for positive/zero scores, red for negative.
-                        color     = scoreColor(total),
-                        textAlign = TextAlign.Center
-                    )
+// The ranked standings card. Every leader (several on a tie) gets a brass-tinted
+// row, a brass ring around a large avatar, a "LEADING" overline and an XL score.
+@Composable
+private fun StandingsCard(standings: List<Standing>, leadingLabel: String, title: String) {
+    SalonCard(
+        modifier       = Modifier
+            .fillMaxWidth()
+            .testTag("standings_card")
+            // The card is announced as "Standings" by screen readers.
+            .semantics { contentDescription = title },
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Column {
+            standings.forEachIndexed { index, standing ->
+                if (standing.isLeader) {
+                    LeaderRow(standing, leadingLabel)
+                } else {
+                    StandingRow(standing)
+                }
+                // Hairline between rows, not after the last one.
+                if (index < standings.lastIndex) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
     }
 }
 
-// ── Shared composables ────────────────────────────────────────────────────────
-
-// An icon-only button with a bar-chart icon for opening the score history overlay.
-// OutlinedIconButton is used instead of plain IconButton so a visible border is drawn
-// ── UndoPreviousRoundButton ───────────────────────────────────────────────────
-
-// Icon button placed in the top-left corner of the game header.
-// It is only rendered when at least one round has been recorded (the caller checks
-// roundHistory.isNotEmpty() before including it), so it is always tappable when shown.
-// Tapping opens a confirmation dialog rather than performing the undo immediately,
-// preventing accidental data loss.
 @Composable
-fun UndoPreviousRoundButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val strings = appStrings(LocalAppLocale.current)
-    OutlinedIconButton(onClick = onClick, modifier = modifier) {
-        Icon(
-            imageVector        = Icons.AutoMirrored.Filled.Undo,
-            contentDescription = strings.undoPreviousRound
-        )
+private fun LeaderRow(standing: Standing, leadingLabel: String) {
+    val brass = MaterialTheme.tarotColors.brass
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.tarotColors.winnerHighlight.copy(alpha = 0.5f))
+            .padding(horizontal = Dimens.SpaceM, vertical = 14.dp)
+            .testTag("standing_${standing.name}"),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // Brass ring: a 2 dp brass border drawn 2 dp outside the avatar.
+        Box(
+            modifier = Modifier
+                .border(2.dp, brass, CircleShape)
+                .padding(4.dp)
+        ) {
+            PlayerAvatar(name = standing.name, seatIndex = standing.seatIndex, size = AvatarSize.L)
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text  = leadingLabel.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.tarotColors.brassText
+            )
+            Text(
+                text     = standing.name,
+                style    = MaterialTheme.typography.headlineSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            ScoreText(score = standing.total, size = ScoreSize.XL)
+            TrendArrow(standing.lastDelta)
+        }
     }
 }
 
-// around the icon, making it clearer to the user that this is a tappable element.
-// Always enabled — tapping before the first round opens the table with only headers.
-// The contentDescription ensures screen readers announce the button's purpose.
 @Composable
-fun HistoryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val strings = appStrings(LocalAppLocale.current)
-    OutlinedIconButton(onClick = onClick, modifier = modifier) {
-        Icon(
-            imageVector        = Icons.Default.BarChart,
-            contentDescription = strings.history
+private fun StandingRow(standing: Standing) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .padding(horizontal = Dimens.SpaceM)
+            .testTag("standing_${standing.name}"),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Rank number, muted; tied players share a rank (1, 1, 3).
+        Text(
+            text     = standing.rank.toString(),
+            style    = MaterialTheme.typography.labelMedium,
+            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(20.dp)
         )
+        PlayerAvatar(name = standing.name, seatIndex = standing.seatIndex, size = AvatarSize.M)
+        Text(
+            text     = standing.name,
+            style    = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        TrendArrow(standing.lastDelta)
+        ScoreText(score = standing.total, size = ScoreSize.M)
+    }
+}
+
+// Tiny up/down arrow showing whether the player gained or lost in the last round.
+// Nothing is drawn for a skipped round, a zero change, or before the first round.
+@Composable
+private fun TrendArrow(lastDelta: Int?) {
+    if (lastDelta == null || lastDelta == 0) return
+    val up = lastDelta > 0
+    Icon(
+        imageVector        = if (up) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+        contentDescription = null, // decorative: the score itself carries the meaning
+        tint               = if (up) MaterialTheme.tarotColors.positive else MaterialTheme.tarotColors.negative,
+        modifier           = Modifier.size(20.dp).testTag(if (up) "trend_up" else "trend_down")
+    )
+}
+
+// "Who took?" — one large tile per player. 3 players: one row of 3; 4 players: 2 × 2;
+// 5 players: 3 + 2. The current taker (if any) is filled felt green.
+@Composable
+private fun TakerTiles(
+    names: List<String>,
+    selectedTaker: String?,
+    onTakerChosen: (String) -> Unit
+) {
+    val columns = takerGridColumns(names.size)
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+        // chunked(n) splits the list into rows of n (the last row may be shorter).
+        names.withIndex().chunked(columns).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                for ((seat, name) in row) {
+                    TakerTile(
+                        name     = name,
+                        seat     = seat,
+                        selected = name == selectedTaker,
+                        onClick  = { onTakerChosen(name) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                // Invisible fillers keep the last row's tiles the same width as the others.
+                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TakerTile(
+    name: String,
+    seat: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scheme = MaterialTheme.colorScheme
+    // Surface(onClick = …) is a clickable card with a ripple and button semantics.
+    Surface(
+        onClick  = onClick,
+        modifier = modifier
+            .height(96.dp)
+            .testTag("taker_tile_$name")
+            .semantics { this.selected = selected },
+        shape    = MaterialTheme.shapes.medium,
+        color    = if (selected) scheme.primary else scheme.surface,
+        contentColor = if (selected) scheme.onPrimary else scheme.onSurface,
+        border   = BorderStroke(1.dp, if (selected) scheme.primary else scheme.outline)
+    ) {
+        Column(
+            modifier            = Modifier.padding(horizontal = Dimens.SpaceS),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS, Alignment.CenterVertically)
+        ) {
+            PlayerAvatar(name = name, seatIndex = seat, size = AvatarSize.M)
+            // The name shrinks rather than wrapping when a tile is narrow (5 players).
+            AutoSizeText(text = name, style = MaterialTheme.typography.titleSmall)
+        }
+    }
+}
+
+// The latest rounds, newest first, with a "See all" link to the history screen:
+//   R4  Bruno · Garde · Lost        −162
+//   R3  Skipped
+@Composable
+private fun LastRoundsLog(
+    rounds: List<RoundResult>,
+    strings: AppStrings,
+    locale: AppLocale,
+    onSeeAll: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+        SectionHeader(title = strings.lastRounds) {
+            AppTextButton(text = strings.seeAll, onClick = onSeeAll)
+        }
+        for (round in rounds) {
+            val muted = MaterialTheme.colorScheme.onSurfaceVariant
+            Row(
+                modifier              = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 40.dp)
+                    .testTag("last_round_${round.roundNumber}"),
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text     = strings.roundBadge(round.roundNumber),
+                    style    = MaterialTheme.typography.labelMedium,
+                    color    = muted,
+                    modifier = Modifier.width(32.dp)
+                )
+                val contract = round.contract
+                if (contract == null) {
+                    // Skipped rounds are muted and carry no score.
+                    Text(
+                        text     = strings.skipped,
+                        style    = MaterialTheme.typography.bodyMedium,
+                        color    = muted,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    val outcome = if (round.won == true) strings.wonShort else strings.lostShort
+                    Text(
+                        text     = "${round.takerName} · ${contract.localizedName(locale)} · $outcome",
+                        style    = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    round.playerScores[round.takerName]?.let { ScoreText(score = it, size = ScoreSize.S) }
+                }
+            }
+        }
     }
 }
 

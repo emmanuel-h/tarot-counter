@@ -74,6 +74,26 @@ data class AppStrings(
     val partnerCalledByTaker: String,
     val confirmRound: String,
     val scores: String,
+    // ── Salon game screen (issue #198) ──
+    // Heading of the ranked standings card (also its accessibility label).
+    val standings: String,
+    // Brass label on the leader's row, shown in upper case.
+    val leading: String,
+    // Heading above the taker tiles, and its helper text on the right.
+    val whoTook: String,
+    val tapTheTaker: String,
+    // Heading of the mini round log, and the link that opens the history screen.
+    val lastRounds: String,
+    val seeAll: String,
+    // Short round badge in the mini log: "R4" / "M4".
+    val roundBadge: (n: Int) -> String,
+    // "Won" / "Lost" in the mini log line "Bruno · Garde · Lost".
+    val wonShort: String,
+    val lostShort: String,
+    // Title of the round-entry view, e.g. "Chloé takes".
+    val takerTakes: (taker: String) -> String,
+    // Accessibility label of the back arrow in the round-entry view.
+    val changeTaker: String,
     val history: String,
     val endGame: String,
     // Tooltip title and section label for the chelem bonus (still used by the ⓘ icon).
@@ -262,6 +282,17 @@ val EnStrings = AppStrings(
     partnerCalledByTaker  = "Partner (called by taker)",
     confirmRound          = "Confirm round",
     scores                = "Scores",
+    standings             = "Standings",
+    leading               = "Leading",
+    whoTook               = "Who took?",
+    tapTheTaker           = "Tap the taker",
+    lastRounds            = "Last rounds",
+    seeAll                = "See all",
+    roundBadge            = { n -> "R$n" },
+    wonShort              = "Won",
+    lostShort             = "Lost",
+    takerTakes            = { taker -> "$taker takes" },
+    changeTaker           = "Change taker",
     history               = "History",
     endGame               = "End Game",
     chelemLabel           = "Chelem (grand slam)",
@@ -392,6 +423,17 @@ val FrStrings = AppStrings(
     partnerCalledByTaker  = "Appelé (par le preneur)",
     confirmRound          = "Valider",
     scores                = "Scores",
+    standings             = "Classement",
+    leading               = "En tête",
+    whoTook               = "Qui prend ?",
+    tapTheTaker           = "Touchez le preneur",
+    lastRounds            = "Dernières manches",
+    seeAll                = "Tout voir",
+    roundBadge            = { n -> "M$n" },
+    wonShort              = "Gagnée",
+    lostShort             = "Perdue",
+    takerTakes            = { taker -> "$taker prend" },
+    changeTaker           = "Changer de preneur",
     history               = "Historique",
     endGame               = "Fin de partie",
     chelemLabel           = "Chelem (grand chelem)",

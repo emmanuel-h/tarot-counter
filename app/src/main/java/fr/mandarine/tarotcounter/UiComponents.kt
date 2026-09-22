@@ -357,9 +357,18 @@ fun AppTextButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    // Optional label colour, e.g. colorScheme.error for "End game".
+    // Color.Unspecified keeps Material's default (colorScheme.primary).
+    contentColor: Color = Color.Unspecified
 ) {
-    TextButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+    TextButton(
+        onClick  = onClick,
+        modifier = modifier,
+        enabled  = enabled,
+        colors   = if (contentColor == Color.Unspecified) ButtonDefaults.textButtonColors()
+                   else ButtonDefaults.textButtonColors(contentColor = contentColor)
+    ) {
         AutoSizeText(text)
     }
 }
@@ -654,7 +663,7 @@ fun CompactBonusGrid(
  * Both colours come from the active Salon theme tokens, so they automatically
  * adapt to light vs. dark mode without any hardcoded hex values.
  *
- * This helper is used by [CompactScoreboard] (GameScreen), the table in
+ * This helper is used by [ScoreText] (standings, rounds, past games), the table in
  * [FinalScoreScreen], and the table in [ScoreHistoryScreen] so the colour
  * convention stays consistent across all three views.
  *
