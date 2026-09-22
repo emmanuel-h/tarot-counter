@@ -4,26 +4,29 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,30 +39,54 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import fr.mandarine.tarotcounter.ui.theme.Dimens
+import fr.mandarine.tarotcounter.ui.theme.tarotColors
 
 /**
- * FinalScoreScreen shows the game results when the player ends the game early
- * or when a natural end is declared.
+ * The game-over screen (Salon redesign, issue #201):
  *
- * Layout:
- *   - Trophy icon + "Game Over" heading
- *   - Winner card (gold/amber secondaryContainer) showing name and final score
- *     (or "Tie!" with all co-winner names in case of a draw)
- *   - Full round-by-round score table, with winner column(s) highlighted
- *   - "New Game" button that returns to the setup screen
+ * ```
+ * ┌──────────────────────────────┐
+ * │ ←  Game Over                 │
+ * │ ┌── felt card ─────────────┐ │
+ * │ │        [trophy]          │ │
+ * │ │ WINNER                   │ │   "IT'S A TIE!" + every co-winner on a tie
+ * │ │        Alice             │ │
+ * │ │        +428              │ │
+ * │ │  8 rounds · 4 players    │ │
+ * │ └──────────────────────────┘ │
+ * │ ┌──────────────────────────┐ │   ranking (competition ranks, brass leaders)
+ * │ │ 1 (A) Alice        +428  │ │
+ * │ │ 2 (C) Chloé         +96  │ │
+ * │ └──────────────────────────┘ │
+ * │ See all rounds             › │   → round-by-round table (score history)
+ * │ Score over time              │
+ * │  ╱‾‾╲__╱‾   one line/player  │   Canvas chart, zero baseline, round ticks
+ * │ [         New Game         ] │
+ * │ [         Main Menu        ] │
+ * │           Back to game       │
+ * └──────────────────────────────┘
+ * ```
  *
- * The winner is the player with the highest cumulative total after all rounds.
- * If multiple players share the highest score, all are shown as co-winners.
+ * The system back button asks for confirmation first (the results would be lost).
  *
  * @param playerNames  Ordered list of player display names (fallbacks already resolved).
  * @param roundHistory All completed rounds in chronological order, oldest first.
- * @param onBack       Callback fired when the user taps "Back to Game" (returns to the active game).
- * @param onNewGame    Callback fired when the user taps "New Game" (navigates back to setup).
- * @param onMainMenu   Callback fired when the user taps "Main Menu" (navigates to the landing screen).
- * @param modifier     Passed from the parent (e.g. Scaffold inner padding).
+ * @param onBack       "Back to game": return to the active game.
+ * @param onNewGame    "New Game": navigate back to setup.
+ * @param onMainMenu   "Main Menu": navigate to the landing screen.
  */
 @Composable
 fun FinalScoreScreen(
@@ -70,256 +97,322 @@ fun FinalScoreScreen(
     onMainMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Read the active locale and resolve all strings once at the top of the composable.
     val strings = appStrings(LocalAppLocale.current)
 
-    // ── System back-button handling ───────────────────────────────────────────
-    // Controls whether the leave-confirmation dialog is visible.
-    // The dialog is triggered by the system back button (or gesture), not by the
-    // in-screen back arrow — the arrow stays wired to onBack (return to game).
-    var showLeaveConfirm by remember { mutableStateOf(false) }
+    // "See all rounds" opens the round-by-round table on top of this screen;
+    // its back arrow returns here (not to the game).
+    var showAllRounds by remember { mutableStateOf(false) }
+    if (showAllRounds) {
+        ScoreHistoryScreen(
+            playerNames  = playerNames,
+            roundHistory = roundHistory,
+            onBack       = { showAllRounds = false },
+            modifier     = modifier
+        )
+        // While the table is open, system back closes it too.
+        BackHandler { showAllRounds = false }
+        return
+    }
 
-    // BackHandler intercepts the Android system back button while this composable
-    // is in the composition. Because FinalScoreScreen is placed *after* the
-    // GameScreen-level BackHandler in the composition tree, this one takes priority
-    // and GameScreen's handler is effectively shadowed.
+    // ── System back-button handling ───────────────────────────────────────────
+    // System back asks for confirmation; the in-screen back arrow returns to the game.
+    var showLeaveConfirm by remember { mutableStateOf(false) }
     BackHandler { showLeaveConfirm = true }
 
-    // Confirmation dialog — only rendered when showLeaveConfirm is true.
-    // AlertDialog is a Material 3 modal that blocks interaction with the rest of
-    // the screen until the user picks "Leave" or "Cancel".
     if (showLeaveConfirm) {
         AlertDialog(
             onDismissRequest = { showLeaveConfirm = false },
             title = { Text(strings.backConfirmTitle) },
             text  = { Text(strings.backConfirmBody) },
             confirmButton = {
-                // "Leave" navigates to the landing page (same as "New Game" button).
                 AppTextButton(text = strings.backConfirmLeave, onClick = onNewGame)
             },
             dismissButton = {
-                // "Cancel" closes the dialog and returns to the Final Score screen.
                 AppTextButton(text = strings.cancel, onClick = { showLeaveConfirm = false })
             }
         )
     }
 
-    // `computeFinalTotals` sums each player's per-round scores across all rounds.
-    // It lives in GameModels so it can be unit-tested without Compose.
-    val totals = computeFinalTotals(playerNames, roundHistory)
-
-    // `findWinners` returns a list to handle ties: normally one name, multiple on a draw.
+    // Pure helpers (GameModels.kt / Standings.kt), unit-tested on the JVM.
+    val totals  = computeFinalTotals(playerNames, roundHistory)
     val winners = findWinners(totals)
 
-    // Build a set of column indices (1-based, because index 0 is the "Round" column)
-    // that correspond to winner(s). Used to highlight those columns in the table.
-    // Set<Int> gives O(1) membership checks inside the row composable.
-    val winnerColumnIndices: Set<Int> = playerNames
-        .mapIndexedNotNull { i, name -> if (name in winners) i + 1 else null }
-        .toSet()
-
-    // Box centers the content Column horizontally on wide screens (tablets in landscape).
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter
     ) {
-    Column(
-        modifier = Modifier
-            .widthIn(max = MAX_CONTENT_WIDTH)
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        // ── Screen header: back arrow + title ─────────────────────────────────
-        // SalonTopBar (UiComponents.kt) is the shared Salon top bar: back arrow,
-        // then the title in Cormorant — identical on every overlay screen.
-        SalonTopBar(title = strings.gameOver, onBack = onBack)
-
-        // ── Decorative trophy icon ─────────────────────────────────────────────
-        // Enlarged to 72dp and tinted gold (secondary) to make the game-ending moment
-        // feel more dramatic. The icon is purely decorative — the title conveys meaning.
-        Spacer(modifier = Modifier.height(8.dp))
-        Icon(
-            imageVector = Icons.Default.EmojiEvents,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.secondary  // gold/amber accent
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // ── Winner card ───────────────────────────────────────────────────────
-        // `secondaryContainer` is the gold/amber tinted container — aligns with the
-        // trophy icon above and the winner-column highlight in the table.
-        //
-        // The card uses a scale-in + fade-in entry animation so it "pops" into view
-        // when the screen first appears, giving the winner announcement more drama.
-        // `visible` starts false and is set to true in a LaunchedEffect so the
-        // animation fires exactly once on composition.
-        var cardVisible by remember { mutableStateOf(false) }
-        LaunchedEffect(Unit) { cardVisible = true }
-
-        AnimatedVisibility(
-            visible = cardVisible,
-            // scaleIn grows the card from 80% → 100%; fadeIn prevents a hard pop.
-            enter = scaleIn(initialScale = 0.8f) + fadeIn()
+        Column(
+            modifier = Modifier
+                .widthIn(max = MAX_CONTENT_WIDTH)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.ScreenMargin)
+                .padding(bottom = Dimens.SpaceL),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+            SalonTopBar(title = strings.gameOver, onBack = onBack)
+
+            // ── Winner card ───────────────────────────────────────────────────
+            // Pops in once (scale + fade) to give the result a sense of occasion.
+            var cardVisible by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) { cardVisible = true }
+            AnimatedVisibility(
+                visible = cardVisible,
+                enter   = scaleIn(initialScale = 0.8f) + fadeIn()
             ) {
-                Column(
+                WinnerCard(
+                    winners     = winners,
+                    score       = winners.firstOrNull()?.let { totals.getValue(it) } ?: 0,
+                    detail      = listOf(
+                        strings.roundCount(roundHistory.size),
+                        strings.playerCount(playerNames.size)
+                    ).joinToString(" · "),
+                    strings     = strings
+                )
+            }
+
+            if (roundHistory.isEmpty()) {
+                // Nothing to rank or chart.
+                Text(
+                    text     = strings.noRoundsPlayed,
+                    style    = MaterialTheme.typography.bodyMedium,
+                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                // ── Ranking ───────────────────────────────────────────────────
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+                    RankingCard(computeStandings(playerNames, roundHistory))
+                    // The full round-by-round table now lives behind this link.
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                        AppTextButton(text = strings.seeAllRounds, onClick = { showAllRounds = true })
+                    }
+                }
+
+                // ── Score over time ───────────────────────────────────────────
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SectionHeader(title = strings.scoreOverTime)
+                    ScoreChart(
+                        playerNames = playerNames,
+                        rounds      = roundHistory,
+                        description = strings.scoreChartDescription(roundHistory.size)
+                    )
+                    ChartLegend(playerNames)
+                }
+            }
+
+            // ── Actions, most to least important ──────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                AppButton(
+                    text      = strings.newGame,
+                    onClick   = onNewGame,
+                    modifier  = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.titleMedium
+                )
+                AppOutlinedButton(
+                    text     = strings.mainMenu,
+                    onClick  = onMainMenu,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                AppTextButton(
+                    text     = strings.backToGame,
+                    onClick  = onBack,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+        }
+    }
+}
+
+// The felt-green winner card: trophy, "WINNER" (or "IT'S A TIE!"), the name(s)
+// in Cormorant, the winning score in brass, and "8 rounds · 4 players".
+@Composable
+private fun WinnerCard(winners: List<String>, score: Int, detail: String, strings: AppStrings) {
+    FeltCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("winner_card")
+            // Read as one announcement: "Winner, Alice, +428, 8 rounds · 4 players".
+            .semantics(mergeDescendants = true) {}
+    ) {
+        Column(
+            modifier            = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)
+        ) {
+            Icon(
+                imageVector        = Icons.Default.EmojiEvents,
+                contentDescription = null, // decorative: the text announces the winner
+                tint               = MaterialTheme.tarotColors.brassOnFelt,
+                modifier           = Modifier.size(40.dp)
+            )
+            Text(
+                text  = (if (winners.size > 1) strings.itsATie else strings.winner).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.tarotColors.brassOnFelt
+            )
+            Text(
+                text      = winners.joinToString(" & "),
+                style     = MaterialTheme.typography.displaySmall,
+                textAlign = TextAlign.Center
+            )
+            // On the felt the score is brass rather than green/red: it is always
+            // the best score of the game, and brass stays readable on green.
+            Text(
+                text  = score.withSign(),
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.tarotColors.brassOnFelt
+            )
+            Text(text = detail, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+// Final ranking: rank, avatar, name, score. Leaders (every co-winner) in brass.
+@Composable
+private fun RankingCard(standings: List<Standing>) {
+    SalonCard(
+        modifier       = Modifier.fillMaxWidth().testTag("ranking_card"),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Column {
+            standings.forEachIndexed { index, standing ->
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .heightIn(min = 56.dp)
+                        .then(
+                            if (standing.isLeader) {
+                                Modifier.background(MaterialTheme.tarotColors.winnerHighlight.copy(alpha = 0.5f))
+                            } else Modifier
+                        )
+                        .padding(horizontal = Dimens.SpaceM)
+                        .testTag("rank_${standing.name}"),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (winners.size == 1) {
-                        // Single winner ─ show "Winner", the name (with star medal), and score.
-                        Text(
-                            text = strings.winner,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        // Row so the star icon sits inline with the winner's name.
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Small decorative star medal — contentDescription null because
-                            // the winner's name text already conveys the meaning.
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = winners.first(),
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
-                        val score = totals[winners.first()] ?: 0
-                        Text(
-                            text = strings.scoreDisplay(score.withSign()),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    } else if (winners.isNotEmpty()) {
-                        // Tie ─ list all co-winners. No star icon — no single champion.
-                        Text(
-                            text = strings.itsATie,
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = winners.joinToString(" & "),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                    // `winners.isEmpty()` can only happen with no players — impossible in practice.
+                    Text(
+                        text     = standing.rank.toString(),
+                        style    = MaterialTheme.typography.labelLarge,
+                        color    = if (standing.isLeader) MaterialTheme.tarotColors.brassText
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(20.dp)
+                    )
+                    PlayerAvatar(name = standing.name, seatIndex = standing.seatIndex, size = AvatarSize.M)
+                    Text(
+                        text     = standing.name,
+                        style    = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ScoreText(score = standing.total, size = ScoreSize.M)
+                }
+                if (index < standings.lastIndex) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // ── Score table ───────────────────────────────────────────────────────
-        // The table uses weighted columns (ScoreTableRow) so it always fills the
-        // available width without horizontal scrolling, regardless of player count
-        // (issue #129). Winner column(s) receive a secondaryContainer tint.
-        if (roundHistory.isEmpty()) {
-            // No rounds were played — show a simple notice instead of an empty table.
-            Text(
-                text = strings.noRoundsPlayed,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Header row: localized "Round" label + one header per player name.
-                // No score values for the header row — labels use the default colour.
-                ScoreTableRow(
-                    cells               = listOf(strings.roundColumn) + playerNames,
-                    isHeader            = true,
-                    winnerColumnIndices = winnerColumnIndices
-                )
-                HorizontalDivider()
-
-                // buildScoreTableData() (GameModels.kt) handles the running-totals
-                // accumulation loop — shared with ScoreHistoryScreen (issue #75).
-                for (row in buildScoreTableData(playerNames, roundHistory)) {
-                    ScoreTableRow(
-                        cells               = row.cells,
-                        isHeader            = false,
-                        scoreValues         = row.scoreValues,
-                        winnerColumnIndices = winnerColumnIndices
-                    )
-                }
-            }   // end Column
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // ── Action buttons row ────────────────────────────────────────────────
-        // All three buttons share the row with equal widths via Modifier.weight(1f).
-        // Using weight() instead of fillMaxWidth() is required inside a Row — each
-        // child claims its proportional share of remaining space after unweighted
-        // siblings are measured. With all three at 1f they each get exactly 1/3.
-        //
-        // Order (left → right):
-        //   Back to Game (AppOutlinedButton) — return to the active game
-        //   Main Menu    (AppOutlinedButton) — return to the landing screen
-        //   New Game     (AppButton)         — primary CTA, filled container
-        //
-        // rememberSharedAutoSizeState ensures all three labels shrink together
-        // to the same font size if any single label overflows its 1/3-width slot.
-        // Keyed on the three label strings so a locale change resets the size.
-        //
-        // Arrangement.spacedBy puts the gap only *between* buttons (no outer margins),
-        // keeping the row flush with the surrounding content padding.
-        val buttonSizeState = rememberSharedAutoSizeState(
-            strings.backToGame, strings.mainMenu, strings.newGame
-        )
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Left: resume the current game if "End Game" was tapped by mistake.
-            AppOutlinedButton(
-                text            = strings.backToGame,
-                onClick         = onBack,
-                modifier        = Modifier.weight(1f),
-                sharedSizeState = buttonSizeState
-            )
-            // Center: return to the landing screen (main menu).
-            AppOutlinedButton(
-                text            = strings.mainMenu,
-                onClick         = onMainMenu,
-                modifier        = Modifier.weight(1f),
-                sharedSizeState = buttonSizeState
-            )
-            // Right: primary CTA — start a brand-new game (goes to setup screen).
-            AppButton(
-                text            = strings.newGame,
-                onClick         = onNewGame,
-                modifier        = Modifier.weight(1f),
-                sharedSizeState = buttonSizeState
-            )
-        }
-    }   // end Column
-    }   // end Box
+    }
 }
 
+// Line chart of every player's cumulative score, drawn on a Compose Canvas:
+//   - one line per player, in that player's tone (same colour as their avatar),
+//   - a dashed zero baseline,
+//   - a tick under the baseline for every round, with a few round numbers,
+//   - the highest and lowest values printed on the left.
+@Composable
+private fun ScoreChart(playerNames: List<String>, rounds: List<RoundResult>, description: String) {
+    val series   = cumulativeSeries(playerNames, rounds)
+    val (low, high) = chartBounds(series)
+    val labels   = xAxisLabels(rounds.size)
+    val tarot    = MaterialTheme.tarotColors
+    val scheme   = MaterialTheme.colorScheme
+    // A TextMeasurer lays out text so drawText() can paint it on the canvas.
+    val measurer = rememberTextMeasurer()
+    // labelMedium without letter spacing: labelSmall's wide tracking is for overlines.
+    val labelStyle = MaterialTheme.typography.labelMedium.copy(
+        color         = scheme.onSurfaceVariant,
+        letterSpacing = 0.sp
+    )
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .testTag("score_chart")
+            // The canvas is a picture: describe it for screen readers.
+            .semantics { contentDescription = description }
+    ) {
+        val left   = 40.dp.toPx()   // room for the y labels
+        val bottom = 20.dp.toPx()   // room for the x labels
+        val top    = 8.dp.toPx()
+        val plotW  = size.width - left - 4.dp.toPx()
+        val plotH  = size.height - bottom - top
+
+        // Maps a round index / score to canvas coordinates.
+        fun x(i: Int): Float = left + plotW * i / rounds.size.coerceAtLeast(1)
+        fun y(v: Int): Float = top + plotH * (high - v) / (high - low).toFloat()
+
+        // Zero baseline (dashed hairline).
+        drawLine(
+            color       = scheme.outline,
+            start       = Offset(left, y(0)),
+            end         = Offset(left + plotW, y(0)),
+            strokeWidth = 1.dp.toPx(),
+            pathEffect  = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
+        )
+        // Round ticks along the bottom, with a few round numbers.
+        val axisY = top + plotH
+        for (i in 1..rounds.size) {
+            drawLine(scheme.outline, Offset(x(i), axisY), Offset(x(i), axisY + 4.dp.toPx()), 1.dp.toPx())
+        }
+        for (r in labels) {
+            val text = measurer.measure(r.toString(), labelStyle)
+            drawText(text, topLeft = Offset(x(r) - text.size.width / 2f, axisY + 5.dp.toPx()))
+        }
+        // Y labels: highest, zero, lowest (skipping duplicates of zero).
+        for (v in listOf(high, 0, low).distinct()) {
+            val text = measurer.measure(v.withSign(), labelStyle)
+            drawText(text, topLeft = Offset(0f, y(v) - text.size.height / 2f))
+        }
+        // One line per player, drawn segment by segment.
+        series.forEachIndexed { seat, points ->
+            val color = tarot.playerTone(seat).container
+            for (i in 1 until points.size) {
+                drawLine(
+                    color       = color,
+                    start       = Offset(x(i - 1), y(points[i - 1])),
+                    end         = Offset(x(i), y(points[i])),
+                    strokeWidth = 2.5.dp.toPx(),
+                    cap         = StrokeCap.Round
+                )
+            }
+        }
+    }
+}
+
+// Colour key under the chart: a dot in each player's tone, then their name.
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChartLegend(playerNames: List<String>) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+        verticalArrangement   = Arrangement.spacedBy(Dimens.SpaceXs)
+    ) {
+        playerNames.forEachIndexed { seat, name ->
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .background(MaterialTheme.tarotColors.playerTone(seat).container, CircleShape)
+                )
+                Text(text = name, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
