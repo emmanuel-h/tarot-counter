@@ -67,6 +67,24 @@ private fun SalonCardPreview(@PreviewParameter(ThemeModeProvider::class) dark: B
 
 @Preview(widthDp = 360)
 @Composable
+private fun FeltCardPreview(@PreviewParameter(ThemeModeProvider::class) dark: Boolean) {
+    SalonPreview(dark) {
+        FeltCard(modifier = Modifier.fillMaxWidth()) {
+            androidx.compose.material3.Text(
+                text  = "Round 5",
+                style = MaterialTheme.typography.headlineLarge
+            )
+            AvatarStack(
+                names     = previewPlayers.take(4),
+                size      = AvatarSize.M,
+                ringColor = fr.mandarine.tarotcounter.ui.theme.LightTarotColors.felt
+            )
+        }
+    }
+}
+
+@Preview(widthDp = 360)
+@Composable
 private fun PlayerAvatarPreview(@PreviewParameter(ThemeModeProvider::class) dark: Boolean) {
     SalonPreview(dark) {
         Row(

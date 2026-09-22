@@ -7,54 +7,79 @@ The landing screen lets users configure a game before it starts. It currently ha
 1. **Choose the number of players** (3, 4, or 5)
 2. **Enter each player's name**
 
-## Layout
+## Layout (Salon redesign, issue #197)
 
-The screen uses a scrollable `Column`. The layout order follows the natural user flow — configure players, enter names, choose a dealer, then start:
+```
+┌──────────────────────────────┐
+│ Tarot Counter            [⚙] │  SalonTopBar: wordmark + settings icon
+│ ┌── felt card ─────────────┐ │  only when a game is in progress
+│ │ GAME IN PROGRESS  (A)(B)…│ │  brass overline + avatar stack
+│ │ Round 5                  │ │
+│ │ 4 players · Alice leads +312 │
+│ │ [         Resume        ]│ │  ivory pill on the felt
+│ └──────────────────────────┘ │
+│ ═══════════ ♠ ♥ ♦ ♣ ═══════  │  SuitDivider (only with the resume card)
+│ ┌── New Game ──────────────┐ │  SalonCard
+│ │ Players        (3 | 4 | 5)│ │
+│ │ (1) Player 1             │ │  PlayerNameField per seat
+│ │ (2) Player 2             │ │
+│ │ First Dealer (Random|Choose)│
+│ │ [       Start Game      ]│ │
+│ └──────────────────────────┘ │
+│ Past Games                   │  SectionHeader
+│ ┌──────────────────────────┐ │
+│ │ 🏆 Alice             +540 │ │  one SalonCard row per game
+│ │    Tue 22 Sep · 5 players · 8 rounds │
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
+```
 
-1. Language switcher (flag toggle, top-right)
-2. Card-suit decorative header (`♠ ♥ ♦ ♣`, in primary color)
-3. App title
-4. Player count chips (3 / 4 / 5)
-5. Player name fields
-6. **First Dealer section** ← new (issue #128)
-7. **Start Game button** ← below the dealer section
-8. Resume Game card (if an unfinished game is saved)
-9. Past Games list (if any completed games exist)
-10. **Feedback button** ← right-aligned, below Past Games
+The screen is one scrollable column, capped at 600 dp and centred on tablets. `imePadding()` keeps the focused name field above the keyboard.
 
-## Visual design
+1. **Top bar**: the app name as a Cormorant wordmark (`headlineLarge`) on the left, the settings gear on the right (48 dp touch target). It replaces the old centred title and the emoji suits row.
+2. **Resume card**: a `FeltCard` shown at the **top** when an unfinished game is saved. It shows:
+   - a brass "GAME IN PROGRESS" overline
+   - the next round number
+   - the player count and the current leader with their score ("Alice leads +312"; a tie reads "Alice & Bob lead +20", and before any scored round it reads "No rounds played")
+   - an `AvatarStack` of the players
+   - an ivory **Resume** button
+3. **Suit divider**: separates the game in progress from a new game.
+4. **New game card**: a `SalonCard` titled "New Game" that groups every setup step. It holds the player count, one name field per seat, the first dealer, and Start.
+5. **Past games**: a `SectionHeader` followed by one row per saved game (see below).
 
-### Decorative card-suit header
+### Past games rows
 
-A row of the four French tarot suit symbols (`♠ ♥ ♦ ♣`) appears above the app title using `displaySmall` typography and the `primary` theme color. This gives the screen an immediate card-game identity without requiring custom images.
+Each row is a `SalonCard`, at least 48 dp tall, laid out like this:
 
-### Resume Game card accent border
+- **Left:** a brass trophy.
+- **Middle:** the winner's name. A tie reads "Tie: Alice & Bob"; a game with no rounds reads "No rounds played".
+- **Under the name:** date · player count · round count.
+- **Right:** the winner's score as a `ScoreText`.
 
-The `ResumeGameCard` includes a 4 dp wide vertical strip in the `primary` color on its left edge. This is achieved by placing a thin `Box` and the card's `Column` content side by side in a `Row` inside the card. The strip acts as an accent border that distinguishes the active-game card visually from the passive history cards below.
+The date comes from `formatGameDate()` (`GameDates.kt`) and uses the app language, not the device's:
 
-### Past Games section
+- same year as today: "Tue 22 Sep" / "mar. 22 sept."
+- another year: the year is added, e.g. "Sat 13 Sep 2025"
 
-- The section heading uses `titleLarge` (previously `titleMedium`) for stronger visual hierarchy.
-- Each `PastGameCard` displays a small trophy icon (`Icons.Default.EmojiEvents`) inline with the winner name when a single winner exists. Tie results and no-rounds results do not show the trophy.
+### Pure logic
+
+| Function | File | Purpose |
+|---|---|---|
+| `currentLeaders(playerNames, rounds)` | `GameModels.kt` | Leader(s) and their score for the resume card; `null` before the first scored round (skipped rounds don't count) |
+| `formatGameDate(datestamp, locale, now, timeZone)` | `GameDates.kt` | Past-game date in the app language, with the year only when it differs from the current one |
+| `AppLocale.javaLocale` | `AppLocale.kt` | Maps EN/FR to `Locale.ENGLISH` / `Locale.FRENCH` for date formatting |
+
+All three are covered by `HomeLogicTest`.
 
 ## How it works
 
-### Theme and language toggles
-
-The top header row contains two `SingleChoiceSegmentedButtonRow` controls:
-
-- **Theme toggle** (left): ☀️ (light) / 🌙 (dark)
-- **Language toggle** (right): 🇬🇧 (English) / 🇫🇷 (French)
-
-Both use `SegmentedButton` with `icon = {}` (no checkmark). The selected segment gets a filled background; unselected segments have no individual border — only the outer row border remains. This makes the current selection immediately obvious and avoids the visual noise of individual outlined chips for every unselected option.
-
 ### Player count selection
 
-A `SingleChoiceSegmentedButtonRow` with three segments (3, 4, 5) lets the user pick the number of players. The selected segment has a filled background. The default is **3 players**.
+A compact `SingleChoiceSegmentedButtonRow` with three segments (3, 4, 5) sits on the right of the "Players" label. The selected segment is filled felt green. The default is **3 players**.
 
 ### Player name inputs
 
-Below the chips, one `OutlinedTextField` is rendered per player (e.g. "Player 1", "Player 2", …). The number of fields updates instantly when the chip selection changes:
+Below the player count, one `PlayerNameField` is shown per seat, with that seat's coloured avatar in the leading slot. While a field is empty, the avatar shows the seat number and the field shows a "Player N" placeholder. Once a name is typed, the avatar shows the name's initial. The number of fields updates instantly when the player count changes:
 
 - Switching from 3 → 5 adds two new empty fields.
 - Switching from 5 → 3 removes the last two fields (and any names typed in them).
@@ -66,7 +91,7 @@ Every player in a game must have a unique name. The app validates this in real t
 
 - **Name resolution** — a blank field is treated as its fallback label (`"Player 1"`, `"Player 2"`, …), the same label GameScreen would use during play. This means leaving two fields empty is caught as a duplicate.
 - **Case-insensitive** — `"Alice"` and `"alice"` are considered the same name.
-- **Error highlight** — any field whose resolved name clashes with another gets a red border and a `"Name already used"` hint below it. Both conflicting fields are highlighted, not just one.
+- **Error highlight** — any field whose resolved name clashes with another gets a red border and an inline `"Name already used"` message right under it. Both conflicting fields are highlighted, not just one.
 - **Button disabled** — the "Start Game" button is disabled as long as at least one duplicate exists. It re-enables automatically once all names are unique.
 
 #### Example

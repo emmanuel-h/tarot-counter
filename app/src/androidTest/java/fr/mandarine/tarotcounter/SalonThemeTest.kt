@@ -117,7 +117,8 @@ class SalonThemeTest {
         assertEquals(CormorantGaramond, headlineFamily)
         assertEquals(Figtree, bodyFamily)
         // Tabular figures so score columns line up.
-        assertEquals("tnum", bodyFeatures)
+        // Tabular (tnum) + lining (lnum) figures so score columns line up.
+        assertEquals("tnum, lnum", bodyFeatures)
     }
 
     @Test
