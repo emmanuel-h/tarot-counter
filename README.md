@@ -7,16 +7,15 @@ An Android app for tracking scores in **French Tarot**, a classic French trick-t
 TarotCounter guides players through a game round by round:
 
 1. **Home / setup** — a Salon top bar shows the app name with a **⚙** settings button. If a game is in progress, a felt-green **resume card** comes first: round number, avatar stack, current leader and score, **Resume** button. A **New Game** card groups the setup: choose 3, 4 or 5 players, enter optional names (each field shows the seat's coloured avatar), and choose the **first dealer** (random or a specific player). Duplicate names are flagged inline in real time, and Start stays disabled until every name is unique.
-2. **Attacker selection + contract** — tap the player who won the bidding to set them as the **attacker** (any player can bid, not just the dealer); then pick their contract; the dealer label shows who is distributing the cards this round; a persistent **bottom action bar** always shows **End Game** (left) and **Skip round** (right) for quick access
-3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
-4. **Compact scoreboard** — after the first round, a persistent card at the top shows each player's running total at a glance
-5. **Score history screen** — tap the bar-chart icon (always visible in the header) to open the history screen; a **segmented toggle** switches between two views: **Table** (cumulative scores per round, one row per player) and **List** (round-by-round detail log, newest first, with a coloured **●** indicator per row: green = won, red = lost, grey = skipped)
-6. **End Game / Final Score** — tap **End Game** in the bottom bar at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted with a soft brass tint), and three action buttons on one line: **Main Menu** (return to the landing screen), **New Game** (go to setup), and **Back to Game** (resume the current game)
-7. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (CompactScoreboard, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
-8. **Auto-save & Resume** — the game state is saved after every round. If the app is closed mid-game, the resume card appears at the top of the home screen the next time it is opened.
-9. **Past Games** — completed games are saved to the device. The home screen lists them, one row each: trophy, winner (or tie), date in the app language, player and round counts, and the winner's score.
-10. **Back navigation** — the Android system back button always returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
-11. **Settings page** — a dedicated settings page (reachable via the ⚙ gear icon on the setup screen) consolidates theme toggle (☀️ / 🌙), language toggle (🇬🇧 / 🇫🇷), and a feedback button that opens the device's email client pre-addressed to the developer; both theme and language are persisted across restarts
+2. **Game screen, between rounds**: the scores come first. A dealer chip sits under the "Round N" title (with undo and history icon buttons). After round 1 comes a ranked **Standings** card: rank, avatar, name, a small ▲/▼ trend since the last round, and the score; leaders are highlighted in brass. Then **"Who took?"**: one large avatar tile per player (3 / 2×2 / 3+2). Then **Last rounds**: the latest 3, with **See all** opening the history. The bottom bar holds **End Game** (red text) and **Skip round**.
+3. **Round entry**: tapping a taker tile opens "Alice takes" (a back arrow changes the taker). Pick the contract, then enter bouts, points scored (0–91, taker's or defenders' points; the app converts with `takerPoints = 91 − defenderPoints`), the partner (5 players) and bonuses. Then **Confirm round**.
+4. **Score history screen** — tap the chart icon in the top bar (or **See all** under *Last rounds*) to open the history screen; a **segmented toggle** switches between two views: **Table** (cumulative scores per round, one row per player) and **List** (round-by-round detail log, newest first, with a coloured **●** indicator per row: green = won, red = lost, grey = skipped)
+5. **End Game / Final Score** — tap **End Game** in the bottom bar at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted with a soft brass tint), and three action buttons on one line: **Main Menu** (return to the landing screen), **New Game** (go to setup), and **Back to Game** (resume the current game)
+6. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (standings, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
+7. **Auto-save & Resume** — the game state is saved after every round. If the app is closed mid-game, the resume card appears at the top of the home screen the next time it is opened.
+8. **Past Games** — completed games are saved to the device. The home screen lists them, one row each: trophy, winner (or tie), date in the app language, player and round counts, and the winner's score.
+9. **Back navigation** — the Android system back button closes the round entry first (back to "Who took?"), otherwise returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
+10. **Settings page** — a dedicated settings page (reachable via the ⚙ gear icon on the setup screen) consolidates theme toggle (☀️ / 🌙), language toggle (🇬🇧 / 🇫🇷), and a feedback button that opens the device's email client pre-addressed to the developer; both theme and language are persisted across restarts
 
 The app rotates the **dealer** each round and lets the user explicitly select the **attacker** (the player who won the bidding), determines win/loss, and computes each player's score for the round.
 
@@ -72,7 +71,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── GameStorage.kt         # DataStore read/write + JSON serialization
 ├── GameViewModel.kt       # StateFlows for games, locale, theme; save/load coroutines
 ├── LandingScreen.kt       # Player setup UI + Past Games list
-├── GameScreen.kt          # Round management, taker rotation, details form, history, End Game button
+├── GameScreen.kt          # Game screen: standings, "Who took?" tiles, last rounds, round entry, bottom bar
 ├── SettingsScreen.kt      # Settings page: theme, language, feedback
 ├── ScoreHistoryScreen.kt  # Score history: table view + list view with toggle
 ├── FinalScoreScreen.kt    # End-of-game results: winner card + full score table
@@ -80,6 +79,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── UiComponentsPreviews.kt # Light + dark @Previews of every Salon component
 ├── SalonUi.kt             # Pure logic behind the Salon components (initials, sizes, suit glyphs)
 ├── GameDates.kt           # Past-game date formatting in the app language
+├── Standings.kt           # Game screen logic: ranked standings, taker grid, last rounds
 └── ui/theme/              # "Salon" design tokens: colours (+ TarotColors), typography, shapes, spacing, contrast helper
 ```
 
@@ -196,6 +196,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ColorContrastTest.kt` | WCAG relative luminance and contrast ratio helpers |
 | `SalonPaletteTest.kt` | Every text/background pair of both themes ≥ 4.5:1; player tones |
 | `SalonUiTest.kt` | Salon component logic: player initials, avatar/score sizes, suit glyphs, top-bar action limit |
+| `StandingsTest.kt` | Game screen logic: ranked standings (ties, leaders, trend), taker grid columns, last rounds |
 | `HomeLogicTest.kt` | Home screen logic: current leader(s), past-game date formatting, app → Java locale |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
 | `LandingScreenTest.kt` | Home screen: top bar, resume card, New Game card (player count, name fields with avatars, duplicate validation, dealer), past-game rows |

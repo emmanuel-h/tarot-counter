@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -81,19 +82,11 @@ class GameScreenTest {
     }
 
     /**
-     * Selects [attackerName] as the attacker by tapping their name in the attacker
-     * segmented-button row. Must be called before selecting a contract, because the
-     * "choose a contract" prompt is only shown once an attacker is selected.
+     * Selects [attackerName] as the taker by tapping their tile in the "Who took?"
+     * grid (issue #198). This opens the round-entry view (contract, bouts, points…).
      */
     private fun selectAttacker(attackerName: String = "Alice") {
-        // The name can appear in several places (scoreboard, round history, dealer
-        // label…). The attacker selector is a row of radio buttons, so we match only a
-        // radio button carrying the name. Contract buttons are radio buttons too, but
-        // their labels never equal a player name.
-        composeTestRule.onAllNodes(
-            hasText(attackerName) and
-                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
-        )[0].performClick()
+        composeTestRule.onNodeWithTag("taker_tile_$attackerName").performClick()
     }
 
     /**
@@ -176,19 +169,20 @@ class GameScreenTest {
     }
 
     @Test
-    fun all_three_bottom_bar_buttons_are_displayed_from_the_start() {
-        // Spec (#89): End Game, Skip Round, and Confirm round must all be visible
-        // on the same row from the moment the game starts.
+    fun between_rounds_bottom_bar_shows_end_game_and_skip_round() {
+        // Salon (#198): between rounds the bar holds End game (text) and Skip round
+        // (outlined). Confirm only appears once a taker opens the round entry.
         launchGame()
         composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
         composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Confirm round").assertDoesNotExist()
     }
 
     @Test
     fun confirm_button_is_disabled_when_no_contract_is_selected() {
-        // Spec (#89): Confirm is always visible but disabled until a contract is chosen.
+        // Confirm is visible in the round entry but disabled until a contract is chosen.
         launchGame()
+        selectAttacker()
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 
@@ -237,13 +231,14 @@ class GameScreenTest {
     }
 
     @Test
-    fun bottom_bar_buttons_remain_visible_while_contract_form_is_open() {
+    fun round_entry_bottom_bar_shows_end_game_and_confirm() {
         launchGame()
         selectAttacker()
         composeTestRule.onNodeWithText(guard).performClick()
         composeTestRule.onNodeWithText("End Game").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Skip round").assertIsDisplayed()
         composeTestRule.onNodeWithText("Confirm round").assertIsDisplayed()
+        // Skipping only makes sense before a taker is chosen.
+        composeTestRule.onNodeWithText("Skip round").assertDoesNotExist()
     }
 
     // ── Spec: selecting a contract opens the details form (Step 2) ────────────
@@ -362,18 +357,15 @@ class GameScreenTest {
     // ── Spec: scoreboard shown after a played round ────────────────────────────
 
     @Test
-    fun scores_section_appears_after_first_played_round() {
+    fun standings_card_appears_after_first_played_round() {
         launchGame()
+        composeTestRule.onNodeWithTag("standings_card").assertDoesNotExist()
         selectContractAndEnterScore()
         composeTestRule.onNodeWithText("Confirm round").performClick()
 
-        composeTestRule.onNodeWithText("Scores").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("standings_card").assertIsDisplayed()
         players.forEach { name ->
-            assertTrue(
-                "$name should appear in the scoreboard",
-                composeTestRule.onAllNodesWithText(name, substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
-            )
+            composeTestRule.onNodeWithTag("standing_$name").assertExists()
         }
     }
 
@@ -419,12 +411,14 @@ class GameScreenTest {
     }
 
     @Test
-    fun score_history_button_also_appears_in_round_details_form() {
+    fun round_entry_shows_taker_title_and_back_arrow() {
         launchGame()
-        composeTestRule.onNodeWithText("Skip round").performClick()
-        selectAttacker()
-        composeTestRule.onNodeWithText(guard).performClick()
-        composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
+        selectAttacker("Alice")
+        composeTestRule.onNodeWithText("Alice takes").assertIsDisplayed()
+        // The back arrow returns to "Who took?" and keeps the chosen taker selected.
+        composeTestRule.onNodeWithContentDescription("Change taker").performClick()
+        composeTestRule.onNodeWithText("Who took?").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("taker_tile_Alice").assertIsSelected()
     }
 
     @Test
@@ -961,21 +955,22 @@ class GameScreenTest {
     }
 
     @Test
-    fun attacker_label_is_displayed() {
-        // The "Attacker" label should always be visible above the selector row.
+    fun who_took_heading_and_one_tile_per_player_are_displayed() {
         launchGame()
-        composeTestRule.onNodeWithText("Attacker").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Who took?").assertIsDisplayed()
+        players.forEach { composeTestRule.onNodeWithTag("taker_tile_$it").assertIsDisplayed() }
     }
 
     @Test
-    fun confirm_disabled_without_attacker_even_when_contract_and_score_set() {
-        // Core regression test for issue #124: scoring must go to the selected attacker.
-        // Confirm must stay disabled when no attacker is selected.
+    fun changing_the_taker_clears_the_contract_and_disables_confirm() {
+        // Core regression for issue #124: scoring must go to the selected taker.
+        // Going back and picking another taker resets the form, so Confirm is
+        // disabled until the new taker's contract and points are entered.
         launchGame()
-        // Contracts are hidden until an attacker is picked (issue #131), so fill the
-        // form, then tap the attacker again to deselect them.
         selectContractAndEnterScore(attacker = "Alice")
-        composeTestRule.onAllNodesWithText("Alice")[0].performClick()
+        composeTestRule.onNodeWithContentDescription("Change taker").performClick()
+        selectAttacker("Bob")
+        composeTestRule.onNodeWithText("Bob takes").assertIsDisplayed()
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 
@@ -1001,15 +996,15 @@ class GameScreenTest {
 
     @Test
     fun attacker_resets_after_round_is_confirmed() {
-        // After a round is confirmed the attacker selection must clear so the next
-        // round starts fresh — no player should be pre-selected.
+        // After a round is confirmed the view returns to "Who took?" with no tile
+        // selected, so the next round starts fresh.
         launchGame()
         selectContractAndEnterScore(attacker = "Alice")
         composeTestRule.onNodeWithText("Confirm round").performClick()
 
-        // After advancing to round 2, the Confirm button must again be disabled
-        // (no attacker selected yet for the new round).
-        composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Who took?").assertIsDisplayed()
+        players.forEach { composeTestRule.onNodeWithTag("taker_tile_$it").assertIsNotSelected() }
+        composeTestRule.onNodeWithText("Confirm round").assertDoesNotExist()
     }
 
     // ── Spec: undo previous round (issue #146) ───────────────────────────────
@@ -1174,30 +1169,14 @@ class GameScreenTest {
     // ── Spec: compact scoreboard — player name truncation (issue #118) ─────────
 
     @Test
-    fun scoreboard_shows_all_five_player_names_after_a_round() {
-        // Regression: with 5 players, each Column in CompactScoreboard must carry
-        // Modifier.weight(1f) so the Row's width is divided equally and
-        // TextOverflow.Ellipsis has a finite width to truncate against.
-        // Without the weight the columns expand freely and names never clip —
-        // meaning they can overflow their neighbour and become unreadable.
+    fun standings_show_all_five_players_after_a_round() {
         val fivePlayers = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
         launchGame(playerNames = fivePlayers)
         selectContractAndEnterScore(attacker = "Alice")
         composeTestRule.onNodeWithText("Confirm round").performClick()
 
-        // After the first round the "Scores" card must be visible and every
-        // player name must appear somewhere in the composition (possibly truncated
-        // to "Ali…" but still present as a semantics node).
-        composeTestRule.onNodeWithText("Scores").assertIsDisplayed()
-        fivePlayers.forEach { name ->
-            assertTrue(
-                "Player '$name' should appear in the compact scoreboard after round 1",
-                composeTestRule
-                    .onAllNodesWithText(name, substring = true)
-                    .fetchSemanticsNodes()
-                    .isNotEmpty()
-            )
-        }
+        composeTestRule.onNodeWithTag("standings_card").assertIsDisplayed()
+        fivePlayers.forEach { composeTestRule.onNodeWithTag("standing_$it").assertExists() }
     }
 
     // ── Spec: End Game confirmation when points are pending (issue #150) ──────
@@ -1261,8 +1240,8 @@ class GameScreenTest {
 
         // Dialog is gone.
         composeTestRule.onNodeWithText("End the game?").assertDoesNotExist()
-        // Game screen is still active — the round header should still be visible.
-        composeTestRule.onNodeWithText("Round 1").assertIsDisplayed()
+        // Game screen is still active — the round entry is still open.
+        composeTestRule.onNodeWithText("Alice takes").assertIsDisplayed()
         // Final Score screen must NOT have been shown.
         composeTestRule.onNodeWithText("Game Over").assertDoesNotExist()
     }
@@ -1343,4 +1322,86 @@ class GameScreenTest {
             storage.clearInProgressCallCount >= 1
         )
     }
+
+    // ── Salon game screen (issue #198) ────────────────────────────────────────
+
+    @Test
+    fun dealer_chip_is_shown_between_rounds() {
+        launchGame()
+        composeTestRule.onNodeWithTag("dealer_chip").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dealer:", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun last_rounds_log_lists_skipped_and_played_rounds_newest_first() {
+        launchGame()
+        composeTestRule.onNodeWithText("Last rounds").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        selectContractAndEnterScore(attacker = "Alice")
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        composeTestRule.onNodeWithText("Last rounds").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("last_round_1").assertExists()
+        composeTestRule.onNodeWithTag("last_round_2").assertExists()
+        composeTestRule.onNodeWithText("Skipped").assertExists()
+        composeTestRule.onNodeWithText("Alice · $guard", substring = true).assertExists()
+        // Newest first: round 2 sits above round 1.
+        val r2 = composeTestRule.onNodeWithTag("last_round_2").fetchSemanticsNode().boundsInRoot
+        val r1 = composeTestRule.onNodeWithTag("last_round_1").fetchSemanticsNode().boundsInRoot
+        assertTrue("R2 must be above R1", r2.top < r1.top)
+    }
+
+    @Test
+    fun see_all_opens_the_score_history() {
+        launchGame()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule.onNodeWithText("See all").performClick()
+        composeTestRule.onNodeWithText("Score history").assertIsDisplayed()
+    }
+
+    @Test
+    fun leader_row_shows_leading_label_after_a_won_round() {
+        launchGame()
+        // With 0 bouts the taker needs 56 points: 60 wins, so Alice leads.
+        selectContractAndEnterScore(attacker = "Alice", score = "60")
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+        composeTestRule.onNodeWithText("LEADING").assertIsDisplayed()
+    }
+
+    @Test
+    fun top_bar_has_history_and_undo_icon_buttons() {
+        launchGame()
+        composeTestRule.onNodeWithContentDescription("History").assertIsDisplayed()
+        // Nothing to undo before the first round.
+        composeTestRule.onNodeWithContentDescription("Undo previous round").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule.onNodeWithContentDescription("Undo previous round").assertIsDisplayed()
+    }
+
+    @Test
+    fun four_players_get_a_two_by_two_taker_grid() {
+        launchGame(playerNames = listOf("Alice", "Bob", "Charlie", "Dave"))
+        val a = composeTestRule.onNodeWithTag("taker_tile_Alice").fetchSemanticsNode().boundsInRoot
+        val b = composeTestRule.onNodeWithTag("taker_tile_Bob").fetchSemanticsNode().boundsInRoot
+        val c = composeTestRule.onNodeWithTag("taker_tile_Charlie").fetchSemanticsNode().boundsInRoot
+        assertTrue("Alice and Bob share the first row", a.top == b.top)
+        assertTrue("Charlie starts the second row", c.top > a.top && c.left == a.left)
+    }
+
+    @Test
+    fun system_back_in_round_entry_returns_to_who_took() {
+        var endedGame = false
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(), FakeGameStorage()
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        composeTestRule.setContent {
+            TarotCounterTheme { GameScreen(viewModel = viewModel, onEndGame = { endedGame = true }) }
+        }
+        selectAttacker("Alice")
+        Espresso.pressBack()
+        composeTestRule.onNodeWithText("Who took?").assertIsDisplayed()
+        assertTrue("Back from the round entry must not leave the game", !endedGame)
+    }
 }
+
