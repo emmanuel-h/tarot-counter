@@ -1,6 +1,14 @@
 package fr.mandarine.tarotcounter
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,7 +31,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,7 +45,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,7 +52,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -57,10 +62,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -428,6 +433,14 @@ fun GameScreen(
         if (roundEntryOpen && attacker != null) {
             SalonTopBar(
                 title                  = strings.takerTakes(attacker),
+                overline               = strings.roundHeader(currentRound),
+                titleLeading           = {
+                    PlayerAvatar(
+                        name      = attacker,
+                        seatIndex = displayNames.indexOf(attacker),
+                        size      = AvatarSize.M
+                    )
+                },
                 onBack                 = { roundEntryOpen = false },
                 backContentDescription = strings.changeTaker,
                 modifier               = Modifier.padding(horizontal = Dimens.SpaceXs)
@@ -478,306 +491,101 @@ fun GameScreen(
                 onSeeAll      = { showScoreHistory = true }
             )
           } else {
-            // ── Round entry (restyled in issue #199) ──────────────────────────
-
-            // ── Contract selection ────────────────────────────────────────────
-            // Only shown once an attacker has been selected — the attacker's name
-            // appears in the label so the user can confirm who is playing.
-            // SingleChoiceSegmentedButtonRow is the Material 3 standard for picking
-            // one option from a fixed set. Tapping the already-selected segment
-            // deselects it (collapses the details form).
-
-            // rememberSharedAutoSizeState must be called unconditionally (Compose rule:
-            // remember calls must not be placed inside if/when/loop branches).
-            // The value is only *used* inside the if-block below.
-            val contractLabelSize = rememberSharedAutoSizeState(locale)
-
-            if (selectedAttacker != null) {
-                Text(
-                    text = strings.chooseContract(selectedAttacker!!),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.align(Alignment.Start)
+            // ── Round entry (Salon, issue #199) ───────────────────────────────
+            //   Contract     [Petite ×1] [Garde ×2]      2×2 contract cards
+            //                [G. sans ×4] [G. contre ×6]
+            //   Bouts (0)(1)(2)(3)         needs 41     bout chips
+            //   ┌ Points scored   (Attack|Defense) ┐
+            //   │ 47 / 91                           │    big Cormorant number
+            //   │ ✓ Made by 6 → Chloé +186          │    live result pill
+            //   └───────────────────────────────────┘
+            //   Partner (5 players)  avatar chips
+            //   Bonuses / Chelem     (restyled in #200)
+            Column(
+                modifier            = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)
+            ) {
+                ContractCards(
+                    selected = selectedContract,
+                    label    = strings.contractLabel,
+                    locale   = locale,
+                    // Tapping the selected card again deselects it (collapses the form).
+                    onSelect = { c -> selectedContract = if (selectedContract == c) null else c }
                 )
-                Spacer(Modifier.height(8.dp))
 
-                // Shared font size — all 4 segments shrink together so they always display
-                // at the same size (the smallest needed across the longest label).
-                // Keyed on locale so labels re-measure whenever the language changes.
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    Contract.entries.forEachIndexed { index, c ->
-                        SegmentedButton(
-                            // Salon colours: selected segment filled felt green (issue #196).
-                            colors   = salonSegmentedButtonColors(),
-                            // shape draws the correct rounded corners: round on the outer ends,
-                            // straight on the inner edges between segments.
-                            shape    = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = Contract.entries.size
-                            ),
-                            selected = selectedContract == c,
-                            onClick  = { selectedContract = if (selectedContract == c) null else c },
-                            // Hide the checkmark icon — the filled/outlined segment already
-                            // communicates selection clearly.
-                            icon     = {}
-                        ) {
-                            AutoSizeText(
-                                text            = c.localizedName(locale),
-                                modifier        = Modifier.padding(horizontal = 1.dp),
-                                sharedSizeState = contractLabelSize
+                val contract = selectedContract
+                if (contract != null) {
+                    BoutChips(
+                        bouts    = bouts,
+                        label    = strings.boutsLabel,
+                        helper   = strings.boutsNeeds(requiredPoints(bouts)),
+                        onSelect = { bouts = it }
+                    )
+
+                    // The live result is computed from the same function the ViewModel
+                    // uses to record the round, so the pill always matches the outcome.
+                    val typedPoints = pointsText.toIntOrNull()
+                    val preview = if (typedPoints != null && !pointsError) {
+                        val takerPoints = if (defenderMode) 91 - typedPoints else typedPoints
+                        previewRound(
+                            playerNames = displayNames,
+                            takerName   = attacker,
+                            contract    = contract,
+                            details     = RoundDetails(
+                                bouts          = bouts,
+                                points         = takerPoints,
+                                partnerName    = if (displayNames.size == 5) selectedPartner else null,
+                                petitAuBout    = petitAuBout,
+                                poignees       = poignees.toList(),
+                                doublePoignees = doublePoignees.toList(),
+                                triplePoignees = triplePoignees.toList(),
+                                chelem         = chelem,
+                                chelemPlayer   = chelemPlayer
                             )
-                        }
+                        )
+                    } else null
+
+                    PointsCard(
+                        pointsText    = pointsText,
+                        onPointsText  = { pointsText = it },
+                        defenderMode  = defenderMode,
+                        onCampChange  = { defender ->
+                            if (defender != defenderMode) {
+                                // Clear the value so it is never read for the wrong camp.
+                                pointsText   = ""
+                                defenderMode = defender
+                            }
+                        },
+                        pointsError   = pointsError,
+                        preview       = preview,
+                        taker         = attacker,
+                        strings       = strings,
+                        onDone        = { keyboardController?.hide() }
+                    )
+
+                    // ── Partner (5-player games only) ─────────────────────────
+                    // The taker calls a silent partner; the taker can't call themself.
+                    if (displayNames.size == 5) {
+                        PartnerChips(
+                            label    = strings.partnerCalledByTaker,
+                            players  = displayNames,
+                            taker    = attacker,
+                            selected = selectedPartner,
+                            // Tapping the selected partner again clears the choice.
+                            onSelect = { name ->
+                                selectedPartner = if (selectedPartner == name) null else name
+                            }
+                        )
                     }
                 }
+            }
 
-                Spacer(Modifier.height(8.dp))
-            } // end attacker-required guard
-
-            // ── Inline round details ──────────────────────────────────────────
-            // The form state (bouts, pointsText, etc.) is declared at the top of
-            // GameScreen and reset via LaunchedEffect(selectedContract) — this lets
-            // the Confirm button in the pinned bottom bar read and submit the values.
             val contract = selectedContract
             if (contract != null) {
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Dimens.SpaceL))
                 HorizontalDivider()
                 Spacer(Modifier.height(12.dp))
-
-                // ── Bouts + Points side by side ───────────────────────────────
-                // Placing these in a Row cuts vertical space compared to stacking them.
-                //
-                // IntrinsicSize.Min sets the Row's height to the tallest column's natural
-                // height (i.e. the height of its content without any expansion). This is
-                // needed so fillMaxHeight() inside each Column has a concrete ceiling to
-                // fill up to.
-                //
-                // Both Columns use fillMaxHeight() so they stretch to that shared height.
-                // A weight(1f) Spacer between the label and the field then pushes the
-                // field to the bottom of each Column, keeping both fields vertically
-                // aligned even when one label wraps to more lines than the other
-                // (e.g. "Nombre de bouts (oudlers)" in French wraps but "Points" does not).
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),  // height = tallest column's natural height
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    // No verticalAlignment — each Column manages alignment internally
-                ) {
-                    // Left half: bouts dropdown (ExposedDropdownMenuBox)
-                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        FormLabel(strings.numberOfBouts)
-                        // Flexible spacer: grows to fill remaining Column height,
-                        // pushing the dropdown flush with the bottom of the Row.
-                        Spacer(Modifier.weight(1f))
-
-                        var boutsExpanded by remember { mutableStateOf(false) }
-
-                        ExposedDropdownMenuBox(
-                            expanded         = boutsExpanded,
-                            onExpandedChange = { boutsExpanded = !boutsExpanded },
-                            modifier         = Modifier.testTag("bouts_dropdown")
-                        ) {
-                            OutlinedTextField(
-                                value          = bouts.toString(),
-                                onValueChange  = {},
-                                readOnly       = true,
-                                trailingIcon   = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = boutsExpanded)
-                                },
-                                colors         = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                singleLine     = true,
-                                modifier       = Modifier
-                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                    .fillMaxWidth()
-                            )
-                            ExposedDropdownMenu(
-                                expanded         = boutsExpanded,
-                                onDismissRequest = { boutsExpanded = false }
-                            ) {
-                                // One menu item per valid bout count (0 through 3).
-                                for (n in 0..3) {
-                                    DropdownMenuItem(
-                                        text           = { Text(n.toString()) },
-                                        onClick        = {
-                                            bouts         = n
-                                            boutsExpanded = false
-                                        },
-                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Right half: points entry with an inline camp toggle
-                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        // Section header mirrors the "Number of bouts (oudlers)" label
-                        // on the left so both halves of the Row look structurally identical.
-                        FormLabel(strings.pointsHeader)
-                        // Flexible spacer (mirrors the one in the left Column) so the
-                        // text field always aligns with the bouts dropdown below.
-                        Spacer(Modifier.weight(1f))
-                        // ── Points field with trailing camp toggle ───────────────
-                        // The floating label tells the user which camp's points to enter.
-                        // The trailing icon (Swords = attacker, Shield = defenders) lets
-                        // them switch camp without leaving the keyboard.
-                        // SwordsIcon embeds the Material Symbols Outlined "swords" path
-                        // (material-icons-extended 1.7.x has no sword glyph).
-                        // Icons.Default.Shield is the standard Material Design shield.
-                        // Together they form an immediately-recognisable attack/defend pair.
-                        // Tapping it clears the current value so there is no confusion
-                        // about which camp the displayed number belongs to.
-                        // When the user enters defender points, the app converts on
-                        // confirm: takerPoints = 91 − defenderPoints.
-                        OutlinedTextField(
-                            value = pointsText,
-                            onValueChange = { input ->
-                                // Accept only digit characters, at most two (max value 91).
-                                if (input.all { it.isDigit() } && input.length <= 2) {
-                                    pointsText = input
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction    = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = { keyboardController?.hide() }
-                            ),
-                            // Dynamic label: shows which camp the user is entering points for.
-                            // AutoSizeText shrinks the label font until the full string fits
-                            // on one line — this handles narrow screens and large system fonts
-                            // without truncating or wrapping.
-                            label = {
-                                AutoSizeText(
-                                    text = if (defenderMode) strings.defenderPointsLabel
-                                           else strings.attackerPointsLabel
-                                )
-                            },
-                            // Trailing icon acts as the camp toggle.
-                            // The icon represents the CURRENT mode (Swords = attacker,
-                            // Shield = defenders), and the content description describes
-                            // what the NEXT tap will switch to, following Material
-                            // accessibility guidelines for toggle controls.
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = {
-                                        // Clear first so no stale value carries over
-                                        // to the new camp's context.
-                                        pointsText   = ""
-                                        defenderMode = !defenderMode
-                                    },
-                                    modifier = Modifier.testTag("camp_toggle")
-                                ) {
-                                    Icon(
-                                        // SwordsIcon (Material Symbols "swords" path) = attacker.
-                                        // Icons.Default.Shield (Material Icons Extended) = defenders.
-                                        // Both icons are from Google's Material design language,
-                                        // giving a clear, immediately-recognisable attack/defend pair.
-                                        imageVector = if (defenderMode)
-                                            Icons.Default.Shield  // defenders hold the shield
-                                        else
-                                            SwordsIcon,           // attacker wields the crossed swords
-                                        // Content description names the NEXT mode so screen
-                                        // readers announce the action, not the current state.
-                                        contentDescription = if (defenderMode)
-                                            strings.attackerPointsLabel
-                                        else
-                                            strings.defenderPointsLabel
-                                    )
-                                }
-                            },
-                            isError         = pointsError,
-                            supportingText  = if (pointsError) ({
-                                Text(
-                                    text  = strings.pointsOutOfRange,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }) else null,
-                            singleLine      = true,
-                            modifier        = Modifier.fillMaxWidth().testTag("points_input")
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(12.dp))
-
-                // ── Partner selection (5-player only) ─────────────────────────
-                // In a 5-player game the attacker calls a silent partner before the round.
-                if (displayNames.size == 5) {
-                    // The attacker cannot be their own partner, so exclude them.
-                    val partnerOptions = displayNames.filter { it != selectedAttacker }
-                    // Label on the left, dropdown on the right — same horizontal row.
-                    var partnerExpanded by remember { mutableStateOf(false) }
-                    Row(
-                        modifier             = Modifier.fillMaxWidth(),
-                        verticalAlignment    = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Label takes the left half of the row.
-                        Text(
-                            text     = strings.partnerCalledByTaker,
-                            style    = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.weight(1f)
-                        )
-                        // Dropdown fills the right half.
-                        ExposedDropdownMenuBox(
-                            expanded         = partnerExpanded,
-                            onExpandedChange = { partnerExpanded = !partnerExpanded },
-                            modifier         = Modifier
-                                .weight(1f)
-                                .testTag("partner_dropdown")
-                        ) {
-                            OutlinedTextField(
-                                // Show the selected partner name, or a dash when no partner chosen.
-                                value         = selectedPartner ?: "—",
-                                onValueChange = {},
-                                readOnly      = true,
-                                trailingIcon  = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = partnerExpanded)
-                                },
-                                colors     = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                singleLine = true,
-                                // Smaller font so the text fits inside the reduced-height field.
-                                textStyle  = MaterialTheme.typography.bodyMedium,
-                                modifier   = Modifier
-                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                    .fillMaxWidth()
-                                    // Compact height — bodyMedium (14 sp) fits comfortably at 48 dp.
-                                    .height(48.dp)
-                            )
-                            ExposedDropdownMenu(
-                                expanded         = partnerExpanded,
-                                onDismissRequest = { partnerExpanded = false }
-                            ) {
-                                // Dash entry at the top lets the user clear the partner.
-                                DropdownMenuItem(
-                                    text           = { Text("—") },
-                                    onClick        = {
-                                        selectedPartner = null
-                                        partnerExpanded = false
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                )
-                                for (name in partnerOptions) {
-                                    DropdownMenuItem(
-                                        text           = { Text(name) },
-                                        onClick        = {
-                                            selectedPartner = name
-                                            partnerExpanded = false
-                                        },
-                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    HorizontalDivider()
-                    Spacer(Modifier.height(16.dp))
-                }
 
                 // ── Player-assigned bonuses (compact grid) ─────────────────────
                 // Petit au bout stays single-select (only one player captures the
@@ -1337,6 +1145,310 @@ private fun LastRoundsLog(
                         modifier = Modifier.weight(1f)
                     )
                     round.playerScores[round.takerName]?.let { ScoreText(score = it, size = ScoreSize.S) }
+                }
+            }
+        }
+    }
+}
+
+// ── Round entry building blocks (Salon, issue #199) ───────────────────────────
+
+// A small muted label above a round-entry section, with an optional helper on the right.
+@Composable
+private fun EntryLabel(text: String, helper: String? = null) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text     = text,
+            style    = MaterialTheme.typography.labelMedium,
+            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        if (helper != null) {
+            Text(
+                text  = helper,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// The four contracts as a 2 × 2 grid of cards: name in Cormorant on the left,
+// multiplier on the right. The selected card is filled felt green, its multiplier
+// in brass.
+@Composable
+private fun ContractCards(
+    selected: Contract?,
+    label: String,
+    locale: AppLocale,
+    onSelect: (Contract) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        EntryLabel(label)
+        // chunked(2) → two rows of two contracts.
+        Contract.entries.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                for (contract in row) {
+                    val isSelected = contract == selected
+                    val scheme = MaterialTheme.colorScheme
+                    Surface(
+                        onClick  = { onSelect(contract) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(60.dp)
+                            .testTag("contract_${contract.name}")
+                            .semantics { this.selected = isSelected },
+                        shape    = MaterialTheme.shapes.medium,
+                        color    = if (isSelected) scheme.primary else scheme.surface,
+                        contentColor = if (isSelected) scheme.onPrimary else scheme.onSurface,
+                        border   = BorderStroke(1.dp, if (isSelected) scheme.primary else scheme.outline),
+                        shadowElevation = if (isSelected) 4.dp else 0.dp
+                    ) {
+                        Row(
+                            modifier          = Modifier.padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Long names ("Guard Against") shrink instead of wrapping.
+                            AutoSizeText(
+                                text     = contract.localizedName(locale),
+                                style    = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text  = "×${contract.multiplier}",
+                                style = MaterialTheme.typography.titleSmall,
+                                // Brass on the felt when selected, muted otherwise.
+                                color = if (isSelected) MaterialTheme.tarotColors.brassOnFelt
+                                        else scheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The number of bouts (oudlers) as four pill chips, 0 to 3, with the points the
+// taker needs on the right ("needs 41"). Selected chip: felt tint + felt border.
+@Composable
+private fun BoutChips(bouts: Int, label: String, helper: String, onSelect: (Int) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        EntryLabel(label, helper)
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            for (n in 0..3) {
+                val isSelected = n == bouts
+                val scheme = MaterialTheme.colorScheme
+                Surface(
+                    onClick  = { onSelect(n) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("bouts_chip_$n")
+                        .semantics { this.selected = isSelected },
+                    shape    = CircleShape,
+                    color    = if (isSelected) scheme.primaryContainer else scheme.surface,
+                    contentColor = if (isSelected) scheme.onPrimaryContainer else scheme.onSurface,
+                    border   = BorderStroke(
+                        width = if (isSelected) 1.5.dp else 1.dp,
+                        color = if (isSelected) scheme.primary else scheme.outline
+                    )
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(text = n.toString(), style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The points card: a large Cormorant number with "/ 91", an Attack | Defense toggle,
+// and the live result pill once a valid number is typed.
+@Composable
+private fun PointsCard(
+    pointsText: String,
+    onPointsText: (String) -> Unit,
+    defenderMode: Boolean,
+    onCampChange: (defender: Boolean) -> Unit,
+    pointsError: Boolean,
+    preview: RoundPreview?,
+    taker: String,
+    strings: AppStrings,
+    onDone: () -> Unit
+) {
+    val scheme = MaterialTheme.colorScheme
+    SalonCard(
+        modifier       = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(Dimens.SpaceM)
+    ) {
+        // ── Label + camp toggle ───────────────────────────────────────────────
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text     = strings.pointsScored,
+                style    = MaterialTheme.typography.labelMedium,
+                color    = scheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            val campSize = rememberSharedAutoSizeState(strings.attackCamp)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.width(184.dp)) {
+                listOf(false to strings.attackCamp, true to strings.defenseCamp)
+                    .forEachIndexed { index, (defender, label) ->
+                        SegmentedButton(
+                            shape    = SegmentedButtonDefaults.itemShape(index, 2),
+                            selected = defenderMode == defender,
+                            onClick  = { onCampChange(defender) },
+                            icon     = {},
+                            colors   = salonSegmentedButtonColors(),
+                            modifier = Modifier.testTag(if (defender) "camp_defense" else "camp_attack")
+                        ) {
+                            AutoSizeText(
+                                text            = label,
+                                modifier        = Modifier.padding(horizontal = 1.dp),
+                                sharedSizeState = campSize
+                            )
+                        }
+                    }
+            }
+        }
+
+        // ── Big number + "/ 91" ───────────────────────────────────────────────
+        // BasicTextField is the bare text input underneath Material's fields; we draw
+        // our own underline so the number can be large and typographic.
+        val underline = if (pointsError) scheme.error else scheme.primary
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            BasicTextField(
+                value         = pointsText,
+                onValueChange = { input ->
+                    // Digits only, at most two (the maximum is 91).
+                    if (input.all { it.isDigit() } && input.length <= 2) onPointsText(input)
+                },
+                singleLine      = true,
+                textStyle       = MaterialTheme.typography.displayLarge.copy(color = scheme.onSurface),
+                cursorBrush     = SolidColor(scheme.primary),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction    = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(onDone = { onDone() }),
+                modifier        = Modifier
+                    .width(120.dp)
+                    .testTag("points_input")
+                    // Screen readers announce which camp's points are expected.
+                    .semantics {
+                        contentDescription = if (defenderMode) strings.defenderPointsLabel
+                                             else strings.attackerPointsLabel
+                    }
+                    // 2 dp underline, red while the value is out of range.
+                    .drawBehind {
+                        val y = size.height - 1.dp.toPx()
+                        drawLine(underline, Offset(0f, y), Offset(size.width, y), 2.dp.toPx())
+                    },
+                decorationBox = { inner ->
+                    Box {
+                        // Grey "0" hint while the field is empty.
+                        if (pointsText.isEmpty()) {
+                            Text(
+                                text  = "0",
+                                style = MaterialTheme.typography.displayLarge,
+                                color = scheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            )
+                        }
+                        inner()
+                    }
+                }
+            )
+            Text(
+                text     = "/ 91",
+                style    = MaterialTheme.typography.bodyLarge,
+                color    = scheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 10.dp)
+            )
+        }
+
+        if (pointsError) {
+            Text(
+                text  = strings.pointsOutOfRange,
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.error
+            )
+        }
+
+        // ── Live result pill ──────────────────────────────────────────────────
+        if (preview != null) {
+            val takerScore = preview.playerScores[taker] ?: 0
+            val text = if (preview.won) {
+                strings.resultMade(preview.margin, taker, takerScore.withSign())
+            } else {
+                strings.resultShort(preview.margin, taker, takerScore.withSign())
+            }
+            // Felt tint when made, red tint when short.
+            val bg = if (preview.won) scheme.primaryContainer else scheme.errorContainer
+            val fg = if (preview.won) scheme.onPrimaryContainer else scheme.onErrorContainer
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(bg, MaterialTheme.shapes.small)
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .testTag("live_result")
+                    // Read as one sentence by screen readers.
+                    .semantics(mergeDescendants = true) {},
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)
+            ) {
+                Icon(
+                    imageVector        = if (preview.won) Icons.Default.Check else Icons.Default.Close,
+                    contentDescription = null, // the sentence carries the meaning
+                    tint               = fg,
+                    modifier           = Modifier.size(18.dp)
+                )
+                Text(text = text, style = MaterialTheme.typography.bodyMedium, color = fg)
+            }
+        }
+    }
+}
+
+// The 5-player partner choice: one avatar chip per player except the taker.
+// The selected partner is filled felt green; tapping it again clears the choice.
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PartnerChips(
+    label: String,
+    players: List<String>,
+    taker: String,
+    selected: String?,
+    onSelect: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        EntryLabel(label)
+        // FlowRow wraps chips onto a second line when they don't fit.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+            verticalArrangement   = Arrangement.spacedBy(Dimens.SpaceS)
+        ) {
+            players.forEachIndexed { seat, name ->
+                if (name == taker) return@forEachIndexed
+                val isSelected = name == selected
+                val scheme = MaterialTheme.colorScheme
+                Surface(
+                    onClick  = { onSelect(name) },
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .testTag("partner_$name")
+                        .semantics { this.selected = isSelected },
+                    shape    = CircleShape,
+                    color    = if (isSelected) scheme.primary else scheme.surface,
+                    contentColor = if (isSelected) scheme.onPrimary else scheme.onSurface,
+                    border   = BorderStroke(1.dp, if (isSelected) scheme.primary else scheme.outline)
+                ) {
+                    Row(
+                        modifier              = Modifier.padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)
+                    ) {
+                        PlayerAvatar(name = name, seatIndex = seat, size = AvatarSize.S)
+                        Text(text = name, style = MaterialTheme.typography.titleSmall)
+                    }
                 }
             }
         }

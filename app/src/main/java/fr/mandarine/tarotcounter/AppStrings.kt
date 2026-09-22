@@ -54,15 +54,7 @@ data class AppStrings(
     val roundHeader: (n: Int) -> String,
     // "Dealer: Alice" label shown above the attacker selector for context.
     val dealerLabel: (dealer: String) -> String,
-    // Label for the attacker-selector row, e.g. "Attacker" / "Preneur".
-    val attackerLabel: String,
-    // "{Attacker} — choose a contract:" prompt above the contract chips.
-    // Only shown once an attacker has been selected.
-    val chooseContract: (taker: String) -> String,
     val skipRound: String,
-    val numberOfBouts: String,
-    // Section header placed above the points text field (mirrors numberOfBouts on the left).
-    val pointsHeader: String,
     // Text field label shown when the user is entering the attacker (taker)'s points.
     // Also used as the content description of the trailing toggle icon when in defender mode
     // (tapping it switches back to attacker mode).
@@ -94,6 +86,20 @@ data class AppStrings(
     val takerTakes: (taker: String) -> String,
     // Accessibility label of the back arrow in the round-entry view.
     val changeTaker: String,
+    // ── Round entry (issue #199) ──
+    // Small label above the contract cards.
+    val contractLabel: String,
+    // Label above the 0–3 bout chips, and the helper on the right: "needs 41".
+    val boutsLabel: String,
+    val boutsNeeds: (required: Int) -> String,
+    // Label of the points card, and the two segments of its camp toggle.
+    val pointsScored: String,
+    val attackCamp: String,
+    val defenseCamp: String,
+    // Live result pill: "Made by 6 → Chloé +186" / "Short by 4 → Chloé -174".
+    // `formattedScore` is already sign-prefixed.
+    val resultMade: (margin: Int, taker: String, formattedScore: String) -> String,
+    val resultShort: (margin: Int, taker: String, formattedScore: String) -> String,
     val history: String,
     val endGame: String,
     // Tooltip title and section label for the chelem bonus (still used by the ⓘ icon).
@@ -270,11 +276,7 @@ val EnStrings = AppStrings(
 
     roundHeader           = { n -> "Round $n" },
     dealerLabel           = { dealer -> "Dealer: $dealer" },
-    attackerLabel         = "Attacker",
-    chooseContract        = { taker -> "$taker — choose a contract:" },
     skipRound             = "Skip round",
-    numberOfBouts         = "Number of bouts (oudlers)",
-    pointsHeader          = "Points",
     // Floating label on the points field; short enough to fit on one line in a
     // half-width field that also has a trailing toggle icon.
     attackerPointsLabel   = "Attacker (0-91)",
@@ -293,6 +295,14 @@ val EnStrings = AppStrings(
     lostShort             = "Lost",
     takerTakes            = { taker -> "$taker takes" },
     changeTaker           = "Change taker",
+    contractLabel         = "Contract",
+    boutsLabel            = "Bouts (oudlers)",
+    boutsNeeds            = { n -> "needs $n" },
+    pointsScored          = "Points scored",
+    attackCamp            = "Attack",
+    defenseCamp           = "Defense",
+    resultMade            = { m, taker, score -> "Made by $m → $taker $score" },
+    resultShort           = { m, taker, score -> "Short by $m → $taker $score" },
     history               = "History",
     endGame               = "End Game",
     chelemLabel           = "Chelem (grand slam)",
@@ -413,11 +423,7 @@ val FrStrings = AppStrings(
 
     roundHeader           = { n -> "Manche $n" },
     dealerLabel           = { dealer -> "Donneur : $dealer" },
-    attackerLabel         = "Preneur",
-    chooseContract        = { taker -> "$taker — choisissez un contrat :" },
     skipRound             = "Passer",
-    numberOfBouts         = "Nombre de bouts",
-    pointsHeader          = "Points",
     attackerPointsLabel   = "Attaquant (0-91)",
     defenderPointsLabel   = "Défenseurs (0-91)",
     partnerCalledByTaker  = "Appelé (par le preneur)",
@@ -434,6 +440,14 @@ val FrStrings = AppStrings(
     lostShort             = "Perdue",
     takerTakes            = { taker -> "$taker prend" },
     changeTaker           = "Changer de preneur",
+    contractLabel         = "Contrat",
+    boutsLabel            = "Bouts",
+    boutsNeeds            = { n -> "il faut $n" },
+    pointsScored          = "Points réalisés",
+    attackCamp            = "Attaque",
+    defenseCamp           = "Défense",
+    resultMade            = { m, taker, score -> "Fait de $m → $taker $score" },
+    resultShort           = { m, taker, score -> "Chuté de $m → $taker $score" },
     history               = "Historique",
     endGame               = "Fin de partie",
     chelemLabel           = "Chelem (grand chelem)",

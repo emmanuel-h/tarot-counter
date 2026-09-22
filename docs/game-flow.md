@@ -86,11 +86,31 @@ Picking a **different** taker than before resets the contract and the whole form
 
 `lastRounds(rounds)` returns the latest 3 rounds, newest first. A played round reads "R4  Bruno · Guard · Lost" with the taker's delta; a skipped round reads "Skipped", muted. **See all** opens the Score History screen.
 
-#### Contract selection
+#### Round entry (Salon, issue #199)
 
-The contract selector is **only shown after an attacker has been selected** (issue #131). This avoids presenting irrelevant information before the bidding winner is known.
+Round entry turns scoring into a guided panel that shows the result **before** the round is confirmed.
 
-Once an attacker is selected, a prompt shows their name above a row of SegmentedButtons — one per contract (weakest → strongest):
+```
+┌──────────────────────────────┐
+│ ←  (C) ROUND 5               │  top bar: back arrow ("Change taker"),
+│        Chloé takes           │  taker avatar, brass overline
+│ Contract                     │
+│ [Small      ×1][Guard    ×2] │  2 × 2 contract cards, selected = felt
+│ [G. Without ×4][G. Against ×6]│
+│ Bouts (oudlers)     needs 41 │
+│ ( 0 ) ( 1 ) (•2 ) ( 3 )      │  bout chips, needs = requiredPoints()
+│ ┌ Points scored (Attack|Defense) ┐
+│ │ 47 / 91                    │ │  large Cormorant number
+│ │ ✓ Made by 6 → Chloé +124   │ │  live result pill
+│ └────────────────────────────┘ │
+│ Partner called by the taker  │  5 players only: avatar chips
+│ Bonuses · Chelem             │  (restyled in #200)
+├──────────────────────────────┤
+│ End Game  [  Confirm round  ]│
+└──────────────────────────────┘
+```
+
+**Contract cards**: one card per contract, weakest to strongest, each showing its name and multiplier. Tapping the selected card again deselects it and collapses the rest of the form.
 
 | Contract (FR) | Contract (EN)  | Multiplier | Description                    |
 |---------------|----------------|:----------:|-------------------------------|
@@ -99,25 +119,29 @@ Once an attacker is selected, a prompt shows their name above a row of Segmented
 | Garde Sans    | Guard Without  | ×4         | Play without the dog           |
 | Garde Contre  | Guard Against  | ×6         | Play against the dog           |
 
-Contract names are localized: French uses the canonical Tarot terms; English provides plain translations for accessibility.
+Contract names are localized: French uses the canonical Tarot terms; English provides plain translations.
 
-The three action buttons at the bottom of the screen let the taker confirm, skip, or end the game (see [Bottom action bar](#bottom-action-bar) below).
+Once a contract is chosen, the rest of the form appears:
 
-#### Inline round details
+| Field | Control | Description |
+|-------|---------|-------------|
+| Bouts (oudlers) | Four pill chips: 0 / 1 / 2 / 3 | Number of oudlers in the taker's tricks. The helper on the right shows the points needed, e.g. "needs 41" (from `requiredPoints()`). |
+| Points | Large number field + **Attack \| Defense** toggle | Points scored by the selected camp, 0–91, digits only. Switching camp clears the field so a value is never read for the wrong team. In Defense mode the app converts on confirm: `takerPoints = 91 − defenderPoints`. Values above 91 show an error and disable Confirm. For screen readers, the field is described as "Attacker (0-91)" or "Defenders (0-91)". |
+| Live result | Pill under the number | Appears once a valid number is typed: "Made by 6 → Chloé +124" in a felt tint, or "Short by 4 → Chloé −174" in a red tint. It updates as any field changes, bonuses included. |
+| Partner | Avatar chips (5 players only) | Every player except the taker. Tapping the selected partner again clears the choice. |
+| Petit au bout | Checkbox per player | Player who captured the 1 of trump on the last trick |
+| Poignée | Checkbox per player | Player who showed a simple Poignée (see thresholds below) |
+| Double poignée | Checkbox per player | Player who showed a double Poignée (see thresholds below) |
+| Triple poignée | Checkbox per player | Player who showed a triple Poignée (see thresholds below) |
+| Chelem | Self-labelled dropdown + player selector | Grand slam outcome and who called it |
 
-After a contract chip is selected, the scoring details form expands below it on the same page.
-Tapping the active chip again collapses the form and deselects the contract.
+**`previewRound(playerNames, takerName, contract, details)`** (`GameModels.kt`) computes the live result. It returns a `RoundPreview`:
 
-| Field              | Type                        | Description |
-|--------------------|-----------------------------|-------------|
-| Bouts (oudlers)    | Dropdown (0 / 1 / 2 / 3)   | Number of oudlers in the taker's tricks |
-| Points             | Number input with trailing camp-toggle icon | Points scored by the selected camp. The floating label shows the current camp and the valid range: **"Attacker (0-91)"** by default, or **"Defenders (0-91)"** after toggling. Tapping the trailing icon (`SwordsIcon` from Material Symbols = attacker, `Icons.Default.Shield` = defenders) switches camps and clears the field to prevent ambiguity. When defenders' mode is active the app converts to taker points on confirm (`takerPoints = 91 − defenderPoints`). Values outside 0–91 show an error and disable the Confirm button. |
-| Partner            | None or any player (5-player only) | The player called by the taker as a silent partner |
-| Petit au bout      | Checkbox per player         | Player who captured the 1 of trump on the last trick |
-| Poignée            | Checkbox per player         | Player who showed a simple Poignée (see thresholds below) |
-| Double poignée     | Checkbox per player         | Player who showed a double Poignée (see thresholds below) |
-| Triple poignée     | Checkbox per player         | Player who showed a triple Poignée (see thresholds below) |
-| Chelem             | Self-labelled dropdown + player selector | Grand slam outcome and who called it. Shows "Chelem" when nothing is selected, otherwise the chosen outcome's name. |
+- `won`: the taker reached the required points
+- `margin`: `|points − required|`
+- `playerScores`: every player's delta, bonuses included
+
+`GameViewModel.recordPlayed()` calls the same function, so the pill always shows exactly what will be recorded. `RoundPreviewTest` covers it.
 
 **Poignée trump thresholds** vary with the number of players (official FFT rules, R-RO201206.pdf):
 
