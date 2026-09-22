@@ -101,6 +101,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // Generates BuildConfig (VERSION_NAME is shown in Settings → About, issue #203).
+        buildConfig = true
     }
 }
 

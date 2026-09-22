@@ -116,6 +116,21 @@ data class AppStrings(
     val historyEmpty: String,
     // Detail line of a round card: "2 bouts · 47 pts".
     val boutsPoints: (bouts: Int, points: Int) -> String,
+    // ── Settings + Rules restyle (issue #203) ──
+    // Group headings of the settings page.
+    val appearanceLabel: String,
+    val helpLabel: String,
+    val aboutLabel: String,
+    // Text labels of the theme toggle (no emoji-only labels).
+    val themeLight: String,
+    val themeDark: String,
+    // "Version" row of the About group.
+    val versionLabel: String,
+    // Column headings of the two rules tables.
+    val rulesBoutsColumn: String,
+    val rulesNeededColumn: String,
+    val rulesContractColumn: String,
+    val rulesMultiplierColumn: String,
     val history: String,
     val endGame: String,
     // Tooltip title and section label for the chelem bonus (still used by the ⓘ icon).
@@ -312,6 +327,16 @@ val EnStrings = AppStrings(
     seeAllRounds          = "See all rounds",
     historyEmpty          = "No rounds played yet. Scores appear here after the first round.",
     boutsPoints           = { b, p -> "$b bouts · $p pts" },
+    appearanceLabel       = "Appearance",
+    helpLabel             = "Help",
+    aboutLabel            = "About",
+    themeLight            = "Light",
+    themeDark             = "Dark",
+    versionLabel          = "Version",
+    rulesBoutsColumn      = "Bouts",
+    rulesNeededColumn     = "Points needed",
+    rulesContractColumn   = "Contract",
+    rulesMultiplierColumn = "Multiplier",
     history               = "History",
     endGame               = "End Game",
     chelemLabel           = "Chelem (grand slam)",
@@ -376,10 +401,10 @@ val EnStrings = AppStrings(
     rulesClose               = "Close",
 
     rulesObjectiveTitle      = "Objective",
-    rulesObjectiveBody       = "Win the round by reaching the required points based on your bouts (oudlers):\n\n• 3 bouts → 36 pts minimum\n• 2 bouts → 41 pts minimum\n• 1 bout  → 51 pts minimum\n• 0 bouts → 56 pts minimum\n\nBouts are the 21 of trumps, the Petit (1 of trumps), and the Excuse.",
+    rulesObjectiveBody       = "Win the round by reaching the points required by the number of bouts (oudlers) in your tricks. Bouts are the 21 of trumps, the Petit (1 of trumps) and the Excuse.",
 
     rulesContractsTitle      = "Contracts",
-    rulesContractsBody       = "The taker announces a contract that multiplies all scores:\n\n• Small (Prise)       × 1\n• Guard (Garde)       × 2\n• Guard Without       × 4\n• Guard Against       × 6",
+    rulesContractsBody       = "The taker announces a contract that multiplies every score of the round:",
 
     rulesScoreFormulaTitle   = "Score Formula",
     rulesScoreFormulaBody    = "(25 + |actual − required|) × contract multiplier\n\nThe taker wins if their points ≥ the required threshold.\nOn a win the taker collects from defenders; on a loss the taker pays each defender.",
@@ -459,6 +484,16 @@ val FrStrings = AppStrings(
     seeAllRounds          = "Voir toutes les manches",
     historyEmpty          = "Aucune manche jouée. Les scores s'afficheront après la première manche.",
     boutsPoints           = { b, p -> "$b bouts · $p pts" },
+    appearanceLabel       = "Apparence",
+    helpLabel             = "Aide",
+    aboutLabel            = "À propos",
+    themeLight            = "Clair",
+    themeDark             = "Sombre",
+    versionLabel          = "Version",
+    rulesBoutsColumn      = "Bouts",
+    rulesNeededColumn     = "Points à faire",
+    rulesContractColumn   = "Contrat",
+    rulesMultiplierColumn = "Multiplicateur",
     history               = "Historique",
     endGame               = "Fin de partie",
     chelemLabel           = "Chelem (grand chelem)",
@@ -523,10 +558,10 @@ val FrStrings = AppStrings(
     rulesClose               = "Fermer",
 
     rulesObjectiveTitle      = "Objectif",
-    rulesObjectiveBody       = "Gagner la manche en atteignant le seuil de points selon vos bouts :\n\n• 3 bouts → 36 pts minimum\n• 2 bouts → 41 pts minimum\n• 1 bout  → 51 pts minimum\n• 0 bout  → 56 pts minimum\n\nLes bouts sont le 21 d'atout, le Petit (1 d'atout) et l'Excuse.",
+    rulesObjectiveBody       = "Gagner la manche en atteignant le seuil de points fixé par le nombre de bouts dans vos plis. Les bouts sont le 21 d'atout, le Petit (1 d'atout) et l'Excuse.",
 
     rulesContractsTitle      = "Contrats",
-    rulesContractsBody       = "Le preneur annonce un contrat qui multiplie tous les scores :\n\n• Prise         × 1\n• Garde         × 2\n• Garde Sans    × 4\n• Garde Contre  × 6",
+    rulesContractsBody       = "Le preneur annonce un contrat qui multiplie tous les scores de la manche :",
 
     rulesScoreFormulaTitle   = "Calcul du score",
     rulesScoreFormulaBody    = "(25 + |points réels − seuil|) × multiplicateur du contrat\n\nLe preneur gagne si ses points sont supérieurs au seuil requis.\nEn cas de victoire il encaisse ; en cas de défaite il paye chaque défenseur.",
