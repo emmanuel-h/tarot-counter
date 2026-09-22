@@ -25,17 +25,8 @@ data class AppStrings(
     // Label for the "choose a specific player" option in the dealer selection toggle.
     val chooseDealer: String,
     val pastGames: String,
-    // Title of the "resume" card shown when an unfinished game exists.
-    val resumeGameTitle: String,
-    // "1 round played" vs "N rounds played" for the resume-card subtitle.
-    val roundsPlayed: (count: Int) -> String,
-    // Combines a round number with a rounds-played label, e.g. "Round 3 · 2 rounds played".
-    val resumeRoundDetail: (round: Int, label: String) -> String,
     val resume: String,
     val noRoundsPlayed: String,
-    // Single-winner summary in the past-game card, e.g. "Winner: Alice (+120)".
-    // `formattedScore` is already sign-prefixed (e.g. "+120") via Int.withSign().
-    val winnerResult: (name: String, formattedScore: String) -> String,
     // Tie summary in the past-game card, e.g. "Tie: Alice & Bob".
     val tieResult: (names: String) -> String,
     // "1 round" vs "N rounds" shown in the past-game card footer.
@@ -120,6 +111,11 @@ data class AppStrings(
     val scoreChartDescription: (rounds: Int) -> String,
     // Link under the ranking that opens the round-by-round table.
     val seeAllRounds: String,
+    // ── Score history (issue #202) ──
+    // Empty state shown by both history views before the first round.
+    val historyEmpty: String,
+    // Detail line of a round card: "2 bouts · 47 pts".
+    val boutsPoints: (bouts: Int, points: Int) -> String,
     val history: String,
     val endGame: String,
     // Tooltip title and section label for the chelem bonus (still used by the ⓘ icon).
@@ -161,14 +157,6 @@ data class AppStrings(
     val cancel: String,
     // "Skipped" label in the round-history list when no contract was played.
     val skipped: String,
-    // "Round N: Taker — " prefix used in each round-history line.
-    val roundHistoryPrefix: (roundNum: Int, taker: String) -> String,
-    // " · N bouts · N pts" details appended to a history line when available.
-    val boutsPointsDetail: (bouts: Int, points: Int) -> String,
-    // " — Won (+N)" outcome segment; `score` is already formatted with sign.
-    val wonOutcome: (score: String) -> String,
-    // " — Lost (N)" outcome segment.
-    val lostOutcome: (score: String) -> String,
 
     // ── Final Score Screen ────────────────────────────────────────────────────
     val mainMenu: String,
@@ -267,12 +255,8 @@ val EnStrings = AppStrings(
     randomDealer          = "Random",
     chooseDealer          = "Choose",
     pastGames             = "Past Games",
-    resumeGameTitle       = "Resume Game",
-    roundsPlayed          = { n -> if (n == 1) "1 round played" else "$n rounds played" },
-    resumeRoundDetail     = { round, label -> "Round $round · $label" },
     resume                = "Resume",
     noRoundsPlayed        = "No rounds played",
-    winnerResult          = { name, formattedScore -> "Winner: $name ($formattedScore)" },
     tieResult             = { names -> "Tie: $names" },
     roundCount            = { n -> if (n == 1) "1 round" else "$n rounds" },
     playersLabel          = "Players",
@@ -326,6 +310,8 @@ val EnStrings = AppStrings(
     scoreOverTime         = "Score over time",
     scoreChartDescription = { n -> "Line chart of every player's cumulative score over $n rounds" },
     seeAllRounds          = "See all rounds",
+    historyEmpty          = "No rounds played yet. Scores appear here after the first round.",
+    boutsPoints           = { b, p -> "$b bouts · $p pts" },
     history               = "History",
     endGame               = "End Game",
     chelemLabel           = "Chelem (grand slam)",
@@ -349,10 +335,6 @@ val EnStrings = AppStrings(
     endGameConfirmBody    = "The current round will not be saved.",
     cancel                = "Cancel",
     skipped               = "Skipped",
-    roundHistoryPrefix    = { n, taker -> "Round $n: $taker — " },
-    boutsPointsDetail     = { bouts, points -> " · $bouts bouts · $points pts" },
-    wonOutcome            = { s -> " — Won$s" },
-    lostOutcome           = { s -> " — Lost$s" },
 
     mainMenu              = "Main Menu",
     backToGame            = "Back to game",
@@ -422,12 +404,8 @@ val FrStrings = AppStrings(
     randomDealer          = "Aléatoire",
     chooseDealer          = "Choisir",
     pastGames             = "Parties précédentes",
-    resumeGameTitle       = "Partie en cours",
-    roundsPlayed          = { n -> if (n == 1) "1 manche jouée" else "$n manches jouées" },
-    resumeRoundDetail     = { round, label -> "Manche $round · $label" },
     resume                = "Reprendre",
     noRoundsPlayed        = "Aucune manche jouée",
-    winnerResult          = { name, formattedScore -> "Gagnant : $name ($formattedScore)" },
     tieResult             = { names -> "Égalité : $names" },
     roundCount            = { n -> if (n == 1) "1 manche" else "$n manches" },
     playersLabel          = "Joueurs",
@@ -479,6 +457,8 @@ val FrStrings = AppStrings(
     scoreOverTime         = "Évolution des scores",
     scoreChartDescription = { n -> "Courbe du score cumulé de chaque joueur sur $n manches" },
     seeAllRounds          = "Voir toutes les manches",
+    historyEmpty          = "Aucune manche jouée. Les scores s'afficheront après la première manche.",
+    boutsPoints           = { b, p -> "$b bouts · $p pts" },
     history               = "Historique",
     endGame               = "Fin de partie",
     chelemLabel           = "Chelem (grand chelem)",
@@ -502,10 +482,6 @@ val FrStrings = AppStrings(
     endGameConfirmBody    = "Le tour en cours ne sera pas sauvegardé.",
     cancel                = "Annuler",
     skipped               = "Passée",
-    roundHistoryPrefix    = { n, taker -> "Manche $n : $taker — " },
-    boutsPointsDetail     = { bouts, points -> " · $bouts bouts · $points pts" },
-    wonOutcome            = { s -> " — Gagné$s" },
-    lostOutcome           = { s -> " — Perdu$s" },
 
     mainMenu              = "Menu principal",
     backToGame            = "Retour",

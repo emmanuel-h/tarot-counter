@@ -427,7 +427,7 @@ fun computeFinalTotals(
     }
 
 // Holds the data for one row in the score table — used by buildScoreTableData()
-// and consumed by the ScoreTableRow composable in UiComponents.kt.
+// and consumed by the history table in ScoreHistoryScreen.kt.
 //
 // `cells`       : formatted text for every column (round number first, then player totals).
 // `scoreValues` : raw integers for colour coding — null at index 0 (round-number column

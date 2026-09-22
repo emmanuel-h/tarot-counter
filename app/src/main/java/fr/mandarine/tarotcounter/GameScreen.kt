@@ -46,15 +46,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -1325,69 +1320,5 @@ private fun PartnerChips(
                 }
             }
         }
-    }
-}
-
-// ── Round history row ─────────────────────────────────────────────────────────
-
-// A single styled row in the round history list.
-//
-// Layout:  [●]  Round N: Taker — Contract · details — Outcome
-//
-// The leading dot (●) is colored by outcome so the user can scan results at a glance:
-//   Won     → MaterialTheme.colorScheme.primary   (green in default theme)
-//   Lost    → MaterialTheme.colorScheme.error     (red)
-//   Skipped → MaterialTheme.colorScheme.onSurfaceVariant (muted)
-//
-// The `testTag` on the dot lets UI tests assert the correct outcome without
-// reading color values directly.
-@Composable
-internal fun RoundHistoryRow(
-    round:   RoundResult,
-    locale:  AppLocale,
-    strings: AppStrings
-) {
-    val contractText = round.contract?.localizedName(locale) ?: strings.skipped
-    val detailsText  = round.details?.let {
-        strings.boutsPointsDetail(it.bouts, it.points)
-    } ?: ""
-    val takerScore   = round.playerScores[round.takerName]
-    val outcomeText  = when (round.won) {
-        true  -> {
-            val s = if (takerScore != null) " (+$takerScore)" else ""
-            strings.wonOutcome(s)
-        }
-        false -> {
-            val s = if (takerScore != null) " ($takerScore)" else ""
-            strings.lostOutcome(s)
-        }
-        null  -> ""
-    }
-
-    val (indicatorColor, indicatorTag) = when (round.won) {
-        true  -> MaterialTheme.colorScheme.primary          to "round_indicator_won"
-        false -> MaterialTheme.colorScheme.error            to "round_indicator_lost"
-        null  -> MaterialTheme.colorScheme.onSurfaceVariant to "round_indicator_skipped"
-    }
-
-    Row(
-        modifier          = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text     = "●  ",
-            style    = MaterialTheme.typography.bodyMedium,
-            color    = indicatorColor,
-            modifier = Modifier.testTag(indicatorTag)
-        )
-        Text(
-            text     = strings.roundHistoryPrefix(round.roundNumber, round.takerName) +
-                       contractText + detailsText + outcomeText,
-            style    = MaterialTheme.typography.bodyMedium,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
     }
 }

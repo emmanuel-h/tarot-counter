@@ -144,48 +144,6 @@ SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
 
 ---
 
-## ScoreTableRow
-
-```kotlin
-@Composable
-fun ScoreTableRow(
-    cells: List<String>,
-    isHeader: Boolean,
-    scoreValues: List<Int?>? = null,
-    winnerColumnIndices: Set<Int> = emptySet()
-)
-```
-
-A single horizontal row in a score table. Used by both `ScoreHistoryScreen` and `FinalScoreScreen`.
-
-- **Column widths:** uses `Modifier.weight()` — index 0 ("Round") gets weight `SCORE_TABLE_ROUND_COL_WEIGHT` (0.8f); all other columns get `SCORE_TABLE_PLAYER_COL_WEIGHT` (1.0f). This distributes the full available width proportionally, so all columns are always visible on screen regardless of player count (no horizontal scrolling needed, even with 5 players).
-- **Text sizing:** each cell uses `AutoSizeText` with a shared size state per row, so long player names shrink gracefully and all cells in a row stay at the same font size.
-- **`isHeader`:** renders all text bold (for the header row).
-- **`scoreValues`:** parallel list of raw integers for semantic colour coding via `scoreColor()`. Pass `null` or include `null` entries to skip colouring for that cell. Index 0 should always be `null` (round-number column has no colour).
-- **`winnerColumnIndices`:** zero-based column indices highlighted with a gold/amber background and bold text. Defaults to `emptySet()` (no highlighting), so `ScoreHistoryScreen` can use this composable without any extra arguments. `FinalScoreScreen` passes the winner column indices.
-
-**Usage (ScoreHistoryScreen — no winner highlighting):**
-```kotlin
-ScoreTableRow(
-    cells    = listOf(strings.roundColumn) + playerNames,
-    isHeader = true
-)
-```
-
-**Usage (FinalScoreScreen — with winner highlighting):**
-```kotlin
-ScoreTableRow(
-    cells               = row.cells,
-    isHeader            = false,
-    scoreValues         = row.scoreValues,
-    winnerColumnIndices = winnerColumnIndices
-)
-```
-
-The data for each row is produced by `buildScoreTableData()` in `GameModels.kt`.
-
----
-
 ## Salon components (issue #196)
 
 The shared building blocks of the "Salon" redesign. Screens of the redesign (#197–#203) are assembled from these parts instead of raw Material defaults. The composables live in `UiComponents.kt`; the pure logic they rely on (initials, sizes, suit glyphs, top-bar limit) lives in `SalonUi.kt` and is unit-tested by `SalonUiTest`. Every component has a light **and** dark `@Preview` in `UiComponentsPreviews.kt` (the `ThemeModeProvider` preview parameter renders each one in both themes).

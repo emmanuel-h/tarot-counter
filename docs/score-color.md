@@ -26,10 +26,11 @@ Using the Salon theme tokens (not hardcoded hex values — see `docs/theme.md`) 
 
 | Location | What is coloured |
 |---|---|
-| `CompactScoreboard` (GameScreen) | Each player's cumulative score text |
-| `ScoreTableRow` (ScoreHistoryScreen) | Player score cells in the history table |
-| `FinalScoreTableRow` (FinalScoreScreen) | Player score cells in the final results table |
+| `ScoreText` (UiComponents) | Standings, last rounds, past games, game-over ranking, round cards |
+| History table cells (ScoreHistoryScreen) | Each player's running total |
 
-## Winner Column (FinalScoreScreen only)
+The winning score on the felt winner card (Game Over) is the one exception: it is always brass (`tarotColors.brassOnFelt`), which reads well on the felt.
 
-The winner's column in the final score table uses a soft brass background (`MaterialTheme.tarotColors.winnerHighlight`, `#F3E7C9` light / `#2F2A1C` dark) instead of the default surface colour. The score text colour is still applied on top (green or red), so the semantic meaning is preserved even for the highlighted column. Both colours reach 4.5:1 on the highlight (checked by `SalonPaletteTest`).
+## Leader column (Score history table)
+
+The current leader's column (every tied leader's) in the history table uses a soft brass background: `MaterialTheme.tarotColors.winnerHighlight` (`#F3E7C9` light / `#2F2A1C` dark) at 60 % opacity. The score text colour is still applied on top (green or red), so the semantic meaning is preserved even for the highlighted column. Both colours reach 4.5:1 on the highlight (checked by `SalonPaletteTest`).

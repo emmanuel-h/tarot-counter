@@ -53,9 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -334,124 +332,6 @@ fun scoreColor(total: Int): Color =
     // Green for winning (positive / zero), red for losing (negative).
     if (total >= 0) MaterialTheme.tarotColors.positive
     else MaterialTheme.tarotColors.negative
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared score-table building blocks
-//
-// These were extracted from ScoreHistoryScreen and FinalScoreScreen (issue #75)
-// to eliminate duplication: any bug fix or visual change now applies everywhere.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Relative weight for the "Round" / "Manche" column.
-// Smaller than a player column because round numbers are at most two digits.
-// Using weight (rather than a fixed dp width) makes the table responsive:
-// all columns together always fill exactly the available screen width, so
-// 4- and 5-player games never require horizontal scrolling (issue #129).
-internal const val SCORE_TABLE_ROUND_COL_WEIGHT: Float = 0.8f
-
-// Relative weight for each player column.
-// All player columns share the same weight, so they are evenly distributed
-// across the remaining width after the round column has taken its share.
-internal const val SCORE_TABLE_PLAYER_COL_WEIGHT: Float = 1f
-
-/**
- * A single horizontal row in a score table.
- *
- * Replaces the near-identical `ScoreTableRow` (ScoreHistoryScreen) and
- * `FinalScoreTableRow` (FinalScoreScreen) that existed before issue #75.
- *
- * Each cell uses [Modifier.weight] so the row always fills the available width,
- * regardless of how many players are in the game (issue #129).
- * The first column (index 0) uses [SCORE_TABLE_ROUND_COL_WEIGHT]; all others
- * use [SCORE_TABLE_PLAYER_COL_WEIGHT].
- *
- * Long player names are automatically shrunk via [AutoSizeText] so they never
- * overflow their cell. All cells in the same row share a [rememberSharedAutoSizeState]
- * so they all display at the same — smallest-needed — font size.
- *
- * @param cells               Text content for each cell in left-to-right order.
- * @param isHeader            If true, renders all text in bold (header row).
- * @param scoreValues         Optional parallel list of raw score integers for colour
- *                            coding. A null entry means "use the default text colour";
- *                            a non-null entry is passed to [scoreColor].
- * @param winnerColumnIndices Zero-based column indices to highlight with a gold background
- *                            and bold text. Defaults to an empty set (no highlighting),
- *                            so ScoreHistoryScreen can use this composable unchanged.
- */
-@Composable
-fun ScoreTableRow(
-    cells: List<String>,
-    isHeader: Boolean,
-    scoreValues: List<Int?>? = null,
-    winnerColumnIndices: Set<Int> = emptySet()
-) {
-    // One shared state per row: all AutoSizeText instances in this row will shrink
-    // together so every cell displays at the same font size. Keyed on the cell
-    // contents so a data change (new round added) resets the shared size to maximum.
-    val rowSizeState = rememberSharedAutoSizeState(*cells.toTypedArray())
-
-    // RowScope is the implicit receiver here, so Modifier.weight() is available
-    // inside forEachIndexed without any extra ceremony.
-    Row(modifier = Modifier.fillMaxWidth()) {
-        cells.forEachIndexed { index, text ->
-            // Round column is slightly narrower than player columns (0.8 vs 1.0).
-            // weight() distributes the Row's full width among all children
-            // proportionally, so the table always fits without horizontal scrolling.
-            val colWeight = if (index == 0) SCORE_TABLE_ROUND_COL_WEIGHT
-                            else            SCORE_TABLE_PLAYER_COL_WEIGHT
-
-            val isWinnerColumn = index in winnerColumnIndices
-
-            // Winner columns get a soft brass tint from the active theme (light or
-            // dark follows the app's own toggle, not the system setting).
-            // `Color.Unspecified` leaves the background transparent (no winner highlight).
-            val bgColor = if (isWinnerColumn) MaterialTheme.tarotColors.winnerHighlight
-                          else Color.Unspecified
-            val bgModifier = if (bgColor != Color.Unspecified) Modifier.background(bgColor)
-                             else Modifier
-
-            // Semantic colour for score cells: green (positive/zero) or red (negative).
-            // Header rows and the round-number column (null scoreValue) always use default.
-            val textColor = if (!isHeader && scoreValues != null) {
-                val value = scoreValues.getOrNull(index)
-                if (value != null) scoreColor(value) else Color.Unspecified
-            } else {
-                Color.Unspecified
-            }
-
-            Box(
-                modifier = Modifier
-                    .weight(colWeight)          // proportional width — fills screen
-                    .then(bgModifier)
-                    .padding(vertical = 8.dp, horizontal = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // AutoSizeText shrinks the font until the text fits its cell.
-                // The shared state ensures every cell in this row uses the same size,
-                // which keeps the row visually consistent (no cell looks different).
-                // `textAlign = TextAlign.Center` is baked into the style so the text
-                // stays centred after the font is scaled down.
-                val cellStyle = if (isHeader || isWinnerColumn) {
-                    MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        textAlign  = TextAlign.Center,
-                        color      = textColor
-                    )
-                } else {
-                    MaterialTheme.typography.bodyMedium.copy(
-                        textAlign = TextAlign.Center,
-                        color     = textColor
-                    )
-                }
-                AutoSizeText(
-                    text            = text,
-                    style           = cellStyle,
-                    sharedSizeState = rowSizeState
-                )
-            }
-        }
-    }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Salon building blocks (issue #196)
