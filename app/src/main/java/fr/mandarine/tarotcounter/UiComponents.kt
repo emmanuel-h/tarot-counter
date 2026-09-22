@@ -23,13 +23,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import fr.mandarine.tarotcounter.ui.theme.Dimens
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,30 +33,21 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,7 +61,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import fr.mandarine.tarotcounter.ui.theme.tarotColors
-import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared UI building blocks for the whole app.
@@ -323,282 +309,6 @@ fun AppTextButton(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reusable game-form building blocks
-//
-// These composables were originally private inside GameScreen.kt. Moving them
-// here makes them available to any screen that needs them and lets them be
-// tested and maintained without touching the main game-screen file.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// A small bold label placed above a form section.
-// `fillMaxWidth()` ensures the label stretches to align with the field below it.
-@Composable
-fun FormLabel(text: String) {
-    Text(
-        text  = text,
-        style = MaterialTheme.typography.titleSmall,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-// Holds the display data and state callbacks for one row of the bonus grid.
-// Declared at file scope (not inside the composable) so it is not recreated on
-// every recomposition of [CompactBonusGrid].
-//
-// Two selection modes are supported:
-//
-//   Single-select  (multiSelect = false) — used for Petit au bout.
-//     At most one player can be assigned at a time. `value` holds the selected
-//     player name (or null). `onSelect` receives the new selection (or null to clear).
-//
-//   Multi-select   (multiSelect = true)  — used for the three Poignée rows.
-//     Any number of players can declare simultaneously. `values` holds the current
-//     set of selected names. `onToggle` receives (playerName, isNowChecked) so the
-//     caller can add or remove the player from its set independently.
-data class BonusRow(
-    val label: String,
-    val tooltip: String,
-    // ── Single-select fields (petit au bout) ──────────────────────────────────
-    val value: String?              = null,
-    val onSelect: ((String?) -> Unit)? = null,
-    // ── Multi-select fields (poignées, issue #149) ────────────────────────────
-    val values: Set<String>                     = emptySet(),
-    val onToggle: ((String, Boolean) -> Unit)?  = null,
-    val multiSelect: Boolean                    = false
-)
-
-// A label cell that wraps both a bonus name and a decorative ⓘ icon inside a
-// single [TooltipBox] so that tapping anywhere on the cell opens the description.
-//
-// label : localized bonus name — shown as text and as the tooltip title.
-// body  : multi-line tooltip body (rules + point value).
-//
-// Layout note: this composable is intentionally content-sized (no fillMaxWidth).
-// The enclosing Row in [CompactBonusGrid] carries the weight() modifier that
-// determines the label column width, keeping checkboxes properly aligned.
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BonusLabelCell(label: String, body: String) {
-    val tooltipState = rememberTooltipState(isPersistent = true)
-    val scope        = rememberCoroutineScope()
-
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
-        tooltip = {
-            // RichTooltip supports a title and a multi-line body text.
-            RichTooltip(title = { Text(label) }) {
-                Text(body)
-            }
-        },
-        state = tooltipState
-    ) {
-        // Only the text + icon are clickable — empty space in the label column is not.
-        Row(
-            modifier = Modifier.clickable { scope.launch { tooltipState.show() } },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text     = label,
-                style    = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            // Decorative info icon — the clickable Row above handles all input.
-            Icon(
-                imageVector        = Icons.Default.Info,
-                contentDescription = null,
-                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier           = Modifier
-                    .padding(start = 2.dp)
-                    .size(14.dp)
-            )
-        }
-    }
-}
-
-// A small ⓘ [IconButton] that opens a [RichTooltip] when tapped.
-// Used next to standalone dropdowns (e.g. the Chelem dropdown in the round form)
-// where a full [BonusLabelCell] would not fit.
-//
-// title : the bonus name shown as the tooltip heading.
-// body  : multi-line explanation text (rules + point value).
-//
-// `isPersistent = true` keeps the tooltip open until the user dismisses it —
-// important on mobile where there is no hover event to close it automatically.
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BonusInfoIcon(title: String, body: String) {
-    val tooltipState = rememberTooltipState(isPersistent = true)
-    val scope        = rememberCoroutineScope()
-
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
-        tooltip = {
-            RichTooltip(title = { Text(title) }) {
-                Text(body)
-            }
-        },
-        state = tooltipState
-    ) {
-        // Small icon button — 20 dp keeps it compact inside a row.
-        IconButton(
-            onClick  = { scope.launch { tooltipState.show() } },
-            modifier = Modifier.size(20.dp)
-        ) {
-            Icon(
-                imageVector        = Icons.Default.Info,
-                contentDescription = null,
-                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier           = Modifier.size(14.dp)
-            )
-        }
-    }
-}
-
-// Compact grid showing four player-assigned bonuses (petit au bout, poignée,
-// double poignée, triple poignée).
-//
-// Layout:
-//   Row 0 (header):  empty label column | Player1 | Player2 | …
-//   Row 1–4 (data):  label + ⓘ          | ☑/☐    | ☑/☐    | …
-//
-// Each player cell holds a [Checkbox]:
-//   • Petit au bout row   — single-select: ticking a box deselects the previous one.
-//   • Poignée rows        — multi-select:  any number of boxes can be ticked at once.
-//     (Issue #149: multiple players may each show their own trump hand independently.)
-//
-// bonusLabels      : four localized label strings (parallel to the state params).
-// bonusTooltips    : four tooltip body strings shown when the ⓘ is tapped.
-// petitAuBout      : currently selected player for Petit au bout, or null.
-// onPetit          : called with the selected player name (or null to clear).
-// poignees         : set of players who declared a simple poignée.
-// onPoignee        : called with (playerName, isNowChecked) when a box is toggled.
-// doublePoignees   : set of players who declared a double poignée.
-// onDoublePoignee  : called with (playerName, isNowChecked) when a box is toggled.
-// triplePoignees   : set of players who declared a triple poignée.
-// onTriplePoignee  : called with (playerName, isNowChecked) when a box is toggled.
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CompactBonusGrid(
-    playerNames: List<String>,
-    bonusLabels: List<String>,
-    bonusTooltips: List<String>,
-    petitAuBout: String?,           onPetit: (String?) -> Unit,
-    poignees: Set<String>,          onPoignee: (String, Boolean) -> Unit,
-    doublePoignees: Set<String>,    onDoublePoignee: (String, Boolean) -> Unit,
-    triplePoignees: Set<String>,    onTriplePoignee: (String, Boolean) -> Unit
-) {
-    // Build one BonusRow per bonus. The first row (Petit au bout) uses single-select;
-    // the three Poignée rows use multi-select (issue #149).
-    val bonuses = listOf(
-        BonusRow(
-            label    = bonusLabels[0],
-            tooltip  = bonusTooltips[0],
-            value    = petitAuBout,
-            onSelect = onPetit
-        ),
-        BonusRow(
-            label       = bonusLabels[1],
-            tooltip     = bonusTooltips[1],
-            values      = poignees,
-            onToggle    = onPoignee,
-            multiSelect = true
-        ),
-        BonusRow(
-            label       = bonusLabels[2],
-            tooltip     = bonusTooltips[2],
-            values      = doublePoignees,
-            onToggle    = onDoublePoignee,
-            multiSelect = true
-        ),
-        BonusRow(
-            label       = bonusLabels[3],
-            tooltip     = bonusTooltips[3],
-            values      = triplePoignees,
-            onToggle    = onTriplePoignee,
-            multiSelect = true
-        )
-    )
-
-    // Label column: wide enough for the bonus text + ⓘ icon.
-    // Reduced from 0.42 → 0.36 so the gap between the label and the first
-    // checkbox column is eliminated, freeing ~6 % more width for player columns.
-    val labelWeight = 0.36f
-    // Each player column gets an equal share of the remaining width.
-    val colWeight   = (1f - labelWeight) / playerNames.size
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-
-        // ── Header row: one column title per player ───────────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Empty space above the label column.
-            Spacer(Modifier.weight(labelWeight))
-            for (name in playerNames) {
-                Text(
-                    text      = name,
-                    style     = MaterialTheme.typography.labelSmall,
-                    maxLines  = 1,
-                    overflow  = TextOverflow.Ellipsis,
-                    // Center the name over its checkbox column.
-                    textAlign = TextAlign.Center,
-                    modifier  = Modifier.weight(colWeight)
-                )
-            }
-        }
-
-        // ── One row per bonus ─────────────────────────────────────────────────
-        for (row in bonuses) {
-            Row(
-                // heightIn(min = 48.dp) enforces Material's recommended minimum
-                // touch-target height, making checkboxes easier to tap on small screens.
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Label column: BonusLabelCell makes the text + icon tappable;
-                // empty space in the weight-based column is not clickable.
-                Row(
-                    modifier = Modifier.weight(labelWeight),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BonusLabelCell(label = row.label, body = row.tooltip)
-                }
-
-                // One Checkbox per player. Rendering logic differs by selection mode:
-                //   Single-select (Petit au bout): ticking a box also clears any other.
-                //   Multi-select  (Poignées):      each box toggles independently.
-                for (name in playerNames) {
-                    if (row.multiSelect) {
-                        // Multi-select: pass (name, newCheckedState) to the caller.
-                        Checkbox(
-                            checked         = name in row.values,
-                            onCheckedChange = { checked ->
-                                row.onToggle?.invoke(name, checked)
-                            },
-                            modifier = Modifier.weight(colWeight)
-                        )
-                    } else {
-                        // Single-select: ticking an unchecked box assigns that player;
-                        // ticking the already-checked player clears it (passes null).
-                        Checkbox(
-                            checked         = row.value == name,
-                            onCheckedChange = { checked ->
-                                row.onSelect?.invoke(if (checked) name else null)
-                            },
-                            modifier = Modifier.weight(colWeight)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Score colour helper
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -739,42 +449,6 @@ fun ScoreTableRow(
                     sharedSizeState = rowSizeState
                 )
             }
-        }
-    }
-}
-
-// Shows a "None" chip followed by one chip per player name.
-// Tapping a player assigns them to the bonus; tapping the selected player
-// again (or "None") clears the selection.
-//
-// label          : localized section header text shown above the chips.
-// noneLabel      : localized label for the "nobody" chip.
-// selectedPlayer : the currently assigned player name, or null if nobody.
-// onSelect       : callback with the new player name, or null to clear.
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun PlayerChipSelector(
-    label: String,
-    noneLabel: String,
-    selectedPlayer: String?,
-    playerNames: List<String>,
-    onSelect: (String?) -> Unit
-) {
-    FormLabel(label)
-    Spacer(Modifier.height(8.dp))
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = selectedPlayer == null,
-            onClick  = { onSelect(null) },
-            label    = { Text(noneLabel) }
-        )
-        for (name in playerNames) {
-            // Tapping the already-selected player deselects them (null = nobody).
-            FilterChip(
-                selected = selectedPlayer == name,
-                onClick  = { onSelect(if (selectedPlayer == name) null else name) },
-                label    = { Text(name) }
-            )
         }
     }
 }
