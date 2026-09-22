@@ -368,14 +368,12 @@ class GameScreenTest {
     }
 
     @Test
-    fun tapping_history_button_before_first_round_shows_header_only() {
-        // Before any round is played the table should show player-name headers but no score rows.
+    fun tapping_history_button_before_first_round_shows_the_empty_state() {
+        // Salon (#202): before any round the history shows an empty state, no table.
         launchGame()
         composeTestRule.onNodeWithContentDescription("History").performClick()
-        // The screen title and the player-name header must appear.
         composeTestRule.onNodeWithText("Score history").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Alice").assertIsDisplayed()
-        // No round rows: "Round" column header is present but no "1", "2", … cells.
+        composeTestRule.onNodeWithTag("history_empty").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("1").assertCountEquals(0)
     }
 

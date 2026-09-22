@@ -8,6 +8,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
@@ -64,28 +66,30 @@ class ScoreHistoryScreenTest {
 
     @Test
     fun round_column_header_is_displayed() {
-        launchHistory()
+        launchHistory(roundHistory = listOf(RoundResult(1, "Alice", Contract.GARDE, null, true,
+            mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))))
         composeTestRule.onNodeWithText("Round").assertIsDisplayed()
     }
 
     @Test
-    fun player_names_are_shown_as_column_headers() {
-        launchHistory()
+    fun player_names_and_avatars_are_shown_in_the_header() {
+        launchHistory(roundHistory = listOf(RoundResult(1, "Alice", Contract.GARDE, null, true,
+            mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))))
         players.forEach { name ->
             composeTestRule.onNodeWithText(name).assertIsDisplayed()
+            composeTestRule.onNodeWithContentDescription("Player $name").assertIsDisplayed()
         }
     }
 
     // ── Spec: empty state (no rounds completed) ───────────────────────────────
 
     @Test
-    fun empty_history_shows_only_headers() {
-        // With no rounds completed, only the header row should be present.
+    fun empty_history_shows_the_empty_state() {
+        // Salon (#202): no table before the first round, an empty state instead.
         launchHistory(roundHistory = emptyList())
-        // Headers present.
-        composeTestRule.onNodeWithText("Round").assertIsDisplayed()
-        // No data rows — round number "1" should not appear in the table.
-        composeTestRule.onNodeWithText("1").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("history_empty").assertIsDisplayed()
+        composeTestRule.onNodeWithText(EnStrings.historyEmpty).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Round").assertDoesNotExist()
     }
 
     // ── Spec: round rows ──────────────────────────────────────────────────────
@@ -270,8 +274,9 @@ class ScoreHistoryScreenTest {
 
     @Test
     fun default_view_is_table() {
-        // On first open the TABLE segment must be selected — shown by the Round column header.
-        launchHistory()
+        // On first open the TABLE segment is selected — shown by the Round column header.
+        launchHistory(roundHistory = listOf(RoundResult(1, "Alice", Contract.GARDE, null, true,
+            mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))))
         composeTestRule.onNodeWithText("Table").assertIsDisplayed()
         composeTestRule.onNodeWithText("Round").assertIsDisplayed()
     }
@@ -316,10 +321,9 @@ class ScoreHistoryScreenTest {
     }
 
     @Test
-    fun list_view_empty_state_shows_no_rounds_played() {
-        // Empty history in list view shows the "No rounds played" notice.
+    fun list_view_empty_state_is_shown() {
         launchHistoryInListMode()
-        composeTestRule.onNodeWithText("No rounds played").assertIsDisplayed()
+        composeTestRule.onNodeWithText(EnStrings.historyEmpty).assertIsDisplayed()
     }
 
     @Test
@@ -392,20 +396,55 @@ class ScoreHistoryScreenTest {
 
     @Test
     fun list_view_is_newest_round_first() {
-        // With two rounds, the most recent round (round 2) must appear in the list.
+        val history = listOf(
+            RoundResult(roundNumber = 1, takerName = "Alice", contract = null, details = null, won = null),
+            RoundResult(roundNumber = 2, takerName = "Bob", contract = null, details = null, won = null)
+        )
+        launchHistoryInListMode(roundHistory = history)
+        // "R2" card above the "R1" card.
+        val r2 = composeTestRule.onNodeWithTag("round_card_2").fetchSemanticsNode().boundsInRoot
+        val r1 = composeTestRule.onNodeWithTag("round_card_1").fetchSemanticsNode().boundsInRoot
+        assertTrue("Newest round first", r2.top < r1.top)
+        composeTestRule.onNodeWithText("R2").assertIsDisplayed()
+    }
+
+    // ── Salon restyle (issue #202) ────────────────────────────────────────────
+
+    @Test
+    fun list_card_shows_taker_contract_details_outcome_and_delta() {
         val history = listOf(
             RoundResult(
-                roundNumber = 1, takerName = "Alice",
-                contract = null, details = null, won = null
-            ),
-            RoundResult(
-                roundNumber = 2, takerName = "Bob",
-                contract = null, details = null, won = null
+                roundNumber = 1, takerName = "Bob", contract = Contract.GARDE,
+                details = RoundDetails(bouts = 2, points = 47, partnerName = null,
+                    petitAuBout = null, chelem = Chelem.NONE),
+                won = true, playerScores = mapOf("Alice" to -62, "Bob" to 124, "Charlie" to -62)
             )
         )
         launchHistoryInListMode(roundHistory = history)
-        // Both round numbers must be visible (newest first ordering).
-        composeTestRule.onNodeWithText("Round 2", substring = true).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Round 1", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bob · Guard").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2 bouts · 47 pts").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Won").assertIsDisplayed()
+        composeTestRule.onNodeWithText("+124").assertIsDisplayed()
+    }
+
+    @Test
+    fun five_players_table_scrolls_sideways_on_a_narrow_phone() {
+        // 5 × 64 dp + 48 dp = 368 dp > a ~360 dp phone minus margins: the last
+        // player's column starts off screen but exists, reachable by scrolling.
+        val five = listOf("Alice", "Bob", "Charlie", "Dave", "Eve")
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                ScoreHistoryScreen(
+                    playerNames  = five,
+                    roundHistory = listOf(RoundResult(1, "Alice", Contract.PRISE, null, true,
+                        mapOf("Alice" to 100, "Bob" to -25, "Charlie" to -25, "Dave" to -25, "Eve" to -25))),
+                    onBack       = {},
+                    modifier     = androidx.compose.ui.Modifier.width(360.dp)
+                )
+            }
+        }
+        composeTestRule.onNodeWithTag("history_table").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Eve").assertExists()
     }
 }
+
