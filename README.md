@@ -16,6 +16,7 @@ TarotCounter guides players through a game round by round:
 8. **Past Games** — completed games are saved to the device. The home screen lists them, one row each: trophy, winner (or tie), date in the app language, player and round counts, and the winner's score.
 9. **Back navigation** — the Android system back button closes the round entry first (back to "Who took?"), otherwise returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
 10. **Settings page**: reached from the ⚙ gear icon on the home screen. It has grouped cards with icons: **Appearance** (Light / Dark), **Language** (English / Français), **Help** (Rules ›, Send feedback ›) and **About** (version). The Rules open as a full-screen page with section headers and tables for the bouts thresholds and contract multipliers, built from the scoring code. Theme and language are persisted across restarts.
+11. **Motion, haptics and accessibility**: screens fade through into each other. After each round the standings count up to the new totals and the rows slide into their new ranks. Tapping a taker and confirming a round give light haptic feedback. Everything is instant when Android's **Remove animations** setting is on. All tap targets are at least 48 dp, every icon and avatar has a screen-reader label, and the layout was checked at 200 % font size and on a 10" tablet in landscape.
 
 The app rotates the **dealer** each round and lets the user explicitly select the **attacker** (the player who won the bidding), determines win/loss, and computes each player's score for the round.
 
@@ -77,6 +78,9 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── SettingsScreen.kt      # Settings: grouped cards (appearance, language, help, about)
 ├── RulesScreen.kt         # Full-screen rules page with bouts / contracts tables
 ├── RulesData.kt           # Rules tables built from the scoring code
+├── Motion.kt              # Screen transitions, reduced motion, row re-order animation
+├── Haptics.kt             # Light haptic feedback (taker selected, round confirmed)
+├── MotionLogic.kt         # Pure motion/haptics helpers (reduced motion, durations, effects)
 ├── ScoreHistoryScreen.kt  # Score history: sticky-header table + round cards, with toggle
 ├── FinalScoreScreen.kt    # Game over: winner card, ranking, score-over-time chart
 ├── UiComponents.kt        # Shared UI: App* buttons, AutoSizeText, Salon components (SalonCard, PlayerAvatar, SalonTopBar…)
@@ -204,6 +208,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ColorContrastTest.kt` | WCAG relative luminance and contrast ratio helpers |
 | `SalonPaletteTest.kt` | Every text/background pair of both themes ≥ 4.5:1; player tones |
 | `SalonUiTest.kt` | Salon component logic: player initials, avatar/score sizes, suit glyphs, top-bar action limit |
+| `MotionTest.kt` | Reduced-motion detection, animation durations, haptic effect per moment |
 | `RulesDataTest.kt` | Rules page tables (bout thresholds, contract multipliers) and settings strings |
 | `ScoreHistoryLogicTest.kt` | Score history: when the table scrolls sideways, leader columns |
 | `ScoreChartTest.kt` | Game over chart data: cumulative series, y bounds (zero included), x-axis labels |
@@ -235,8 +240,9 @@ TarotCounter/
 │   ├── ui-components.md      # Shared UI components: App* buttons, AutoSizeText, Salon components
 │   ├── game-flow.md          # Game mechanics specification
 │   ├── player-setup.md       # Setup screen behaviour
-│   ├── settings.md           # Settings page: theme, language, feedback
-│   ├── score-history.md      # Score history table
+│   ├── settings.md           # Settings page (grouped cards) and the rules page
+│   ├── score-history.md      # Score history: sticky table, round cards
+│   ├── motion-accessibility.md # Transitions, animated standings, reduced motion, haptics, a11y
 │   ├── final-score.md        # Game over screen: winner card, ranking, score chart
 │   ├── game-persistence.md   # How completed games are saved and displayed
 │   ├── score-color.md        # Score colour-coding convention and scoreColor() helper
@@ -256,6 +262,7 @@ TarotCounter/
 
 More detailed documentation lives in [`docs/`](docs/):
 
+- [`docs/motion-accessibility.md`](docs/motion-accessibility.md): transitions, animated standings, reduced motion, haptics, insets and the accessibility pass
 - [`docs/ui-components.md`](docs/ui-components.md) — shared UI building blocks: `AppButton`, `AutoSizeText`, the button convention, and the Salon components (`SalonCard`, `PlayerAvatar`, `SalonTopBar`…)
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules

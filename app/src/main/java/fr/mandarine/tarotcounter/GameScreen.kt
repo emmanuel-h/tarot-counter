@@ -56,6 +56,9 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.animation.AnimatedContent
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -113,6 +116,12 @@ fun GameScreen(
     // Tapping a "Who took?" tile opens it; its back arrow closes it again while
     // keeping the taker and the form, so a mis-tap never loses what was typed.
     var roundEntryOpen by remember { mutableStateOf(false) }
+
+    // Number of rounds the standings were last shown for. When a round has been
+    // added since, the standings first appear as they were *before* that round,
+    // then animate to the new totals and order (count-up + rows sliding, #204).
+    // Starts at the current count, so resuming a game or undoing never animates.
+    var standingsShownForRounds by remember { mutableIntStateOf(roundHistory.size) }
 
     // The contract selected by tapping one of the contract chips.
     // null = no contract selected yet (details form is hidden).
@@ -202,6 +211,10 @@ fun GameScreen(
             // and show the between-rounds view (standings + "Who took?").
             selectedAttacker = null
             roundEntryOpen   = false
+            // Also drop the contract, which (through LaunchedEffect(selectedContract))
+            // clears points, bouts and bonuses: a round skipped while a half-filled
+            // form was open must not leak those values into the next round.
+            selectedContract = null
         }
         // If currentRound decreased (undo), leave the attacker alone.
         // LaunchedEffect(restoredRound) will write the correct value.
@@ -300,6 +313,9 @@ fun GameScreen(
     // Used to hide the software keyboard when the user taps "Confirm".
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    // Light haptic feedback on taker selection and round confirmation (issue #204).
+    val haptics = rememberHaptics()
+
     // ── System back-button handling ───────────────────────────────────────────
     // A single handler covers both the main game view and the score-history overlay.
     // `enabled = !showFinalScore` defers to the Final Score screen's own handler when
@@ -312,29 +328,35 @@ fun GameScreen(
     }
 
     // ── Overlay screens ───────────────────────────────────────────────────────
-    // These replace the whole content when active; the main game column is not rendered.
-
-    if (showFinalScore) {
-        FinalScoreScreen(
-            playerNames  = displayNames,
-            roundHistory = roundHistory,
-            onBack       = { showFinalScore = false },
-            onNewGame    = onEndGame,
-            onMainMenu   = onEndGame,  // both "New Game" and "Main Menu" navigate to the landing screen
-            modifier     = modifier
-        )
-        return
+    // Game over and score history replace the whole game view while they are open.
+    // AnimatedContent fades through between the three (issue #204).
+    val overlay = when {
+        showFinalScore   -> GameOverlay.FINAL_SCORE
+        showScoreHistory -> GameOverlay.HISTORY
+        else             -> GameOverlay.NONE
     }
-
-    if (showScoreHistory) {
-        ScoreHistoryScreen(
-            playerNames  = displayNames,
-            roundHistory = roundHistory,
-            onBack       = { showScoreHistory = false },
-            modifier     = modifier
-        )
-        return
-    }
+    val overlayReducedMotion = LocalReducedMotion.current
+    AnimatedContent(
+        targetState    = overlay,
+        transitionSpec = { fadeThrough(overlayReducedMotion) },
+        label          = "gameOverlay"
+    ) { shownOverlay ->
+    when (shownOverlay) {
+    GameOverlay.FINAL_SCORE -> FinalScoreScreen(
+        playerNames  = displayNames,
+        roundHistory = roundHistory,
+        onBack       = { showFinalScore = false },
+        onNewGame    = onEndGame,
+        onMainMenu   = onEndGame,  // both "New Game" and "Main Menu" navigate to the landing screen
+        modifier     = modifier
+    )
+    GameOverlay.HISTORY -> ScoreHistoryScreen(
+        playerNames  = displayNames,
+        roundHistory = roundHistory,
+        onBack       = { showScoreHistory = false },
+        modifier     = modifier
+    )
+    GameOverlay.NONE -> {
 
     // ── Undo confirmation dialog ──────────────────────────────────────────────
     // AlertDialog is a Material 3 modal overlay; it does NOT replace the whole screen
@@ -468,7 +490,19 @@ fun GameScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-          if (!roundEntryOpen || attacker == null) {
+          // AnimatedContent fades between "Who took?" and the round entry
+          // (issue #204). Its target is the taker whose entry is open, or null.
+          // transitionSpec is not @Composable, so the flag is read here first.
+          val reducedMotion = LocalReducedMotion.current
+          AnimatedContent(
+              targetState    = if (roundEntryOpen) attacker else null,
+              transitionSpec = { fadeThrough(reducedMotion) },
+              label          = "roundEntry"
+          ) { taker ->
+          // AnimatedContent stacks its content like a Box: a Column keeps the
+          // entry's sections one under another.
+          Column(modifier = Modifier.fillMaxWidth()) {
+          if (taker == null) {
             // ── Between rounds: scores first, then "Who took?" ─────────────────
             BetweenRoundsContent(
                 currentDealer = currentDealer,
@@ -478,12 +512,15 @@ fun GameScreen(
                 strings       = strings,
                 locale        = locale,
                 onTakerChosen = { name ->
+                    haptics.play(HapticMoment.TAKER_SELECTED)
                     // A different taker invalidates the contract (and so the whole form).
                     if (name != selectedAttacker) selectedContract = null
                     selectedAttacker = name
                     roundEntryOpen   = true
                 },
-                onSeeAll      = { showScoreHistory = true }
+                onSeeAll      = { showScoreHistory = true },
+                animateStandings = roundHistory.size > standingsShownForRounds,
+                onStandingsShown = { standingsShownForRounds = it }
             )
           } else {
             // ── Round entry (Salon, issue #199) ───────────────────────────────
@@ -524,7 +561,7 @@ fun GameScreen(
                         val takerPoints = if (defenderMode) 91 - typedPoints else typedPoints
                         previewRound(
                             playerNames = displayNames,
-                            takerName   = attacker,
+                            takerName   = taker,
                             contract    = contract,
                             details     = RoundDetails(
                                 bouts          = bouts,
@@ -553,7 +590,7 @@ fun GameScreen(
                         },
                         pointsError   = pointsError,
                         preview       = preview,
-                        taker         = attacker,
+                        taker         = taker,
                         strings       = strings,
                         onDone        = { keyboardController?.hide() }
                     )
@@ -564,7 +601,7 @@ fun GameScreen(
                         PartnerChips(
                             label    = strings.partnerCalledByTaker,
                             players  = displayNames,
-                            taker    = attacker,
+                            taker    = taker,
                             selected = selectedPartner,
                             // Tapping the selected partner again clears the choice.
                             onSelect = { name ->
@@ -580,7 +617,7 @@ fun GameScreen(
                 Spacer(Modifier.height(Dimens.SpaceL))
                 BonusesSection(
                     playerNames    = displayNames,
-                    taker          = attacker,
+                    taker          = taker,
                     partner        = if (displayNames.size == 5) selectedPartner else null,
                     petitAuBout    = petitAuBout,
                     onPetitAuBout  = { petitAuBout = it },
@@ -603,6 +640,8 @@ fun GameScreen(
             }
             // end inline round details
           } // end round entry
+          } // end Column
+          } // end AnimatedContent
 
         }  // end inner scrollable Column
 
@@ -671,6 +710,7 @@ fun GameScreen(
                                 chelemPlayer   = if (chelem == Chelem.NONE) null else chelemPlayer
                             )
                         )
+                        haptics.play(HapticMoment.ROUND_CONFIRMED)
                         // Deselect contract → LaunchedEffect resets all form fields;
                         // closing the entry view brings the updated standings back.
                         selectedContract = null
@@ -689,7 +729,13 @@ fun GameScreen(
         }
     }  // end outer Column
     }  // end Box
+    } // end GameOverlay.NONE
+    } // end when
+    } // end AnimatedContent
 }
+
+// The screens that can replace the game view.
+private enum class GameOverlay { NONE, HISTORY, FINAL_SCORE }
 
 // ── Between rounds (Salon game screen, issue #198) ───────────────────────────
 //
@@ -716,8 +762,14 @@ private fun BetweenRoundsContent(
     strings: AppStrings,
     locale: AppLocale,
     onTakerChosen: (String) -> Unit,
-    onSeeAll: () -> Unit
+    onSeeAll: () -> Unit,
+    animateStandings: Boolean = false,
+    onStandingsShown: (Int) -> Unit = {}
 ) {
+    // Records that the standings are now shown for this many rounds (see
+    // standingsShownForRounds in GameScreen). Runs after the first frame.
+    LaunchedEffect(roundHistory.size) { onStandingsShown(roundHistory.size) }
+
     Column(
         modifier            = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)
@@ -732,6 +784,8 @@ private fun BetweenRoundsContent(
         if (roundHistory.isNotEmpty()) {
             StandingsCard(
                 standings    = computeStandings(displayNames, roundHistory),
+                // The standings before the latest round: the animation's start.
+                previous     = if (animateStandings && !LocalReducedMotion.current) computeStandings(displayNames, roundHistory.dropLast(1)) else null,
                 leadingLabel = strings.leading,
                 title        = strings.standings
             )
@@ -789,10 +843,33 @@ private fun DealerChip(text: String, modifier: Modifier = Modifier) {
     }
 }
 
+// Pause before the standings animate from the previous round to the new one,
+// so the eye lands on the card first.
+private const val STANDINGS_ANIMATION_DELAY_MS = 250L
+
 // The ranked standings card. Every leader (several on a tie) gets a brass-tinted
 // row, a brass ring around a large avatar, a "LEADING" overline and an XL score.
 @Composable
-private fun StandingsCard(standings: List<Standing>, leadingLabel: String, title: String) {
+private fun StandingsCard(
+    standings: List<Standing>,
+    leadingLabel: String,
+    title: String,
+    previous: List<Standing>? = null
+) {
+    // While true, the card shows `previous`; flipping it to false after a short
+    // pause makes every score count to its new value and every row slide to its
+    // new rank. Remembered once: later recompositions don't restart it.
+    var showPrevious by remember { mutableStateOf(previous != null) }
+    LaunchedEffect(Unit) {
+        if (showPrevious) {
+            delay(STANDINGS_ANIMATION_DELAY_MS)
+            showPrevious = false
+        }
+    }
+    val shown = if (showPrevious && previous != null) previous else standings
+    // Each player's total before the round: where their score starts counting from.
+    val previousTotals = previous?.associate { it.name to it.total }.orEmpty()
+
     SalonCard(
         modifier       = Modifier
             .fillMaxWidth()
@@ -801,16 +878,24 @@ private fun StandingsCard(standings: List<Standing>, leadingLabel: String, title
             .semantics { contentDescription = title },
         contentPadding = PaddingValues(0.dp)
     ) {
+        val reducedMotion = LocalReducedMotion.current
         Column {
-            standings.forEachIndexed { index, standing ->
-                if (standing.isLeader) {
-                    LeaderRow(standing, leadingLabel)
-                } else {
-                    StandingRow(standing)
-                }
-                // Hairline between rows, not after the last one.
-                if (index < standings.lastIndex) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            shown.forEachIndexed { index, standing ->
+                // key(name): the row is tied to the player, not to its position, so
+                // when the ranking changes Compose *moves* the row and
+                // animatePlacement slides it to its new place (issue #204).
+                key(standing.name) {
+                    Column(modifier = Modifier.animatePlacement(enabled = !reducedMotion)) {
+                        if (standing.isLeader) {
+                            LeaderRow(standing, leadingLabel, previousTotals[standing.name])
+                        } else {
+                            StandingRow(standing, previousTotals[standing.name])
+                        }
+                        // Hairline between rows, not after the last one.
+                        if (index < shown.lastIndex) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        }
+                    }
                 }
             }
         }
@@ -818,7 +903,7 @@ private fun StandingsCard(standings: List<Standing>, leadingLabel: String, title
 }
 
 @Composable
-private fun LeaderRow(standing: Standing, leadingLabel: String) {
+private fun LeaderRow(standing: Standing, leadingLabel: String, countFrom: Int? = null) {
     val brass = MaterialTheme.tarotColors.brass
     Row(
         modifier = Modifier
@@ -851,14 +936,14 @@ private fun LeaderRow(standing: Standing, leadingLabel: String) {
             )
         }
         Column(horizontalAlignment = Alignment.End) {
-            ScoreText(score = standing.total, size = ScoreSize.XL)
+            ScoreText(score = standing.total, size = ScoreSize.XL, animate = true, countFrom = countFrom)
             TrendArrow(standing.lastDelta)
         }
     }
 }
 
 @Composable
-private fun StandingRow(standing: Standing) {
+private fun StandingRow(standing: Standing, countFrom: Int? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -884,7 +969,7 @@ private fun StandingRow(standing: Standing) {
             modifier = Modifier.weight(1f)
         )
         TrendArrow(standing.lastDelta)
-        ScoreText(score = standing.total, size = ScoreSize.M)
+        ScoreText(score = standing.total, size = ScoreSize.M, animate = true, countFrom = countFrom)
     }
 }
 
@@ -944,7 +1029,8 @@ private fun TakerTile(
     Surface(
         onClick  = onClick,
         modifier = modifier
-            .height(96.dp)
+            // A minimum, not a fixed height: at 200 % font size the tile grows.
+            .heightIn(min = 96.dp)
             .testTag("taker_tile_$name")
             .semantics { this.selected = selected },
         shape    = MaterialTheme.shapes.medium,
@@ -1063,7 +1149,7 @@ private fun ContractCards(
                         onClick  = { onSelect(contract) },
                         modifier = Modifier
                             .weight(1f)
-                            .height(60.dp)
+                            .heightIn(min = 60.dp)   // grows with large font sizes
                             .testTag("contract_${contract.name}")
                             .semantics { this.selected = isSelected },
                         shape    = MaterialTheme.shapes.medium,
@@ -1111,7 +1197,7 @@ private fun BoutChips(bouts: Int, label: String, helper: String, onSelect: (Int)
                     onClick  = { onSelect(n) },
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .heightIn(min = 48.dp)   // grows with large font sizes
                         .testTag("bouts_chip_$n")
                         .semantics { this.selected = isSelected },
                     shape    = CircleShape,
