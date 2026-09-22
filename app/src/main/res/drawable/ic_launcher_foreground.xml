@@ -15,12 +15,12 @@
     raised vs the previous (54, 95) to push the fan upward and reduce the
     excess green border at the top of the icon.
 
-    Colour palette
-        #FFFFFF  white           (card bodies)
-        #C4972A  antique gold    (borders, bell, stars)
-        #2A0F5E  deep purple     (numerals)
-        #CC0000  red             (hearts, diamonds)
-        #000000  black           (spades, clubs)
+    Colour palette — "Salon" (issue #205, matches ui/theme/Color.kt)
+        #FFFDF8  paper ivory     (card bodies)
+        #B08A3E  brass           (borders, frames, corner stars)
+        #1F4D3A  felt green      (numerals)
+        #9B2C2C  Salon red       (hearts, diamonds)
+        #1E2420  ink             (spades, clubs)
 
     Layout changes vs previous revision
         • Pivot raised from y=95 to y=89 → entire fan shifts upward ~6 dp
@@ -35,208 +35,218 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         LEFT CARD — Le Petit (Trump I)
-         Rotated −22° around (54, 89): raising the pivot shifts the whole fan
-         upward so there is less green space above the cards.
-         The top-left corner of this card is the most visible area.
-         ═══════════════════════════════════════════════════════════════════════ -->
+    <!--
+        Salon refresh (issue #205): the whole fan is scaled to 82 % around the
+        canvas centre so it sits inside the brass ring of the background layer
+        and no card corner is cut by round launcher masks.
+    -->
     <group
-        android:rotation="-22"
+        android:scaleX="0.82"
+        android:scaleY="0.82"
         android:pivotX="54"
-        android:pivotY="89">
+        android:pivotY="54">
+        <!-- ═══════════════════════════════════════════════════════════════════════
+             LEFT CARD — Le Petit (Trump I)
+             Rotated −22° around (54, 89): raising the pivot shifts the whole fan
+             upward so there is less green space above the cards.
+             The top-left corner of this card is the most visible area.
+             ═══════════════════════════════════════════════════════════════════════ -->
+        <group
+            android:rotation="-22"
+            android:pivotX="54"
+            android:pivotY="89">
 
-        <!-- Parchment body — widened from 32 dp to 36 dp (x: 36–72) -->
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
-        <!-- Gold outer border -->
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#C4972A"
-            android:strokeWidth="1.5"
-            android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
-        <!-- Gold inner frame — 4 dp inset from outer edges (x: 40–68, y: 28–70) -->
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#C4972A"
-            android:strokeWidth="0.75"
-            android:pathData="M42,28 Q40,28 40,30 V68 Q40,70 42,70 H66 Q68,70 68,68 V30 Q68,28 66,28 Z" />
+            <!-- Parchment body — widened from 32 dp to 36 dp (x: 36–72) -->
+            <path
+                android:fillColor="#FFFDF8"
+                android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
+            <!-- Gold outer border -->
+            <path
+                android:fillColor="#00000000"
+                android:strokeColor="#B08A3E"
+                android:strokeWidth="1.5"
+                android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
+            <!-- Gold inner frame — 4 dp inset from outer edges (x: 40–68, y: 28–70) -->
+            <path
+                android:fillColor="#00000000"
+                android:strokeColor="#B08A3E"
+                android:strokeWidth="0.75"
+                android:pathData="M42,28 Q40,28 40,30 V68 Q40,70 42,70 H66 Q68,70 68,68 V30 Q68,28 66,28 Z" />
 
-        <!--
-            Bold "1" in the top-left corner — the outermost visible area after
-            the −22° rotation.  Shape: vertical bar with a diagonal serif/flag
-            at the top-left (flag tip at the bar's top-left corner).
+            <!--
+                Bold "1" in the top-left corner — the outermost visible area after
+                the −22° rotation.  Shape: vertical bar with a diagonal serif/flag
+                at the top-left (flag tip at the bar's top-left corner).
 
-            Coordinates shifted: x−2 and y−6 relative to previous revision.
-            M42,40  → flag base (bottom-left of serif)
-            L46,29  → flag tip  (joins bar at its top-left corner)
-            H50     → top-right corner of bar
-            V51     → bottom-right corner of bar
-            H46     → bottom-left corner of bar
-            V40     → back up to flag base
-            Z       → close
-        -->
-        <path
-            android:fillColor="#2A0F5E"
-            android:pathData="M42,40 L46,29 H50 V51 H46 V40 Z" />
+                Coordinates shifted: x−2 and y−6 relative to previous revision.
+                M42,40  → flag base (bottom-left of serif)
+                L46,29  → flag tip  (joins bar at its top-left corner)
+                H50     → top-right corner of bar
+                V51     → bottom-right corner of bar
+                H46     → bottom-left corner of bar
+                V40     → back up to flag base
+                Z       → close
+            -->
+            <path
+                android:fillColor="#1F4D3A"
+                android:pathData="M42,40 L46,29 H50 V51 H46 V40 Z" />
 
-    </group>
+        </group>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         RIGHT CARD — Le Monde (Trump XXI)
-         Rotated +22° around (54, 89): top swings right.
-         The top-right corner of this card is the most visible area.
-         ═══════════════════════════════════════════════════════════════════════ -->
-    <group
-        android:rotation="22"
-        android:pivotX="54"
-        android:pivotY="89">
+        <!-- ═══════════════════════════════════════════════════════════════════════
+             RIGHT CARD — Le Monde (Trump XXI)
+             Rotated +22° around (54, 89): top swings right.
+             The top-right corner of this card is the most visible area.
+             ═══════════════════════════════════════════════════════════════════════ -->
+        <group
+            android:rotation="22"
+            android:pivotX="54"
+            android:pivotY="89">
+
+            <!-- Parchment body -->
+            <path
+                android:fillColor="#FFFDF8"
+                android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
+            <!-- Gold outer border -->
+            <path
+                android:fillColor="#00000000"
+                android:strokeColor="#B08A3E"
+                android:strokeWidth="1.5"
+                android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
+            <!-- Gold inner frame -->
+            <path
+                android:fillColor="#00000000"
+                android:strokeColor="#B08A3E"
+                android:strokeWidth="0.75"
+                android:pathData="M42,28 Q40,28 40,30 V68 Q40,70 42,70 H66 Q68,70 68,68 V30 Q68,28 66,28 Z" />
+
+            <!--
+                Bold "21" in the top-right corner — 7-segment style, two digits.
+                Coordinates shifted: x+2 and y−6 relative to previous revision so
+                the numerals stay flush with the new inner frame corner.
+                Digit "2" occupies x=54–63, y=29–51.
+                Digit "1" occupies x=64–68, y=29–51.
+            -->
+            <!-- 2 – segment a (top bar) -->
+            <path android:fillColor="#1F4D3A" android:pathData="M54,29 H63 V32 H54 Z" />
+            <!-- 2 – segment b (top-right leg) -->
+            <path android:fillColor="#1F4D3A" android:pathData="M60,29 H63 V42 H60 Z" />
+            <!-- 2 – segment g (middle bar) -->
+            <path android:fillColor="#1F4D3A" android:pathData="M54,39 H63 V42 H54 Z" />
+            <!-- 2 – segment e (bottom-left leg) -->
+            <path android:fillColor="#1F4D3A" android:pathData="M54,42 H57 V51 H54 Z" />
+            <!-- 2 – segment d (bottom bar) -->
+            <path android:fillColor="#1F4D3A" android:pathData="M54,48 H63 V51 H54 Z" />
+            <!-- 1 – vertical bar -->
+            <path android:fillColor="#1F4D3A" android:pathData="M64,29 H68 V51 H64 Z" />
+
+        </group>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════
+             CENTRE CARD — L'Excuse  (drawn last = topmost / always in front)
+             No rotation. Shows the four suit symbols (♥ ♠ ♦ ♣) in a 2×2 grid,
+             surrounded by four 4-pointed gold stars in the corners.
+             ═══════════════════════════════════════════════════════════════════════ -->
 
         <!-- Parchment body -->
         <path
-            android:fillColor="#FFFFFF"
+            android:fillColor="#FFFDF8"
             android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
         <!-- Gold outer border -->
         <path
             android:fillColor="#00000000"
-            android:strokeColor="#C4972A"
+            android:strokeColor="#B08A3E"
             android:strokeWidth="1.5"
             android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
         <!-- Gold inner frame -->
         <path
             android:fillColor="#00000000"
-            android:strokeColor="#C4972A"
+            android:strokeColor="#B08A3E"
             android:strokeWidth="0.75"
             android:pathData="M42,28 Q40,28 40,30 V68 Q40,70 42,70 H66 Q68,70 68,68 V30 Q68,28 66,28 Z" />
 
         <!--
-            Bold "21" in the top-right corner — 7-segment style, two digits.
-            Coordinates shifted: x+2 and y−6 relative to previous revision so
-            the numerals stay flush with the new inner frame corner.
-            Digit "2" occupies x=54–63, y=29–51.
-            Digit "1" occupies x=64–68, y=29–51.
+            ── SUIT SYMBOLS ─────────────────────────────────────────────────────────
+
+            The four French playing-card suits in a 2×2 grid inside the inner frame.
+            Hearts and diamonds: red (#9B2C2C). Spades and clubs: black (#000000).
+            All y coordinates shifted −6 vs the previous revision.
+
+              Top-left     ♠ Spade    centre (48, 41)   x=42–54, y=35–48
+              Top-right    ♥ Heart    centre (60, 41)   x=54–66, y=34–47
+              Bottom-left  ♦ Diamond  centre (48, 56)   x=42–54, y=50–62
+              Bottom-right ♣ Club     centre (60, 56)   x=54–66, y=50–64
         -->
-        <!-- 2 – segment a (top bar) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M54,29 H63 V32 H54 Z" />
-        <!-- 2 – segment b (top-right leg) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M60,29 H63 V42 H60 Z" />
-        <!-- 2 – segment g (middle bar) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M54,39 H63 V42 H54 Z" />
-        <!-- 2 – segment e (bottom-left leg) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M54,42 H57 V51 H54 Z" />
-        <!-- 2 – segment d (bottom bar) -->
-        <path android:fillColor="#2A0F5E" android:pathData="M54,48 H63 V51 H54 Z" />
-        <!-- 1 – vertical bar -->
-        <path android:fillColor="#2A0F5E" android:pathData="M64,29 H68 V51 H64 Z" />
 
+        <!--
+            ♠ Spade — inverted heart body (top tip pointing up) with a small
+            trapezoidal foot/collar at the bottom. Centre x=48.
+        -->
+        <path
+            android:fillColor="#1E2420"
+            android:pathData="M48,35 C52,38 54,40 54,42 C54,45 51,46 48,45 C51,46 52,47 52,48 H44 C44,47 45,46 48,45 C45,46 42,45 42,42 C42,40 44,38 48,35 Z" />
+
+        <!--
+            ♥ Heart — two well-rounded bumps separated by a pronounced V-notch,
+            bottom tip pointing down. Centre (60, 41), spans x=54–66, y=34–47.
+        -->
+        <path
+            android:fillColor="#9B2C2C"
+            android:pathData="M60,47 C57,44 54,42 54,39 C54,35 56,34 58,34 C59,34 60,35 60,37 C60,35 61,34 62,34 C64,34 66,35 66,39 C66,42 63,44 60,47 Z" />
+
+        <!-- ♦ Diamond — a simple axis-aligned rhombus -->
+        <path
+            android:fillColor="#9B2C2C"
+            android:pathData="M48,50 L54,56 L48,62 L42,56 Z" />
+
+        <!--
+            ♣ Club — three overlapping circles (trefoil) with a narrow stem and
+            a wider base bar. All centres shifted y−6 vs previous revision.
+        -->
+        <!-- Top circle, centre (60, 53), r=3 -->
+        <path android:fillColor="#1E2420"
+            android:pathData="M57,53 A3,3,0,0,1,63,53 A3,3,0,0,1,57,53 Z" />
+        <!-- Left circle, centre (57, 57), r=3 -->
+        <path android:fillColor="#1E2420"
+            android:pathData="M54,57 A3,3,0,0,1,60,57 A3,3,0,0,1,54,57 Z" />
+        <!-- Right circle, centre (63, 57), r=3 -->
+        <path android:fillColor="#1E2420"
+            android:pathData="M60,57 A3,3,0,0,1,66,57 A3,3,0,0,1,60,57 Z" />
+        <!-- Stem -->
+        <path android:fillColor="#1E2420" android:pathData="M59,60 H61 V63 H59 Z" />
+        <!-- Base bar -->
+        <path android:fillColor="#1E2420" android:pathData="M57,63 H63 V64.5 H57 Z" />
+
+        <!--
+            ── CORNER STARS ─────────────────────────────────────────────────────────
+
+            Four 4-pointed brass stars, one near each corner of the inner frame.
+            Positions adjusted for the wider card (inner frame x=40–68) and
+            the upward shift (inner frame y=28–70).  Stars sit 3 dp inward from
+            the inner frame's x-edges and 4 dp below/above its y-edges.
+
+              Top-left  star  centre (43, 32)
+              Top-right star  centre (65, 32)
+              Bot-left  star  centre (43, 66)
+              Bot-right star  centre (65, 66)
+
+            Outer radius 4 dp, inner radius 1.5 dp (4-pointed diamond star shape).
+        -->
+        <!-- Top-left star, centre (43, 32) -->
+        <path
+            android:fillColor="#B08A3E"
+            android:pathData="M43,28 L44.5,30.5 L47,32 L44.5,33.5 L43,36 L41.5,33.5 L39,32 L41.5,30.5 Z" />
+        <!-- Top-right star, centre (65, 32) -->
+        <path
+            android:fillColor="#B08A3E"
+            android:pathData="M65,28 L66.5,30.5 L69,32 L66.5,33.5 L65,36 L63.5,33.5 L61,32 L63.5,30.5 Z" />
+        <!-- Bottom-left star, centre (43, 66) -->
+        <path
+            android:fillColor="#B08A3E"
+            android:pathData="M43,62 L44.5,64.5 L47,66 L44.5,67.5 L43,70 L41.5,67.5 L39,66 L41.5,64.5 Z" />
+        <!-- Bottom-right star, centre (65, 66) -->
+        <path
+            android:fillColor="#B08A3E"
+            android:pathData="M65,62 L66.5,64.5 L69,66 L66.5,67.5 L65,70 L63.5,67.5 L61,66 L63.5,64.5 Z" />
     </group>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         CENTRE CARD — L'Excuse  (drawn last = topmost / always in front)
-         No rotation. Shows the four suit symbols (♥ ♠ ♦ ♣) in a 2×2 grid,
-         surrounded by four 4-pointed gold stars in the corners.
-         ═══════════════════════════════════════════════════════════════════════ -->
-
-    <!-- Parchment body -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
-    <!-- Gold outer border -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#C4972A"
-        android:strokeWidth="1.5"
-        android:pathData="M39,24 Q36,24 36,27 V71 Q36,74 39,74 H69 Q72,74 72,71 V27 Q72,24 69,24 Z" />
-    <!-- Gold inner frame -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#C4972A"
-        android:strokeWidth="0.75"
-        android:pathData="M42,28 Q40,28 40,30 V68 Q40,70 42,70 H66 Q68,70 68,68 V30 Q68,28 66,28 Z" />
-
-    <!--
-        ── SUIT SYMBOLS ─────────────────────────────────────────────────────────
-
-        The four French playing-card suits in a 2×2 grid inside the inner frame.
-        Hearts and diamonds: red (#CC0000). Spades and clubs: black (#000000).
-        All y coordinates shifted −6 vs the previous revision.
-
-          Top-left     ♠ Spade    centre (48, 41)   x=42–54, y=35–48
-          Top-right    ♥ Heart    centre (60, 41)   x=54–66, y=34–47
-          Bottom-left  ♦ Diamond  centre (48, 56)   x=42–54, y=50–62
-          Bottom-right ♣ Club     centre (60, 56)   x=54–66, y=50–64
-    -->
-
-    <!--
-        ♠ Spade — inverted heart body (top tip pointing up) with a small
-        trapezoidal foot/collar at the bottom. Centre x=48.
-    -->
-    <path
-        android:fillColor="#000000"
-        android:pathData="M48,35 C52,38 54,40 54,42 C54,45 51,46 48,45 C51,46 52,47 52,48 H44 C44,47 45,46 48,45 C45,46 42,45 42,42 C42,40 44,38 48,35 Z" />
-
-    <!--
-        ♥ Heart — two well-rounded bumps separated by a pronounced V-notch,
-        bottom tip pointing down. Centre (60, 41), spans x=54–66, y=34–47.
-    -->
-    <path
-        android:fillColor="#CC0000"
-        android:pathData="M60,47 C57,44 54,42 54,39 C54,35 56,34 58,34 C59,34 60,35 60,37 C60,35 61,34 62,34 C64,34 66,35 66,39 C66,42 63,44 60,47 Z" />
-
-    <!-- ♦ Diamond — a simple axis-aligned rhombus -->
-    <path
-        android:fillColor="#CC0000"
-        android:pathData="M48,50 L54,56 L48,62 L42,56 Z" />
-
-    <!--
-        ♣ Club — three overlapping circles (trefoil) with a narrow stem and
-        a wider base bar. All centres shifted y−6 vs previous revision.
-    -->
-    <!-- Top circle, centre (60, 53), r=3 -->
-    <path android:fillColor="#000000"
-        android:pathData="M57,53 A3,3,0,0,1,63,53 A3,3,0,0,1,57,53 Z" />
-    <!-- Left circle, centre (57, 57), r=3 -->
-    <path android:fillColor="#000000"
-        android:pathData="M54,57 A3,3,0,0,1,60,57 A3,3,0,0,1,54,57 Z" />
-    <!-- Right circle, centre (63, 57), r=3 -->
-    <path android:fillColor="#000000"
-        android:pathData="M60,57 A3,3,0,0,1,66,57 A3,3,0,0,1,60,57 Z" />
-    <!-- Stem -->
-    <path android:fillColor="#000000" android:pathData="M59,60 H61 V63 H59 Z" />
-    <!-- Base bar -->
-    <path android:fillColor="#000000" android:pathData="M57,63 H63 V64.5 H57 Z" />
-
-    <!--
-        ── CORNER STARS ─────────────────────────────────────────────────────────
-
-        Four 4-pointed gold stars, one near each corner of the inner frame.
-        Positions adjusted for the wider card (inner frame x=40–68) and
-        the upward shift (inner frame y=28–70).  Stars sit 3 dp inward from
-        the inner frame's x-edges and 4 dp below/above its y-edges.
-
-          Top-left  star  centre (43, 32)
-          Top-right star  centre (65, 32)
-          Bot-left  star  centre (43, 66)
-          Bot-right star  centre (65, 66)
-
-        Outer radius 4 dp, inner radius 1.5 dp (4-pointed diamond star shape).
-    -->
-    <!-- Top-left star, centre (43, 32) -->
-    <path
-        android:fillColor="#C4972A"
-        android:pathData="M43,28 L44.5,30.5 L47,32 L44.5,33.5 L43,36 L41.5,33.5 L39,32 L41.5,30.5 Z" />
-    <!-- Top-right star, centre (65, 32) -->
-    <path
-        android:fillColor="#C4972A"
-        android:pathData="M65,28 L66.5,30.5 L69,32 L66.5,33.5 L65,36 L63.5,33.5 L61,32 L63.5,30.5 Z" />
-    <!-- Bottom-left star, centre (43, 66) -->
-    <path
-        android:fillColor="#C4972A"
-        android:pathData="M43,62 L44.5,64.5 L47,66 L44.5,67.5 L43,70 L41.5,67.5 L39,66 L41.5,64.5 Z" />
-    <!-- Bottom-right star, centre (65, 66) -->
-    <path
-        android:fillColor="#C4972A"
-        android:pathData="M65,62 L66.5,64.5 L69,66 L66.5,67.5 L65,70 L63.5,67.5 L61,66 L63.5,64.5 Z" />
-
 </vector>

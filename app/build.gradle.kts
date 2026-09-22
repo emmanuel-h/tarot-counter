@@ -284,6 +284,8 @@ afterEvaluate {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    // Splash screen shown while the app starts (issue #205).
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
