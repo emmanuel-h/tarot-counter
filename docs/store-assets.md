@@ -57,3 +57,32 @@ python3 tools/store/feature_graphic.py
 ## Icon
 
 The Play Store icon `ic_launcher.png` (512 × 512) comes from `tools/icon/generate_icons.py`; see `docs/icon-design.md`.
+
+## Publishing to Google Play
+
+`tools/store/publish-play.py` talks to the Play Developer Publishing API: it uploads the bundle and its R8 mapping, releases it on a track with the notes in each language, and with `--screenshots` empties and refills the listing's screenshot slots. All of it goes into one *edit* (Play's transaction) committed once, and a failure deletes the edit, so the listing never shows half an update. `/release-store` runs it; `--dry-run` prints the calls without sending any, and `--validate-only` has Play check the edit and then throws it away.
+
+```bash
+python3 tools/store/publish-play.py --screenshots                # listing images alone
+python3 tools/store/publish-play.py --bundle … --mapping … --track production \
+    --release-name 3.1.0 --notes-dir notes/ [--screenshots]
+```
+
+`--notes-dir` holds one file per language, named by Play's code: `en-US.txt`, `fr-FR.txt` (500 characters at most each).
+
+`--screenshots` uploads this mapping, set by `LISTINGS` at the top of the script:
+
+| Play slot | en-US | fr-FR |
+|---|---|---|
+| Phone (max 8) | `en/light/1`–`5`, then `en/dark/2`–`4` | `fr/light/1`–`5`, then `fr/dark/2`–`4` |
+| 7-inch | left untouched | `tablet7/fr/light/*` |
+| 10-inch | left untouched | `tablet10/fr/light/*` |
+
+It needs only `requests`, `PyJWT` and `cryptography`, which the system Python already has — no Google client library, no fastlane, no Ruby.
+
+### One-time setup
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), pick or create a project and enable the **Google Play Android Developer API**.
+2. Under *IAM & Admin → Service accounts*, create a service account (no project role needed), then *Keys → Add key → JSON*. Save the file as `~/.config/tarotcounter/play-service-account.json` and `chmod 600` it. Somewhere else works too if `PLAY_SERVICE_ACCOUNT` points at it. Never in the repository — `.gitignore` refuses `*service-account*.json` as a backstop. A service account already set up for another app of the same developer account can be reused: copy or symlink its key here.
+3. In the [Play Console](https://play.google.com/console/), *Users and permissions*, invite the service account's e-mail address (or edit it if it is already there), and on TarotCounter give it *Release to production…*, *Release apps to testing tracks* and *Manage store presence*.
+4. Check it: `python3 tools/store/publish-play.py --screenshots --validate-only` signs in, builds the edit, has Play validate it, and publishes nothing. A new permission can take a few minutes, occasionally longer, before the API accepts it.

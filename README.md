@@ -168,7 +168,7 @@ Use the `/release-store` skill to automate the full release workflow in one step
 /release-store hotfix   # bump patch version
 ```
 
-The skill bumps `versionCode` / `versionName` in `app/build.gradle.kts`, builds the signed `.aab`, creates a GitHub release with auto-generated notes, and uploads the artifact. See [`docs/release-workflow.md`](docs/release-workflow.md) for details.
+The skill bumps `versionCode` / `versionName` in `app/build.gradle.kts`, optionally regenerates the store screenshots, builds the signed `.aab`, creates a GitHub release with the bundle and R8 mapping attached, and publishes the bundle, French/English release notes and screenshots to Google Play through `tools/store/publish-play.py` (Play Developer API, service account key in `~/.config/tarotcounter/`). See [`docs/release-workflow.md`](docs/release-workflow.md) and [`docs/store-assets.md`](docs/store-assets.md) for details.
 
 ### R8 Minification
 
