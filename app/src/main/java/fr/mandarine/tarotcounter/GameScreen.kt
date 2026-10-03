@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -1171,9 +1172,15 @@ private fun ContractCards(
                             Text(
                                 text  = "×${contract.multiplier}",
                                 style = MaterialTheme.typography.titleSmall,
-                                // Brass on the felt when selected, muted otherwise.
-                                color = if (isSelected) MaterialTheme.tarotColors.brassOnFelt
-                                        else scheme.onSurfaceVariant
+                                // Selected: brass on the dark felt (light theme); on the
+                                // pale sage of the dark theme brass would be unreadable, so
+                                // the card's own text colour is used there. Muted otherwise.
+                                color = when {
+                                    !isSelected                     -> scheme.onSurfaceVariant
+                                    // Felt green is ~0.06, the night sage ~0.49.
+                                    scheme.primary.luminance() < 0.3f -> MaterialTheme.tarotColors.brassOnFelt
+                                    else                            -> scheme.onPrimary
+                                }
                             )
                         }
                     }
