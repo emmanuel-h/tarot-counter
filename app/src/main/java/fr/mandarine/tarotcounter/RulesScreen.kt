@@ -1,12 +1,15 @@
 package fr.mandarine.tarotcounter
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -14,125 +17,144 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import fr.mandarine.tarotcounter.ui.theme.Dimens
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 
-// RulesDialog shows a scrollable summary of all scoring rules currently implemented
-// in the game. It is opened when the user taps the "Rules" button on SettingsScreen.
+// RulesScreen (Salon restyle, issue #203): a full-screen page replacing the old
+// dialog, opened from Settings → Help → Rules.
 //
-// The dialog is capped at 85 % of the screen height so it never overflows on small
-// devices. The content column scrolls independently within that space.
+//   ┌──────────────────────────────┐
+//   │ ←  Game Rules                │
+//   │ Objective                    │  SectionHeader + body
+//   │ ┌──────────────────────────┐ │
+//   │ │ Bouts     Points needed  │ │  table from requiredPoints()
+//   │ │   0            56        │ │
+//   │ │   3            36        │ │
+//   │ └──────────────────────────┘ │
+//   │ ═════════ ♠ ♥ ♦ ♣ ═════════  │
+//   │ Contracts                    │
+//   │ ┌──────────────────────────┐ │
+//   │ │ Contract     Multiplier  │ │  table from Contract.multiplier
+//   │ │ Small            ×1      │ │
+//   │ └──────────────────────────┘ │
+//   │ Score Formula / Score Distribution / Bonuses  (text sections)
+//   └──────────────────────────────┘
 //
-// onDismiss: called when the user taps "Close" or taps the scrim (dim area outside).
+// The tables are built from the scoring code itself (RulesData.kt), so they can
+// never disagree with the scores the app computes.
 @Composable
-fun RulesDialog(onDismiss: () -> Unit) {
-    // Read the current locale from the composition tree so the dialog
-    // automatically switches language when the user changes it in settings.
+fun RulesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val locale  = LocalAppLocale.current
     val strings = appStrings(locale)
 
-    // Dialog is a bare-window overlay drawn on top of everything else.
-    // onDismissRequest handles taps on the scrim around the dialog.
-    Dialog(onDismissRequest = onDismiss) {
-
-        // Surface provides the correct Material shape, elevation and background colour.
-        // fillMaxHeight(0.85f) prevents the dialog from being taller than 85 % of the
-        // screen — important on phones with many rule sections that exceed one screenful.
-        Surface(
-            modifier      = Modifier
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = MAX_CONTENT_WIDTH)
                 .fillMaxWidth()
-                .fillMaxHeight(0.85f),
-            shape         = MaterialTheme.shapes.large,
-            color         = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.ScreenMargin)
+                .padding(bottom = Dimens.SpaceL)
+                .testTag("rules_screen"),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
+            SalonTopBar(
+                title                  = strings.rulesTitle,
+                onBack                 = onBack,
+                backContentDescription = strings.rulesClose
+            )
 
-                // ── Dialog title ──────────────────────────────────────────────
-                Text(
-                    text  = strings.rulesTitle,
-                    style = MaterialTheme.typography.headlineSmall
-                )
+            // ── Objective + bouts table ───────────────────────────────────────
+            RulesSection(strings.rulesObjectiveTitle, strings.rulesObjectiveBody)
+            RulesTable(
+                headers = strings.rulesBoutsColumn to strings.rulesNeededColumn,
+                rows    = boutThresholdRows().map { (bouts, needed) -> bouts.toString() to needed.toString() },
+                tag     = "rules_bouts_table"
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            SuitDivider(modifier = Modifier.padding(vertical = Dimens.SpaceS))
 
-                // ── Scrollable rules content ──────────────────────────────────
-                // weight(1f, fill = false) lets this column grow to fill the space
-                // between the title and the Close button, and enables scrolling when
-                // the content is taller than the remaining height.
-                // Without weight() the column would push the Close button off-screen.
-                Column(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    // Each entry is a (sectionTitle, sectionBody) pair.
-                    // Adding a new section only requires inserting a pair here —
-                    // the rendering loop below handles the rest automatically.
-                    val sections = listOf(
-                        strings.rulesObjectiveTitle   to strings.rulesObjectiveBody,
-                        strings.rulesContractsTitle   to strings.rulesContractsBody,
-                        strings.rulesScoreFormulaTitle to strings.rulesScoreFormulaBody,
-                        strings.rulesDistributionTitle to strings.rulesDistributionBody,
-                        strings.rulesBonusTitle        to strings.rulesBonusBody,
-                    )
+            // ── Contracts + multipliers table ─────────────────────────────────
+            RulesSection(strings.rulesContractsTitle, strings.rulesContractsBody)
+            RulesTable(
+                headers = strings.rulesContractColumn to strings.rulesMultiplierColumn,
+                rows    = contractMultiplierRows().map { (contract, multiplier) ->
+                    contract.localizedName(locale) to multiplier
+                },
+                tag     = "rules_contracts_table"
+            )
 
-                    sections.forEachIndexed { index, (title, body) ->
-                        RulesSection(title = title, body = body)
+            SuitDivider(modifier = Modifier.padding(vertical = Dimens.SpaceS))
 
-                        // Place a divider between sections, but not after the last one.
-                        if (index < sections.lastIndex) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            HorizontalDivider()
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-                    }
-                }
+            // ── Text-only sections ────────────────────────────────────────────
+            RulesSection(strings.rulesScoreFormulaTitle, strings.rulesScoreFormulaBody)
+            RulesSection(strings.rulesDistributionTitle, strings.rulesDistributionBody)
+            RulesSection(strings.rulesBonusTitle, strings.rulesBonusBody)
+        }
+    }
+}
 
-                Spacer(modifier = Modifier.height(24.dp))
+// A section: Cormorant heading (left-aligned) then a body paragraph.
+@Composable
+private fun RulesSection(title: String, body: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+        SectionHeader(title = title)
+        Text(text = body, style = MaterialTheme.typography.bodyMedium)
+    }
+}
 
-                // ── Close button ──────────────────────────────────────────────
-                // Right-aligned to match the "Send Feedback" button style on SettingsScreen.
-                // AppTextButton wraps TextButton + AutoSizeText so the label always fits.
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    AppTextButton(
-                        text    = strings.rulesClose,
-                        onClick = onDismiss
-                    )
+// A two-column table in a paper card: muted header row, then hairline-separated
+// rows. The second column is centred (numbers and multipliers).
+@Composable
+private fun RulesTable(headers: Pair<String, String>, rows: List<Pair<String, String>>, tag: String) {
+    SalonCard(
+        modifier       = Modifier.fillMaxWidth().testTag(tag),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Column {
+            RulesTableRow(headers.first, headers.second, header = true)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            rows.forEachIndexed { index, (left, right) ->
+                RulesTableRow(left, right, header = false)
+                if (index < rows.lastIndex) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
     }
 }
 
-// Renders one rules section: a bold heading followed by a body paragraph.
-// Private because it is only ever called from RulesDialog above.
 @Composable
-private fun RulesSection(title: String, body: String) {
-    Text(
-        text     = title,
-        style    = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(modifier = Modifier.height(6.dp))
-    // bodyMedium keeps the text readable but compact enough to fit many rules on screen.
-    Text(
-        text     = body,
-        style    = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.fillMaxWidth()
-    )
+private fun RulesTableRow(left: String, right: String, header: Boolean) {
+    val style = if (header) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyLarge
+    val color = if (header) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier          = Modifier
+            .fillMaxWidth()
+            .heightIn(min = if (header) 40.dp else 44.dp)
+            .padding(horizontal = Dimens.SpaceM),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = left, style = style, color = color, modifier = Modifier.weight(1f))
+        Text(text = right, style = style, color = color, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+    }
 }
 
 // ── Previews ──────────────────────────────────────────────────────────────────
 
-@Preview(showBackground = true)
+@Preview(heightDp = 1400)
 @Composable
-fun RulesDialogPreview() {
-    TarotCounterTheme {
-        RulesDialog(onDismiss = {})
+private fun RulesScreenPreview(@PreviewParameter(ThemeModeProvider::class) dark: Boolean) {
+    TarotCounterTheme(darkTheme = dark) {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            RulesScreen(onBack = {})
+        }
     }
 }

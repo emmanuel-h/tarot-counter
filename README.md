@@ -15,7 +15,7 @@ TarotCounter guides players through a game round by round:
 7. **Auto-save & Resume** — the game state is saved after every round. If the app is closed mid-game, the resume card appears at the top of the home screen the next time it is opened.
 8. **Past Games** — completed games are saved to the device. The home screen lists them, one row each: trophy, winner (or tie), date in the app language, player and round counts, and the winner's score.
 9. **Back navigation** — the Android system back button closes the round entry first (back to "Who took?"), otherwise returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
-10. **Settings page** — a dedicated settings page (reachable via the ⚙ gear icon on the setup screen) consolidates theme toggle (☀️ / 🌙), language toggle (🇬🇧 / 🇫🇷), and a feedback button that opens the device's email client pre-addressed to the developer; both theme and language are persisted across restarts
+10. **Settings page**: reached from the ⚙ gear icon on the home screen. It has grouped cards with icons: **Appearance** (Light / Dark), **Language** (English / Français), **Help** (Rules ›, Send feedback ›) and **About** (version). The Rules open as a full-screen page with section headers and tables for the bouts thresholds and contract multipliers, built from the scoring code. Theme and language are persisted across restarts.
 
 The app rotates the **dealer** each round and lets the user explicitly select the **attacker** (the player who won the bidding), determines win/loss, and computes each player's score for the round.
 
@@ -74,7 +74,9 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── GameViewModel.kt       # StateFlows for games, locale, theme; save/load coroutines
 ├── LandingScreen.kt       # Player setup UI + Past Games list
 ├── GameScreen.kt          # Game screen: standings, "Who took?" tiles, last rounds, round entry, bottom bar
-├── SettingsScreen.kt      # Settings page: theme, language, feedback
+├── SettingsScreen.kt      # Settings: grouped cards (appearance, language, help, about)
+├── RulesScreen.kt         # Full-screen rules page with bouts / contracts tables
+├── RulesData.kt           # Rules tables built from the scoring code
 ├── ScoreHistoryScreen.kt  # Score history: sticky-header table + round cards, with toggle
 ├── FinalScoreScreen.kt    # Game over: winner card, ranking, score-over-time chart
 ├── UiComponents.kt        # Shared UI: App* buttons, AutoSizeText, Salon components (SalonCard, PlayerAvatar, SalonTopBar…)
@@ -202,6 +204,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ColorContrastTest.kt` | WCAG relative luminance and contrast ratio helpers |
 | `SalonPaletteTest.kt` | Every text/background pair of both themes ≥ 4.5:1; player tones |
 | `SalonUiTest.kt` | Salon component logic: player initials, avatar/score sizes, suit glyphs, top-bar action limit |
+| `RulesDataTest.kt` | Rules page tables (bout thresholds, contract multipliers) and settings strings |
 | `ScoreHistoryLogicTest.kt` | Score history: when the table scrolls sideways, leader columns |
 | `ScoreChartTest.kt` | Game over chart data: cumulative series, y bounds (zero included), x-axis labels |
 | `BonusesTest.kt` | Bonus sheet logic: one poignée level per player, declarants order, chelem candidates, announced chelems |
@@ -210,7 +213,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `HomeLogicTest.kt` | Home screen logic: current leader(s), past-game date formatting, app → Java locale |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
 | `LandingScreenTest.kt` | Home screen: top bar, resume card, New Game card (player count, name fields with avatars, duplicate validation, dealer), past-game rows |
-| `SettingsScreenTest.kt` | Settings page: back navigation, theme toggle, language toggle, feedback button, section labels |
+| `SettingsScreenTest.kt` | Settings: groups, theme/language toggles, feedback row, version, rules page (tables, close, system back) |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history: table (header avatars, totals, sideways scroll), round cards, empty state, toggle, back navigation |
 | `FinalScoreScreenTest.kt` | Game over: winner card, tie, ranking order, chart description, See all rounds, stacked actions, leave confirmation |
