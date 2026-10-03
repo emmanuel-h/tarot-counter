@@ -297,22 +297,6 @@ class AppLocaleTest {
         assertEquals("Both locales must produce the same boutsPointsDetail string", en, fr)
     }
 
-    // ── scoreDisplay lambda ───────────────────────────────────────────────────
-
-    @Test
-    fun scoreDisplay_formats_positive_score() {
-        // formattedScore is pre-formatted via Int.withSign() at the call site.
-        val en = appStrings(AppLocale.EN).scoreDisplay("+120")
-        val fr = appStrings(AppLocale.FR).scoreDisplay("+120")
-        assertEquals("+120 pts", en)
-        assertEquals("Both locales must produce the same scoreDisplay string", en, fr)
-    }
-
-    @Test
-    fun scoreDisplay_formats_negative_score() {
-        assertEquals("-45 pts", appStrings(AppLocale.EN).scoreDisplay("-45"))
-    }
-
     // ── chelemPlaysFirst lambda ───────────────────────────────────────────────
 
     @Test

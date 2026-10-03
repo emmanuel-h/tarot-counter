@@ -21,6 +21,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso
@@ -501,7 +502,7 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("End Game").performClick()
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("Back to game").performClick()
+        composeTestRule.onNodeWithText("Back to game").performScrollTo().performClick()
         composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
     }
 

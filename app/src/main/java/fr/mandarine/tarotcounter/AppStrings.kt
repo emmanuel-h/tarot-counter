@@ -114,6 +114,12 @@ data class AppStrings(
     val chelemOutcomeLabel: String,
     // Button closing a bonus sheet.
     val done: String,
+    // ── Game over (issue #201) ──
+    // Heading of the line chart, and its screen-reader description.
+    val scoreOverTime: String,
+    val scoreChartDescription: (rounds: Int) -> String,
+    // Link under the ranking that opens the round-by-round table.
+    val seeAllRounds: String,
     val history: String,
     val endGame: String,
     // Tooltip title and section label for the chelem bonus (still used by the ⓘ icon).
@@ -173,9 +179,6 @@ data class AppStrings(
     val playerAvatar: (name: String) -> String,
     val gameOver: String,
     val winner: String,
-    // "+N pts" score label shown below the winner name.
-    // `formattedScore` is already sign-prefixed (e.g. "+42") via Int.withSign().
-    val scoreDisplay: (formattedScore: String) -> String,
     val itsATie: String,
     val newGame: String,
 
@@ -320,6 +323,9 @@ val EnStrings = AppStrings(
     },
     chelemOutcomeLabel    = "Outcome",
     done                  = "Done",
+    scoreOverTime         = "Score over time",
+    scoreChartDescription = { n -> "Line chart of every player's cumulative score over $n rounds" },
+    seeAllRounds          = "See all rounds",
     history               = "History",
     endGame               = "End Game",
     chelemLabel           = "Chelem (grand slam)",
@@ -353,7 +359,6 @@ val EnStrings = AppStrings(
     playerAvatar          = { name -> "Player $name" },
     gameOver              = "Game Over",
     winner                = "Winner",
-    scoreDisplay          = { formattedScore -> "$formattedScore pts" },
     itsATie               = "It's a tie!",
     newGame               = "New Game",
 
@@ -471,6 +476,9 @@ val FrStrings = AppStrings(
     },
     chelemOutcomeLabel    = "Résultat",
     done                  = "OK",
+    scoreOverTime         = "Évolution des scores",
+    scoreChartDescription = { n -> "Courbe du score cumulé de chaque joueur sur $n manches" },
+    seeAllRounds          = "Voir toutes les manches",
     history               = "Historique",
     endGame               = "Fin de partie",
     chelemLabel           = "Chelem (grand chelem)",
@@ -504,7 +512,6 @@ val FrStrings = AppStrings(
     playerAvatar          = { name -> "Joueur $name" },
     gameOver              = "Fin de partie",
     winner                = "Gagnant·e",
-    scoreDisplay          = { formattedScore -> "$formattedScore pts" },
     itsATie               = "Égalité !",
     newGame               = "Nouvelle partie",
 

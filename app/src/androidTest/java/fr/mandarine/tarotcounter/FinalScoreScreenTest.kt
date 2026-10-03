@@ -8,6 +8,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -98,7 +101,7 @@ class FinalScoreScreenTest {
                 mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
         )
         launchFinal(roundHistory = history)
-        composeTestRule.onNodeWithText("Winner").assertIsDisplayed()
+        composeTestRule.onNodeWithText("WINNER").assertIsDisplayed()
     }
 
     @Test
@@ -109,7 +112,8 @@ class FinalScoreScreenTest {
                 mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
         )
         launchFinal(roundHistory = history)
-        composeTestRule.onNodeWithText("+50 pts", substring = true).assertIsDisplayed()
+        // Shown in brass on the winner card (and again in the ranking).
+        composeTestRule.onNodeWithTag("winner_card").assert(hasText("+50", substring = true))
     }
 
     // ── Spec: tie ─────────────────────────────────────────────────────────────
@@ -128,7 +132,7 @@ class FinalScoreScreenTest {
             )
         )
         launchFinal(roundHistory = history)
-        composeTestRule.onNodeWithText("It's a tie!").assertIsDisplayed()
+        composeTestRule.onNodeWithText("IT'S A TIE!").assertIsDisplayed()
     }
 
     // ── Spec: empty state ─────────────────────────────────────────────────────
@@ -149,11 +153,12 @@ class FinalScoreScreenTest {
     // ── Spec: score table ─────────────────────────────────────────────────────
 
     @Test
-    fun round_column_header_is_shown_when_history_is_not_empty() {
-        val history = listOf(
-            RoundResult(1, "Alice", null, null, null)  // skipped round
-        )
+    fun round_column_header_is_shown_behind_see_all_rounds() {
+        val history = listOf(RoundResult(1, "Alice", null, null, null))  // skipped round
         launchFinal(roundHistory = history)
+        composeTestRule.onNodeWithText("Round").assertDoesNotExist()
+        // The round-by-round table lives behind "See all rounds" (issue #201).
+        composeTestRule.onNodeWithText("See all rounds").performScrollTo().performClick()
         composeTestRule.onNodeWithText("Round").assertIsDisplayed()
     }
 
@@ -163,6 +168,8 @@ class FinalScoreScreenTest {
             RoundResult(1, "Alice", null, null, null)
         )
         launchFinal(roundHistory = history)
+        // The round-by-round table lives behind "See all rounds" (issue #201).
+        composeTestRule.onNodeWithText("See all rounds").performScrollTo().performClick()
         players.forEach { name ->
             // Each name should appear at least once (column header + possibly winner card).
             assertTrue(
@@ -182,6 +189,8 @@ class FinalScoreScreenTest {
                 mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
         )
         launchFinal(roundHistory = history)
+        // The round-by-round table lives behind "See all rounds" (issue #201).
+        composeTestRule.onNodeWithText("See all rounds").performScrollTo().performClick()
         composeTestRule.onNodeWithText("+50").assertIsDisplayed()
         // Bob and Charlie share the same total, so the value appears in two cells.
         composeTestRule.onAllNodesWithText("-25").assertCountEquals(2)
@@ -200,6 +209,8 @@ class FinalScoreScreenTest {
                 mapOf("Alice" to -30, "Bob" to 15, "Charlie" to 15))
         )
         launchFinal(roundHistory = history)
+        // The round-by-round table lives behind "See all rounds" (issue #201).
+        composeTestRule.onNodeWithText("See all rounds").performScrollTo().performClick()
         composeTestRule.onNodeWithText("+20").assertIsDisplayed()
         // Bob and Charlie share the same total, so the value appears in two cells.
         composeTestRule.onAllNodesWithText("-10").assertCountEquals(2)
@@ -220,6 +231,8 @@ class FinalScoreScreenTest {
                 mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
         )
         launchFinal(roundHistory = history)
+        // The round-by-round table lives behind "See all rounds" (issue #201).
+        composeTestRule.onNodeWithText("See all rounds").performScrollTo().performClick()
         composeTestRule.onNodeWithText("+50").assertIsDisplayed()
     }
 
@@ -231,6 +244,8 @@ class FinalScoreScreenTest {
                 mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
         )
         launchFinal(roundHistory = history)
+        // The round-by-round table lives behind "See all rounds" (issue #201).
+        composeTestRule.onNodeWithText("See all rounds").performScrollTo().performClick()
         // Bob and Charlie share the same total, so the value appears in two cells.
         composeTestRule.onAllNodesWithText("-25").assertCountEquals(2)
         composeTestRule.onAllNodesWithText("-25").onFirst().assertIsDisplayed()
@@ -251,7 +266,7 @@ class FinalScoreScreenTest {
         // The name appears in several places (winner card, table header…): the first
         // match — the winner card at the top — must be visible.
         composeTestRule.onAllNodesWithText("Alice", substring = true).onFirst().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Winner").assertIsDisplayed()
+        composeTestRule.onNodeWithText("WINNER").assertIsDisplayed()
     }
 
     @Test
@@ -263,7 +278,7 @@ class FinalScoreScreenTest {
                 mapOf("Alice" to 10, "Bob" to 10, "Charlie" to -20))
         )
         launchFinal(roundHistory = history)
-        composeTestRule.onNodeWithText("It's a tie!").assertIsDisplayed()
+        composeTestRule.onNodeWithText("IT'S A TIE!").assertIsDisplayed()
     }
 
     @Test
@@ -272,8 +287,8 @@ class FinalScoreScreenTest {
         // is validated visually; here we confirm the button renders and fires the callback.
         var called = false
         launchFinal(onNewGame = { called = true })
-        composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
-        composeTestRule.onNodeWithText("New Game").performClick()
+        composeTestRule.onNodeWithText("New Game").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("New Game").performScrollTo().performClick()
         assertTrue("New Game button should fire onNewGame callback", called)
     }
 
@@ -300,14 +315,14 @@ class FinalScoreScreenTest {
     @Test
     fun back_to_game_button_is_displayed() {
         launchFinal()
-        composeTestRule.onNodeWithText("Back to game").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Back to game").performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun tapping_back_to_game_button_fires_onBack_callback() {
         var backCalled = false
         launchFinal(onBack = { backCalled = true })
-        composeTestRule.onNodeWithText("Back to game").performClick()
+        composeTestRule.onNodeWithText("Back to game").performScrollTo().performClick()
         assertTrue("onBack callback should have been called", backCalled)
     }
 
@@ -316,14 +331,14 @@ class FinalScoreScreenTest {
     @Test
     fun new_game_button_is_displayed() {
         launchFinal()
-        composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
+        composeTestRule.onNodeWithText("New Game").performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun tapping_new_game_button_fires_onNewGame_callback() {
         var callbackFired = false
         launchFinal(onNewGame = { callbackFired = true })
-        composeTestRule.onNodeWithText("New Game").performClick()
+        composeTestRule.onNodeWithText("New Game").performScrollTo().performClick()
         assertTrue("onNewGame callback should have been called", callbackFired)
     }
 
@@ -332,14 +347,14 @@ class FinalScoreScreenTest {
     @Test
     fun main_menu_button_is_displayed() {
         launchFinal()
-        composeTestRule.onNodeWithText("Main Menu").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Main Menu").performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun tapping_main_menu_button_fires_onMainMenu_callback() {
         var callbackFired = false
         launchFinal(onMainMenu = { callbackFired = true })
-        composeTestRule.onNodeWithText("Main Menu").performClick()
+        composeTestRule.onNodeWithText("Main Menu").performScrollTo().performClick()
         assertTrue("Main Menu button should fire onMainMenu callback", callbackFired)
     }
 
@@ -349,7 +364,7 @@ class FinalScoreScreenTest {
         // must not trigger the other's callback.
         var newGameCalled = false
         launchFinal(onNewGame = { newGameCalled = true })
-        composeTestRule.onNodeWithText("Main Menu").performClick()
+        composeTestRule.onNodeWithText("Main Menu").performScrollTo().performClick()
         assertTrue("Main Menu click should NOT fire onNewGame", !newGameCalled)
     }
 
@@ -400,4 +415,59 @@ class FinalScoreScreenTest {
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
         assertTrue("Cancelling should NOT fire onNewGame", !newGameCalled)
     }
+
+    // ── Salon game over (issue #201) ──────────────────────────────────────────
+
+    private val twoRounds = listOf(
+        RoundResult(1, "Alice", Contract.GARDE, null, true,
+            mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25)),
+        RoundResult(2, "Bob", Contract.PRISE, null, true,
+            mapOf("Alice" to -40, "Bob" to 80, "Charlie" to -40))
+    )
+
+    @Test
+    fun winner_card_shows_rounds_and_players() {
+        launchFinal(roundHistory = twoRounds)
+        composeTestRule.onNodeWithTag("winner_card")
+            .assert(hasText("Bob", substring = true))
+            .assert(hasText("2 rounds · 3 players", substring = true))
+    }
+
+    @Test
+    fun ranking_lists_players_best_first() {
+        launchFinal(roundHistory = twoRounds)
+        // Bob +55, Alice +10, Charlie -65.
+        val bob     = composeTestRule.onNodeWithTag("rank_Bob").fetchSemanticsNode().boundsInRoot
+        val alice   = composeTestRule.onNodeWithTag("rank_Alice").fetchSemanticsNode().boundsInRoot
+        val charlie = composeTestRule.onNodeWithTag("rank_Charlie").fetchSemanticsNode().boundsInRoot
+        assertTrue(bob.top < alice.top && alice.top < charlie.top)
+    }
+
+    @Test
+    fun score_chart_is_described_for_screen_readers() {
+        launchFinal(roundHistory = twoRounds)
+        composeTestRule
+            .onNodeWithContentDescription("Line chart of every player's cumulative score over 2 rounds")
+            .assertExists()
+        composeTestRule.onNodeWithText("Score over time").assertExists()
+    }
+
+    @Test
+    fun see_all_rounds_back_arrow_returns_to_game_over() {
+        var backToGame = false
+        launchFinal(roundHistory = twoRounds, onBack = { backToGame = true })
+        composeTestRule.onNodeWithText("See all rounds").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Score history").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Back to game").performClick()
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+        assertTrue("Closing the table must not leave the game-over screen", !backToGame)
+    }
+
+    @Test
+    fun no_chart_or_ranking_without_rounds() {
+        launchFinal(roundHistory = emptyList())
+        composeTestRule.onNodeWithTag("score_chart").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("ranking_card").assertDoesNotExist()
+    }
 }
+
