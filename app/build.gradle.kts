@@ -232,6 +232,10 @@ afterEvaluate {
                 // The trailing * is required to also exclude anonymous lambda classes
                 // that Kotlin generates for composable lambdas (e.g. GameScreenKt$GameScreen$2$1).
                 "fr.mandarine.tarotcounter.GameScreenKt*," +
+                "fr.mandarine.tarotcounter.GameOverlay," +
+                // Composable motion/haptics helpers (pure parts live in MotionLogic.kt)
+                "fr.mandarine.tarotcounter.MotionKt*," +
+                "fr.mandarine.tarotcounter.HapticsKt*," +
                 "fr.mandarine.tarotcounter.LandingScreenKt*," +
                 "fr.mandarine.tarotcounter.FinalScoreScreenKt*," +
                 "fr.mandarine.tarotcounter.ScoreHistoryScreenKt*," +

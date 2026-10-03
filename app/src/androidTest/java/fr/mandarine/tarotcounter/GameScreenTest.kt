@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -1376,6 +1377,98 @@ class GameScreenTest {
         composeTestRule.onNodeWithTag("poignee_Alice_DOUBLE").assertIsNotSelected()
         composeTestRule.onNodeWithText("Done").performClick()
         composeTestRule.onNodeWithTag("live_result").assert(hasText("Made by 4 → Alice +156"))
+    }
+
+    // ── Motion (issue #204) ───────────────────────────────────────────────────
+
+    private fun launchGameWithMotion(reducedMotion: Boolean) {
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(), FakeGameStorage()
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    LocalReducedMotion provides reducedMotion
+                ) { GameScreen(viewModel = viewModel) }
+            }
+        }
+    }
+
+    @Test
+    fun standings_reorder_when_the_leader_changes() {
+        launchGame()
+        // Round 1: Alice wins a Guard (+116 for Alice).
+        selectContractAndEnterScore(attacker = "Alice", score = "60")
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+        // Round 2: Bob wins a Guard Against with 91 (far more than Alice's lead).
+        selectContractAndEnterScore(attacker = "Bob", contract = label(Contract.GARDE_CONTRE), score = "91")
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+
+        val bob   = composeTestRule.onNodeWithTag("standing_Bob").fetchSemanticsNode().boundsInRoot
+        val alice = composeTestRule.onNodeWithTag("standing_Alice").fetchSemanticsNode().boundsInRoot
+        assertTrue("Bob now leads, so his row is above Alice's", bob.top < alice.top)
+    }
+
+    @Test
+    fun scores_count_up_from_the_previous_round() {
+        launchGameWithMotion(reducedMotion = false)
+        selectContractAndEnterScore(attacker = "Alice", score = "60")
+        // Freeze the clock: the standings first show the totals *before* the round.
+        composeTestRule.mainClock.autoAdvance = false
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+        // Two frames in: the standings are composed but still show the old totals
+        // (the count-up starts after a 250 ms pause).
+        composeTestRule.mainClock.advanceTimeByFrame()
+        composeTestRule.mainClock.advanceTimeByFrame()
+        composeTestRule.onNode(hasText("+0") and hasAnyAncestor(hasTestTag("standing_Bob"))).assertExists()
+        // Let everything settle: the final total is reached.
+        composeTestRule.mainClock.autoAdvance = true
+        composeTestRule.onNode(hasText("+116") and hasAnyAncestor(hasTestTag("standing_Alice"))).assertExists()
+    }
+
+    @Test
+    fun reduced_motion_shows_final_scores_immediately() {
+        launchGameWithMotion(reducedMotion = true)
+        selectContractAndEnterScore(attacker = "Alice", score = "60")
+        composeTestRule.mainClock.autoAdvance = false
+        composeTestRule.onNodeWithText("Confirm round").performClick()
+        composeTestRule.mainClock.advanceTimeByFrame()
+        composeTestRule.mainClock.advanceTimeByFrame()
+        composeTestRule.onNode(hasText("+116") and hasAnyAncestor(hasTestTag("standing_Alice"))).assertExists()
+        composeTestRule.mainClock.autoAdvance = true
+    }
+
+    @Test
+    fun round_entry_sections_are_stacked_not_overlapping() {
+        // Regression (#204): AnimatedContent lays out like a Box; the round-entry
+        // sections must still stack top to bottom.
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
+        val contract = composeTestRule.onNodeWithTag("contract_GARDE_CONTRE").fetchSemanticsNode().boundsInRoot
+        val bouts    = composeTestRule.onNodeWithTag("bouts_chip_0").fetchSemanticsNode().boundsInRoot
+        val points   = composeTestRule.onNodeWithTag("points_input").fetchSemanticsNode().boundsInRoot
+        val bonuses  = composeTestRule.onNodeWithTag("bonus_row_petit").fetchSemanticsNode().boundsInRoot
+        assertTrue(contract.bottom <= bouts.top)
+        assertTrue(bouts.bottom <= points.top)
+        assertTrue(points.bottom <= bonuses.top)
+    }
+
+    @Test
+    fun skipping_a_round_clears_a_half_filled_form() {
+        // Regression (#204): open the entry, type points, go back, skip the round.
+        // The next round must start with an empty form, so End Game does not warn
+        // about unsaved points.
+        launchGame()
+        selectContractAndEnterScore(attacker = "Alice", score = "60")
+        composeTestRule.onNodeWithContentDescription("Change taker").performClick()
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule.onNodeWithText("Round 2").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("End the game?").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
     }
 }
 
