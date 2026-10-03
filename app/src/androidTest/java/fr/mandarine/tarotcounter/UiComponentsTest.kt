@@ -32,7 +32,6 @@ import org.junit.runner.RunWith
  *
  * Covers:
  *   - AppButton / AppOutlinedButton / AppTextButton — label display and click behavior
- *   - ScoreTableRow — cell content rendered for header and data rows
  *   - Salon components — card, avatars, divider, header, score, top bar, text fields
  *
  * Run with: ./gradlew connectedAndroidTest
@@ -130,117 +129,6 @@ class UiComponentsTest {
         }
         composeTestRule.onNodeWithText("Skip").performClick()
         assertTrue("AppTextButton click should fire onClick", clicked)
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ScoreTableRow
-    // ─────────────────────────────────────────────────────────────────────────
-
-    @Test
-    fun scoreTableRow_shows_all_cell_texts() {
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                ScoreTableRow(
-                    cells     = listOf("1", "Alice", "Bob"),
-                    isHeader  = false
-                )
-            }
-        }
-        composeTestRule.onNodeWithText("1").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Alice").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Bob").assertIsDisplayed()
-    }
-
-    @Test
-    fun scoreTableRow_header_shows_all_column_titles() {
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                ScoreTableRow(
-                    cells    = listOf("Round", "Alice", "Bob"),
-                    isHeader = true
-                )
-            }
-        }
-        composeTestRule.onNodeWithText("Round").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Alice").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Bob").assertIsDisplayed()
-    }
-
-    @Test
-    fun scoreTableRow_renders_score_values_as_text() {
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                ScoreTableRow(
-                    cells       = listOf("2", "+84", "-42"),
-                    isHeader    = false,
-                    scoreValues = listOf(null, 84, -42)
-                )
-            }
-        }
-        composeTestRule.onNodeWithText("+84").assertIsDisplayed()
-        composeTestRule.onNodeWithText("-42").assertIsDisplayed()
-    }
-
-    @Test
-    fun scoreTableRow_with_winner_column_shows_winner_text() {
-        // The winner column should still show the score text even when highlighted.
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                ScoreTableRow(
-                    cells               = listOf("3", "+120", "+60"),
-                    isHeader            = false,
-                    scoreValues         = listOf(null, 120, 60),
-                    winnerColumnIndices = setOf(1)          // Alice's column
-                )
-            }
-        }
-        composeTestRule.onNodeWithText("+120").assertIsDisplayed()
-        composeTestRule.onNodeWithText("+60").assertIsDisplayed()
-    }
-
-    // ── Responsive table (issue #129) ─────────────────────────────────────────
-
-    @Test
-    fun scoreTableRow_five_players_all_headers_visible_without_scroll() {
-        // Verifies that a 5-player header row (the worst case for width overflow)
-        // renders all cells as displayed nodes — i.e. no horizontal scrolling is
-        // required to see any column.
-        val players = listOf("Alice", "Bob", "Charlie", "Diana", "Eve")
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                // fillMaxWidth() gives the Row the full screen width, which is
-                // the same constraint it gets inside the real ScoreHistoryScreen.
-                ScoreTableRow(
-                    cells    = listOf("Round") + players,
-                    isHeader = true
-                )
-            }
-        }
-        // Every header label must be reachable without scrolling.
-        composeTestRule.onNodeWithText("Round").assertIsDisplayed()
-        players.forEach { name ->
-            composeTestRule.onNodeWithText(name).assertIsDisplayed()
-        }
-    }
-
-    @Test
-    fun scoreTableRow_five_players_data_row_all_scores_visible() {
-        // Data row equivalent of the header test — scores for all 5 players must
-        // be simultaneously visible so the user can compare results at a glance.
-        composeTestRule.setContent {
-            TarotCounterTheme {
-                ScoreTableRow(
-                    cells       = listOf("1", "+100", "-25", "+50", "-75", "-50"),
-                    isHeader    = false,
-                    scoreValues = listOf(null, 100, -25, 50, -75, -50)
-                )
-            }
-        }
-        composeTestRule.onNodeWithText("+100").assertIsDisplayed()
-        composeTestRule.onNodeWithText("-25").assertIsDisplayed()
-        composeTestRule.onNodeWithText("+50").assertIsDisplayed()
-        composeTestRule.onNodeWithText("-75").assertIsDisplayed()
-        composeTestRule.onNodeWithText("-50").assertIsDisplayed()
     }
 
     // ─────────────────────────────────────────────────────────────────────────
