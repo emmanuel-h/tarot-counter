@@ -680,5 +680,20 @@ class UiComponentsTest {
         }
         composeTestRule.onNodeWithText("Name already used").assertIsDisplayed()
     }
-}
 
+    @Test
+    fun feltCard_shows_content() {
+        setSalonContent { FeltCard { androidx.compose.material3.Text("Round 5") } }
+        composeTestRule.onNodeWithText("Round 5").assertIsDisplayed()
+    }
+
+    @Test
+    fun playerAvatar_label_replaces_initial_but_keeps_description() {
+        setSalonContent {
+            PlayerAvatar(name = "Player 3", seatIndex = 2, label = "3")
+        }
+        // The label is drawn but merged away for screen readers, like the initial.
+        composeTestRule.onNodeWithContentDescription("Player Player 3").assertIsDisplayed()
+        composeTestRule.onNodeWithText("P").assertDoesNotExist()
+    }
+}

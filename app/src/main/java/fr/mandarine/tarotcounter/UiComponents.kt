@@ -75,6 +75,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import fr.mandarine.tarotcounter.ui.theme.tarotColors
 import kotlinx.coroutines.launch
@@ -878,6 +879,38 @@ fun SalonCard(
 }
 
 /**
+ * The Salon "hero" card: felt-green ground, ivory text, 16 dp corners and a
+ * stronger shadow than [SalonCard]. Used sparingly, for the one thing that
+ * matters most on a screen (the game in progress, the winner).
+ *
+ * The felt stays deep green in dark mode too (`tarotColors.felt`), so the card
+ * reads as the same object in both themes.
+ */
+@Composable
+fun FeltCard(
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(Dimens.CardPadding),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier  = modifier,
+        shape     = MaterialTheme.shapes.medium,
+        colors    = CardDefaults.cardColors(
+            containerColor = MaterialTheme.tarotColors.felt,
+            // contentColor becomes the default colour of every Text and Icon inside.
+            contentColor   = MaterialTheme.tarotColors.onFelt
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier            = Modifier.padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+            content             = content
+        )
+    }
+}
+
+/**
  * A circle showing a player's initial, in the colour of their seat.
  *
  * The colour comes from `MaterialTheme.tarotColors.playerTone(seatIndex)`, so a
@@ -888,6 +921,8 @@ fun SalonCard(
  * @param size      [AvatarSize.S] (24 dp), [AvatarSize.M] (36 dp) or [AvatarSize.L] (56 dp).
  * @param ringColor Optional colour of a thin ring around the circle. Used by
  *                  [AvatarStack] to separate overlapping avatars; `null` = no ring.
+ * @param label     Text drawn in the circle instead of the name's initial
+ *                  (e.g. the seat number while a name field is still empty).
  */
 @Composable
 fun PlayerAvatar(
@@ -895,7 +930,8 @@ fun PlayerAvatar(
     seatIndex: Int,
     modifier: Modifier = Modifier,
     size: AvatarSize = AvatarSize.M,
-    ringColor: Color? = null
+    ringColor: Color? = null,
+    label: String? = null
 ) {
     val tone        = MaterialTheme.tarotColors.playerTone(seatIndex)
     val description = appStrings(LocalAppLocale.current).playerAvatar(name)
@@ -920,7 +956,7 @@ fun PlayerAvatar(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text  = playerInitial(name),
+            text  = label ?: playerInitial(name),
             color = tone.content,
             style = MaterialTheme.typography.labelLarge.copy(
                 fontSize      = size.fontSizeSp.sp,
@@ -984,7 +1020,12 @@ fun SuitDivider(modifier: Modifier = Modifier) {
         Text(
             text  = SUIT_GLYPHS,
             color = MaterialTheme.tarotColors.brass,
-            style = MaterialTheme.typography.titleLarge.copy(fontSize = 14.sp, lineHeight = 14.sp)
+            // Wide letter spacing (like the mockup's 0.5em) so the four suits breathe.
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontSize      = 14.sp,
+                lineHeight    = 14.sp,
+                letterSpacing = 0.3.em
+            )
         )
         DoubleHairline(color = lineColor)
     }
@@ -1080,6 +1121,8 @@ fun ScoreText(
  * @param backContentDescription Screen-reader label of the back arrow;
  *                               defaults to the localized "Back to game".
  * @param actions                Icon buttons on the right (at most two).
+ * @param titleStyle             Text style of the title; the home screen passes
+ *                               `headlineLarge` to show the app name as a wordmark.
  */
 @Composable
 fun SalonTopBar(
@@ -1087,7 +1130,8 @@ fun SalonTopBar(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     backContentDescription: String? = null,
-    actions: List<TopBarAction> = emptyList()
+    actions: List<TopBarAction> = emptyList(),
+    titleStyle: TextStyle = MaterialTheme.typography.headlineMedium
 ) {
     requireValidTopBarActions(actions)
     val strings = appStrings(LocalAppLocale.current)
@@ -1110,7 +1154,7 @@ fun SalonTopBar(
         }
         Text(
             text     = title,
-            style    = MaterialTheme.typography.headlineMedium,
+            style    = titleStyle,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
@@ -1197,8 +1241,8 @@ fun SalonTextField(
 
 /**
  * A [SalonTextField] for a player's name, with that player's [PlayerAvatar] in
- * the leading slot. While the name is empty, the avatar shows the initial of
- * the [placeholder] (e.g. "P" for "Player 1").
+ * the leading slot. While the name is empty, the avatar shows the seat number
+ * (1, 2, 3…) — "P" for every "Player N" placeholder would not tell seats apart.
  *
  * @param seatIndex   0-based seat — picks the avatar colour.
  * @param placeholder Fallback name shown when the field is empty.
@@ -1226,7 +1270,8 @@ fun PlayerNameField(
             PlayerAvatar(
                 name      = value.ifBlank { placeholder },
                 seatIndex = seatIndex,
-                size      = AvatarSize.M
+                size      = AvatarSize.M,
+                label     = if (value.isBlank()) (seatIndex + 1).toString() else null
             )
         }
     )

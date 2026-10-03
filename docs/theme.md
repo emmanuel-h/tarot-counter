@@ -112,7 +112,7 @@ Static files are used instead of variable fonts because Android 7.x (API 24–25
 
 ### Tabular figures
 
-Every style turns on the OpenType feature `tnum` (`fontFeatureSettings = "tnum"`). With it, every digit has the same width, so score columns line up: `+312` and `−48` stay right-aligned digit for digit. Because it is part of every style, any number in the app is aligned without extra work.
+Every style turns on the OpenType features `tnum` and `lnum` (`fontFeatureSettings = "tnum, lnum"`). `tnum` gives every digit the same width, so score columns line up: `+312` and `−48` stay right-aligned digit for digit. `lnum` switches Cormorant Garamond from its default *old-style* figures (where "1" looks like a small-caps "I" and some digits dip below the line) to lining figures that sit on the baseline — "Round 1" reads correctly. Because both are part of every style, any number in the app is aligned without extra work.
 
 ## Shapes
 

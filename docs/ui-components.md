@@ -241,12 +241,26 @@ SalonCard(title = strings.newGame, modifier = Modifier.fillMaxWidth()) {
 }
 ```
 
+### FeltCard
+
+```kotlin
+@Composable
+fun FeltCard(
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(Dimens.CardPadding),
+    content: @Composable ColumnScope.() -> Unit
+)
+```
+
+The "hero" variant of `SalonCard`: felt-green ground (`tarotColors.felt`, deep green in both themes), ivory content colour (`tarotColors.onFelt`), 16 dp corners, 4 dp elevation, no border. Use it for the single most important thing on a screen — the game in progress on the home screen, the winner on the game-over screen. Brass text on it uses `tarotColors.brassOnFelt`; a button on it is an ivory pill (`containerColor = onFelt`, `contentColor = felt`).
+
 ### PlayerAvatar and AvatarStack
 
 ```kotlin
 @Composable
 fun PlayerAvatar(name: String, seatIndex: Int, modifier: Modifier = Modifier,
-                 size: AvatarSize = AvatarSize.M, ringColor: Color? = null)
+                 size: AvatarSize = AvatarSize.M, ringColor: Color? = null,
+                 label: String? = null)   // drawn instead of the initial when set
 
 @Composable
 fun AvatarStack(names: List<String>, modifier: Modifier = Modifier,
@@ -297,7 +311,8 @@ fun SalonTopBar(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     backContentDescription: String? = null,   // defaults to strings.backToGame
-    actions: List<TopBarAction> = emptyList() // at most MAX_TOP_BAR_ACTIONS (2)
+    actions: List<TopBarAction> = emptyList(), // at most MAX_TOP_BAR_ACTIONS (2)
+    titleStyle: TextStyle = MaterialTheme.typography.headlineMedium // home passes headlineLarge (wordmark)
 )
 
 class TopBarAction(val icon: ImageVector, val contentDescription: String, val onClick: () -> Unit)
@@ -337,7 +352,7 @@ fun PlayerNameField(value: String, onValueChange: (String) -> Unit, seatIndex: I
                     isError: Boolean = false, supportingText: String? = null)
 ```
 
-A single-line text field with a paper-white fill (`surfaceContainerLowest`), 12 dp corners, a hairline border that turns felt green on focus, and an optional leading slot. `PlayerNameField` puts the player's `PlayerAvatar` (M) in that slot — while the field is empty the avatar shows the placeholder's initial (e.g. "P" for "Player 1") — and capitalises words on the keyboard. It will replace the raw `OutlinedTextField` of the setup screen in the Home redesign (#197).
+A single-line text field with a paper-white fill (`surfaceContainerLowest`), 12 dp corners, a hairline border that turns felt green on focus, and an optional leading slot. `PlayerNameField` puts the player's `PlayerAvatar` (M) in that slot — while the field is empty the avatar shows the seat number (1, 2, 3…; its content description still uses the placeholder name) — and capitalises words on the keyboard. The home screen uses it for every player (#197).
 
 ---
 

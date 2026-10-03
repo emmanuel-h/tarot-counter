@@ -6,15 +6,15 @@ An Android app for tracking scores in **French Tarot**, a classic French trick-t
 
 TarotCounter guides players through a game round by round:
 
-1. **Setup** — choose 3, 4, or 5 players and optionally enter custom names; duplicate names are detected in real time and the Start button is disabled until all names are unique; choose the **first dealer** (random or pick a specific player); a decorative `♠ ♥ ♦ ♣` header above the title sets the card-game tone; tap the **⚙ gear icon** (top-right) to open the Settings page
+1. **Home / setup** — a Salon top bar shows the app name with a **⚙** settings button. If a game is in progress, a felt-green **resume card** comes first: round number, avatar stack, current leader and score, **Resume** button. A **New Game** card groups the setup: choose 3, 4 or 5 players, enter optional names (each field shows the seat's coloured avatar), and choose the **first dealer** (random or a specific player). Duplicate names are flagged inline in real time, and Start stays disabled until every name is unique.
 2. **Attacker selection + contract** — tap the player who won the bidding to set them as the **attacker** (any player can bid, not just the dealer); then pick their contract; the dealer label shows who is distributing the cards this round; a persistent **bottom action bar** always shows **End Game** (left) and **Skip round** (right) for quick access
 3. **Scoring details** — enter bouts, points scored (0–91), partner (5-player), and any bonuses; a radio button lets you switch between entering the **taker's points** or the **defenders' points** (the app converts automatically using `takerPoints = 91 − defenderPoints`)
 4. **Compact scoreboard** — after the first round, a persistent card at the top shows each player's running total at a glance
 5. **Score history screen** — tap the bar-chart icon (always visible in the header) to open the history screen; a **segmented toggle** switches between two views: **Table** (cumulative scores per round, one row per player) and **List** (round-by-round detail log, newest first, with a coloured **●** indicator per row: green = won, red = lost, grey = skipped)
 6. **End Game / Final Score** — tap **End Game** in the bottom bar at any point to see the final results: winner card with total score, full round-by-round table (winner's column highlighted with a soft brass tint), and three action buttons on one line: **Main Menu** (return to the landing screen), **New Game** (go to setup), and **Back to Game** (resume the current game)
 7. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (CompactScoreboard, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
-8. **Auto-save & Resume** — the game state is saved after every round; if the app is closed mid-game, a "Resume Game" card appears on the setup screen the next time it is opened
-9. **Past Games** — completed games are saved to the device; the setup screen shows a list of past results with a trophy icon next to the winner's name
+8. **Auto-save & Resume** — the game state is saved after every round. If the app is closed mid-game, the resume card appears at the top of the home screen the next time it is opened.
+9. **Past Games** — completed games are saved to the device. The home screen lists them, one row each: trophy, winner (or tie), date in the app language, player and round counts, and the winner's score.
 10. **Back navigation** — the Android system back button always returns to the landing page; on the Final Score screen a confirmation dialog is shown first to avoid accidentally losing unsaved results
 11. **Settings page** — a dedicated settings page (reachable via the ⚙ gear icon on the setup screen) consolidates theme toggle (☀️ / 🌙), language toggle (🇬🇧 / 🇫🇷), and a feedback button that opens the device's email client pre-addressed to the developer; both theme and language are persisted across restarts
 
@@ -79,6 +79,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── UiComponents.kt        # Shared UI: App* buttons, AutoSizeText, Salon components (SalonCard, PlayerAvatar, SalonTopBar…)
 ├── UiComponentsPreviews.kt # Light + dark @Previews of every Salon component
 ├── SalonUi.kt             # Pure logic behind the Salon components (initials, sizes, suit glyphs)
+├── GameDates.kt           # Past-game date formatting in the app language
 └── ui/theme/              # "Salon" design tokens: colours (+ TarotColors), typography, shapes, spacing, contrast helper
 ```
 
@@ -195,8 +196,9 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ColorContrastTest.kt` | WCAG relative luminance and contrast ratio helpers |
 | `SalonPaletteTest.kt` | Every text/background pair of both themes ≥ 4.5:1; player tones |
 | `SalonUiTest.kt` | Salon component logic: player initials, avatar/score sizes, suit glyphs, top-bar action limit |
+| `HomeLogicTest.kt` | Home screen logic: current leader(s), past-game date formatting, app → Java locale |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
-| `LandingScreenTest.kt` | Setup screen UI: player count chips, name fields, duplicate validation, settings gear icon |
+| `LandingScreenTest.kt` | Home screen: top bar, resume card, New Game card (player count, name fields with avatars, duplicate validation, dealer), past-game rows |
 | `SettingsScreenTest.kt` | Settings page: back navigation, theme toggle, language toggle, feedback button, section labels |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history screen: table view, list view, toggle, round indicators, back navigation |

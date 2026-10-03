@@ -40,6 +40,14 @@ data class AppStrings(
     val tieResult: (names: String) -> String,
     // "1 round" vs "N rounds" shown in the past-game card footer.
     val roundCount: (count: Int) -> String,
+    // Short label next to the 3 | 4 | 5 player-count control.
+    val playersLabel: String,
+    // Brass overline on the felt "resume" card, shown in upper case.
+    val gameInProgress: String,
+    // "4 players" — player count in the resume card and past-games rows.
+    val playerCount: (count: Int) -> String,
+    // "Alice leads +312" / "Alice & Bob lead +20" — `names` has 2+ entries on a tie.
+    val leaderLine: (names: List<String>, formattedScore: String) -> String,
 
     // ── Game Screen ───────────────────────────────────────────────────────────
     // "Round 1" / "Manche 1" header.
@@ -232,6 +240,13 @@ val EnStrings = AppStrings(
     winnerResult          = { name, formattedScore -> "Winner: $name ($formattedScore)" },
     tieResult             = { names -> "Tie: $names" },
     roundCount            = { n -> if (n == 1) "1 round" else "$n rounds" },
+    playersLabel          = "Players",
+    gameInProgress        = "Game in progress",
+    playerCount           = { n -> "$n players" },
+    leaderLine            = { names, score ->
+        if (names.size == 1) "${names.first()} leads $score"
+        else "${names.joinToString(" & ")} lead $score"
+    },
 
     roundHeader           = { n -> "Round $n" },
     dealerLabel           = { dealer -> "Dealer: $dealer" },
@@ -357,6 +372,13 @@ val FrStrings = AppStrings(
     winnerResult          = { name, formattedScore -> "Gagnant : $name ($formattedScore)" },
     tieResult             = { names -> "Égalité : $names" },
     roundCount            = { n -> if (n == 1) "1 manche" else "$n manches" },
+    playersLabel          = "Joueurs",
+    gameInProgress        = "Partie en cours",
+    playerCount           = { n -> "$n joueurs" },
+    leaderLine            = { names, score ->
+        if (names.size == 1) "${names.first()} mène avec $score"
+        else "${names.joinToString(" & ")} mènent avec $score"
+    },
 
     roundHeader           = { n -> "Manche $n" },
     dealerLabel           = { dealer -> "Donneur : $dealer" },

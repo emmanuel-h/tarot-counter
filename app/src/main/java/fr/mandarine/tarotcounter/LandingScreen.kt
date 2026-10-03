@@ -1,15 +1,13 @@
 package fr.mandarine.tarotcounter
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,13 +18,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -38,30 +32,45 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import fr.mandarine.tarotcounter.ui.theme.Dimens
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
-import java.text.SimpleDateFormat
-import java.util.Date
+import fr.mandarine.tarotcounter.ui.theme.tarotColors
 
-// LandingScreen lets the user configure how many players there are and enter their names.
-// It also shows:
-//   - a gear icon button (top-right) that navigates to the Settings page
-//   - a "Resume Game" card (if there is an unfinished game saved from a previous session)
-//   - a "Past Games" list at the bottom (if any games have been completed)
+// LandingScreen is the home screen (Salon redesign, issue #197). From top to bottom:
 //
-// onStartGame:          lambda called when the user presses "Start Game".
+//   ┌──────────────────────────────┐
+//   │ Tarot Counter            [⚙] │  SalonTopBar: wordmark + settings
+//   │ ┌── felt card ─────────────┐ │  only when a game is in progress
+//   │ │ GAME IN PROGRESS   (A)(B)│ │
+//   │ │ Round 5                  │ │
+//   │ │ 4 players · Alice leads… │ │
+//   │ │ [        Resume        ] │ │
+//   │ └──────────────────────────┘ │
+//   │ ═════════ ♠ ♥ ♦ ♣ ═════════  │  SuitDivider
+//   │ ┌── New game ──────────────┐ │  SalonCard
+//   │ │ Players       (3 | 4 | 5)│ │
+//   │ │ (A) Alice                │ │  PlayerNameField per seat
+//   │ │ First dealer (Random|Choose)│
+//   │ │ [      Start game      ] │ │
+//   │ └──────────────────────────┘ │
+//   │ Past games                   │  SectionHeader + one row per game
+//   └──────────────────────────────┘
+//
+// onStartGame:          called when the user presses "Start game".
 //                         names      : raw names entered by the user (blank = use fallback).
 //                         dealerIndex: index of the chosen first dealer in `names`, or null
 //                                      to let the app pick a random dealer.
-// onResumeGame:         lambda called when the user taps "Resume" — passes the saved state back
+// onResumeGame:         called when the user taps "Resume" — passes the saved state back
 //                       to MainActivity so GameScreen can be initialized from it.
-// onNavigateToSettings: lambda called when the user taps the gear icon to open the Settings page.
+// onNavigateToSettings: called when the user taps the gear icon.
 // inProgressGame:       a game that was interrupted mid-session, or null if there is none.
 // pastGames:            list of completed games; defaults to empty for the @Preview below.
 @Composable
@@ -77,257 +86,235 @@ fun LandingScreen(
     val locale  = LocalAppLocale.current
     val strings = appStrings(locale)
 
-    // `remember` keeps a value alive across recompositions (UI redraws).
-    // `mutableIntStateOf` creates an integer that, when changed, triggers a redraw.
-    var selectedPlayers by remember { mutableIntStateOf(3) }
-
-    // `mutableStateListOf` creates an observable list: any change triggers a UI redraw.
-    // Initialized with 3 empty strings matching the default player count.
-    val playerNames = remember { mutableStateListOf("", "", "") }
-
-    // Dealer selection state — declared early so the player-count onClick handlers can
-    // reference them when resetting the chosen dealer after a player-count change.
-    //
-    // `useRandomDealer` toggles between random (true, default) and manual (false).
-    // `selectedDealerIndex` is the index into resolvedNames of the manually chosen dealer;
-    //   defaults to 0 (first player) so there is always a valid selection when switching
-    //   to manual mode.
-    var useRandomDealer by remember { mutableStateOf(true) }
-    var selectedDealerIndex by remember { mutableIntStateOf(0) }
-
-    // Box fills the whole screen and centers its child horizontally.
-    // This ensures the content Column is centered on wide screens (e.g. tablets in landscape)
-    // while still filling the entire width on small phones.
+    // Box fills the whole screen and centres the content column horizontally, so on a
+    // 10" tablet in landscape the column stays 600 dp wide instead of stretching.
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter
     ) {
-    // Column stacks children vertically. `verticalScroll` makes it scrollable
-    // in case the content (name fields + button) doesn't fit on smaller screens.
-    // `widthIn(max = MAX_CONTENT_WIDTH)` caps the column at 600 dp so it doesn't
-    //   stretch across a full 10-inch tablet screen.
-    // `imePadding()` shrinks this Column by the keyboard height when the IME is open.
-    // `Arrangement.Top` is the correct choice for scrollable columns: centering fights
-    // with overflow and can clip content when the keyboard reduces the available height.
-    Column(
-        modifier = Modifier
-            .widthIn(max = MAX_CONTENT_WIDTH)
-            .fillMaxWidth()
-            .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-
-        // ── Header row: settings gear icon (right-aligned) ───────────────────
-        // A single gear IconButton in the top-right corner replaces the scattered
-        // theme and language toggles that previously lived here. All preferences
-        // have been consolidated into the Settings page for a cleaner header.
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End, // push the icon to the right edge
-            verticalAlignment = Alignment.CenterVertically
+        // `imePadding()` shrinks the column by the keyboard height when it is open, and
+        // `verticalScroll` lets the user scroll to any name field above the keyboard.
+        Column(
+            modifier = Modifier
+                .widthIn(max = MAX_CONTENT_WIDTH)
+                .fillMaxWidth()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.ScreenMargin)
+                .padding(bottom = Dimens.SpaceXl),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)
         ) {
-            // OutlinedIconButton provides a visible border around the icon, matching
-            // the HistoryButton and UndoPreviousRoundButton style used in GameScreen.
-            // The outline makes the button visually consistent with other major action
-            // buttons throughout the app, while still providing the standard 48 dp touch target.
-            OutlinedIconButton(onClick = onNavigateToSettings) {
-                Icon(
-                    imageVector        = Icons.Default.Settings,
-                    contentDescription = strings.settings,
-                    tint               = MaterialTheme.colorScheme.onSurface
+            // ── Top bar: wordmark on the left, settings on the right ──────────
+            SalonTopBar(
+                title      = strings.appTitle,
+                titleStyle = MaterialTheme.typography.headlineLarge,
+                actions    = listOf(
+                    TopBarAction(Icons.Default.Settings, strings.settings, onNavigateToSettings)
                 )
+            )
+
+            // ── Resume card — first thing on screen when a game is in progress ──
+            if (inProgressGame != null) {
+                ResumeGameCard(
+                    game     = inProgressGame,
+                    strings  = strings,
+                    onResume = { onResumeGame(inProgressGame) }
+                )
+                SuitDivider()
+            }
+
+            // ── New game ──────────────────────────────────────────────────────
+            NewGameCard(strings = strings, locale = locale, onStartGame = onStartGame)
+
+            // ── Past games ────────────────────────────────────────────────────
+            if (pastGames.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                    SectionHeader(title = strings.pastGames)
+                    for (game in pastGames) {
+                        PastGameRow(game = game, strings = strings, locale = locale)
+                    }
+                }
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // ── Decorative card-suit row ───────────────────────────────────────────
-        // The four French tarot suit symbols serve as a thematic header above the
-        // app title, giving the screen a card-game identity at a glance.
-        // `displaySmall` is a large, airy text style — perfect for decorative glyphs.
-        Text(
-            text = "♠  ♥  ♦  ♣",
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.primary
+// The felt-green card shown when a game was interrupted. It answers three questions
+// at a glance: which round, who is playing (avatar stack), and who is leading.
+@Composable
+private fun ResumeGameCard(
+    game: InProgressGame,
+    strings: AppStrings,
+    onResume: () -> Unit
+) {
+    // Who leads right now — null before the first scored round.
+    val leaders = currentLeaders(game.playerNames, game.rounds)
+    val detail  = buildList {
+        add(strings.playerCount(game.playerNames.size))
+        add(
+            if (leaders != null) strings.leaderLine(leaders.names, leaders.score.withSign())
+            else strings.noRoundsPlayed
         )
+    }.joinToString(" · ")
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Text displays a string. MaterialTheme.typography gives us pre-defined
-        // text styles that match Material Design (headlineLarge is a big bold title).
-        Text(
-            text = strings.appTitle,
-            style = MaterialTheme.typography.headlineLarge
-        )
-
-        // ── Resume card ───────────────────────────────────────────────────────
-        // Shown prominently at the top when the user closed the app mid-game.
-        if (inProgressGame != null) {
-            Spacer(modifier = Modifier.height(24.dp))
-            ResumeGameCard(
-                game = inProgressGame,
-                strings = strings,
-                onResume = { onResumeGame(inProgressGame) }
+    FeltCard(modifier = Modifier.fillMaxWidth().testTag("resume_card")) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(
+                modifier            = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)
+            ) {
+                // Small brass overline, upper case with wide letter spacing (labelSmall).
+                Text(
+                    text  = strings.gameInProgress.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.tarotColors.brassOnFelt
+                )
+                Text(
+                    text  = strings.roundHeader(game.currentRound),
+                    style = MaterialTheme.typography.headlineLarge
+                )
+                Text(
+                    text  = detail,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            // The ring colour matches the felt, so each avatar looks cut out of the card.
+            AvatarStack(
+                names     = game.playerNames,
+                size      = AvatarSize.M,
+                ringColor = MaterialTheme.tarotColors.felt
             )
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider()
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = strings.numberOfPlayers,
-            style = MaterialTheme.typography.titleMedium
+        // An ivory pill on the felt: the inverse of the usual felt-green button.
+        AppButton(
+            text     = strings.resume,
+            onClick  = onResume,
+            modifier = Modifier.fillMaxWidth(),
+            colors   = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.tarotColors.onFelt,
+                contentColor   = MaterialTheme.tarotColors.felt
+            )
         )
+    }
+}
 
-        Spacer(modifier = Modifier.height(12.dp))
+// The "New game" card: player count, one name field per seat, first dealer, Start.
+// All the setup state lives here, so recomposing the rest of the screen never
+// resets what the user typed.
+@Composable
+private fun NewGameCard(
+    strings: AppStrings,
+    locale: AppLocale,
+    onStartGame: (names: List<String>, dealerIndex: Int?) -> Unit
+) {
+    // `remember` keeps a value alive across recompositions (UI redraws).
+    // `mutableIntStateOf` creates an integer that, when changed, triggers a redraw.
+    var selectedPlayers by remember { mutableIntStateOf(3) }
 
-        // SingleChoiceSegmentedButtonRow groups the three player-count options
-        // into one visual unit so the selected count is immediately obvious.
-        // `fillMaxWidth(0.6f)` keeps the row from stretching too wide on large screens.
-        val playerCountOptions = listOf(3, 4, 5)
-        val playerLabelSize    = rememberSharedAutoSizeState()
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth(0.6f)) {
-            playerCountOptions.forEachIndexed { index, n ->
-                SegmentedButton(
-                    // Salon colours: selected segment filled felt green (issue #196).
-                    colors   = salonSegmentedButtonColors(),
-                    shape    = SegmentedButtonDefaults.itemShape(index, playerCountOptions.size),
-                    selected = selectedPlayers == n,
-                    onClick  = {
-                        selectedPlayers = n
-                        // Resize the name list to match the new player count.
-                        // If the new count is larger, pad with empty strings.
-                        // If smaller, drop the extra entries from the end.
-                        while (playerNames.size < n) playerNames.add("")
-                        while (playerNames.size > n) playerNames.removeAt(playerNames.lastIndex)
-                        // Reset the manual dealer choice so it is never out of range
-                        // after the player list shrinks (e.g. picked index 4 with 5
-                        // players, then switched back to 3).
-                        selectedDealerIndex = 0
-                    },
-                    icon = {} // suppress the default checkmark icon
-                ) {
-                    AutoSizeText(
-                        text            = n.toString(), // "3", "4", or "5"
-                        modifier        = Modifier.padding(horizontal = 1.dp),
-                        sharedSizeState = playerLabelSize
-                    )
+    // `mutableStateListOf` creates an observable list: any change triggers a redraw.
+    // Starts with 3 empty strings, matching the default player count.
+    val playerNames = remember { mutableStateListOf("", "", "") }
+
+    // `useRandomDealer` toggles between random (true, default) and manual (false).
+    // `selectedDealerIndex` is the chosen dealer's seat when in manual mode.
+    var useRandomDealer by remember { mutableStateOf(true) }
+    var selectedDealerIndex by remember { mutableIntStateOf(0) }
+
+    // Blank fields fall back to "Player N", so two blank fields never clash and a
+    // typed "Player 1" does clash with a blank first field.
+    val resolvedNames = playerNames.mapIndexed { i, name ->
+        name.ifBlank { strings.playerFallback(i + 1) }
+    }
+    // Duplicates are detected case-insensitively ("alice" == "ALICE").
+    val lowerNames     = resolvedNames.map { it.lowercase() }
+    val duplicateFlags = lowerNames.map { name -> lowerNames.count { it == name } > 1 }
+    val hasDuplicates  = duplicateFlags.any { it }
+
+    SalonCard(modifier = Modifier.fillMaxWidth(), title = strings.newGame) {
+
+        // ── Player count: label on the left, 3 | 4 | 5 on the right ───────────
+        LabeledRow(label = strings.playersLabel) {
+            val playerCountOptions = listOf(3, 4, 5)
+            val playerLabelSize    = rememberSharedAutoSizeState()
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.width(SETUP_TOGGLE_WIDTH)) {
+                playerCountOptions.forEachIndexed { index, n ->
+                    SegmentedButton(
+                        shape    = SegmentedButtonDefaults.itemShape(index, playerCountOptions.size),
+                        selected = selectedPlayers == n,
+                        onClick  = {
+                            selectedPlayers = n
+                            // Grow or shrink the name list to the new player count.
+                            while (playerNames.size < n) playerNames.add("")
+                            while (playerNames.size > n) playerNames.removeAt(playerNames.lastIndex)
+                            // A chosen dealer index could now be out of range: reset it.
+                            selectedDealerIndex = 0
+                        },
+                        icon     = {},
+                        colors   = salonSegmentedButtonColors()
+                    ) {
+                        AutoSizeText(
+                            text            = n.toString(),
+                            modifier        = Modifier.padding(horizontal = 1.dp),
+                            sharedSizeState = playerLabelSize
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Resolve display names: blank fields fall back to the localized "Player N" equivalent.
-        // This ensures that leaving two fields blank is treated as a duplicate.
-        val resolvedNames = playerNames.mapIndexed { i, name ->
-            name.ifBlank { strings.playerFallback(i + 1) }
-        }
-
-        // Build a set of lower-cased names to detect duplicates case-insensitively.
-        val lowerNames = resolvedNames.map { it.lowercase() }
-
-        // `duplicateFlags[i]` is true when the same resolved name appears more than once.
-        val duplicateFlags = lowerNames.map { name -> lowerNames.count { it == name } > 1 }
-
-        // The button is disabled and a warning is shown whenever any duplicate exists.
-        val hasDuplicates = duplicateFlags.any { it }
-
-        Text(
-            text = strings.playerNamesLabel,
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Loop over each player slot and render a text field for their name.
-        for (i in playerNames.indices) {
-            // OutlinedTextField is a Material Design text input with a visible border.
-            // `isError` turns the border red when this slot's name conflicts with another.
-            // `supportingText` shows a small hint below the field (only when there is an error).
-            OutlinedTextField(
-                value = playerNames[i],
-                onValueChange = { playerNames[i] = it }, // `it` is the new string the user typed
-                label = { Text(strings.playerFallback(i + 1)) },
-                singleLine = true,                        // prevent multi-line input
-                isError = duplicateFlags[i],
-                supportingText = if (duplicateFlags[i]) {
-                    { Text(strings.nameAlreadyUsed) }
-                } else null,
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)                   // 80% of screen width
-                    .padding(vertical = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // ── Dealer selection ──────────────────────────────────────────────────
-        // By default the app picks a random first dealer (matching the original
-        // behaviour). The user can switch to "Choose" and pick a specific player.
-
-        Text(
-            text  = strings.dealerSelectionLabel,
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // A two-segment toggle: "Random" (left) vs "Choose" (right).
-        // `rememberSharedAutoSizeState(locale)` resets the shared font size when
-        // the language changes so both labels are measured fresh.
-        val dealerModeSize = rememberSharedAutoSizeState(locale)
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth(0.6f)) {
-            SegmentedButton(
-                // Salon colours: selected segment filled felt green (issue #196).
-                colors   = salonSegmentedButtonColors(),
-                shape    = SegmentedButtonDefaults.itemShape(0, 2),
-                selected = useRandomDealer,
-                onClick  = { useRandomDealer = true },
-                icon     = {} // suppress the default checkmark
-            ) {
-                AutoSizeText(
-                    text            = strings.randomDealer,
-                    modifier        = Modifier.padding(horizontal = 1.dp),
-                    sharedSizeState = dealerModeSize
-                )
-            }
-            SegmentedButton(
-                // Salon colours: selected segment filled felt green (issue #196).
-                colors   = salonSegmentedButtonColors(),
-                shape    = SegmentedButtonDefaults.itemShape(1, 2),
-                selected = !useRandomDealer,
-                onClick  = { useRandomDealer = false },
-                icon     = {}
-            ) {
-                AutoSizeText(
-                    text            = strings.chooseDealer,
-                    modifier        = Modifier.padding(horizontal = 1.dp),
-                    sharedSizeState = dealerModeSize
+        // ── One name field per seat, with that seat's avatar ─────────────────
+        // The duplicate-name error is shown inline, right under the clashing field.
+        Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            for (i in playerNames.indices) {
+                PlayerNameField(
+                    value          = playerNames[i],
+                    onValueChange  = { playerNames[i] = it },
+                    seatIndex      = i,
+                    placeholder    = strings.playerFallback(i + 1),
+                    isError        = duplicateFlags[i],
+                    supportingText = if (duplicateFlags[i]) strings.nameAlreadyUsed else null,
+                    modifier       = Modifier
+                        .fillMaxWidth()
+                        .testTag("player_name_field_$i")
                 )
             }
         }
 
-        // When "Choose" is selected, show one segment per player so the user can
-        // tap the name of the person who will deal first.
+        // ── First dealer: Random | Choose ─────────────────────────────────────
+        LabeledRow(label = strings.dealerSelectionLabel) {
+            // Keyed on the locale so both labels are re-measured after a language change.
+            val dealerModeSize = rememberSharedAutoSizeState(locale)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.width(SETUP_TOGGLE_WIDTH)) {
+                listOf(true to strings.randomDealer, false to strings.chooseDealer)
+                    .forEachIndexed { index, (random, label) ->
+                        SegmentedButton(
+                            shape    = SegmentedButtonDefaults.itemShape(index, 2),
+                            selected = useRandomDealer == random,
+                            onClick  = { useRandomDealer = random },
+                            icon     = {},
+                            colors   = salonSegmentedButtonColors()
+                        ) {
+                            AutoSizeText(
+                                text            = label,
+                                modifier        = Modifier.padding(horizontal = 1.dp),
+                                sharedSizeState = dealerModeSize
+                            )
+                        }
+                    }
+            }
+        }
+
+        // In "Choose" mode, one segment per player lets the user tap the first dealer.
         if (!useRandomDealer) {
-            Spacer(modifier = Modifier.height(12.dp))
-            // Shared state ensures all player-name labels display at the same size —
-            // the smallest size needed to fit the longest name.
             val dealerNameSize = rememberSharedAutoSizeState(locale)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 resolvedNames.forEachIndexed { index, name ->
                     SegmentedButton(
-                        // Salon colours: selected segment filled felt green (issue #196).
-                        colors   = salonSegmentedButtonColors(),
                         shape    = SegmentedButtonDefaults.itemShape(index, resolvedNames.size),
                         selected = selectedDealerIndex == index,
                         onClick  = { selectedDealerIndex = index },
-                        icon     = {}
+                        icon     = {},
+                        colors   = salonSegmentedButtonColors()
                     ) {
                         AutoSizeText(
                             text            = name,
@@ -339,249 +326,145 @@ fun LandingScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // "Start Game" button placed BELOW the name fields so the visual flow naturally
-        // guides the user: enter names first, then press Start.
-        // `enabled = !hasDuplicates` prevents starting a game when names clash.
+        // ── Start ─────────────────────────────────────────────────────────────
+        // Disabled while two names clash; the inline errors above explain why.
         AppButton(
-            text     = strings.startGame,
-            // Pass `null` for random mode or the chosen index for manual mode.
-            onClick  = {
+            text      = strings.startGame,
+            onClick   = {
                 val dealerIndex = if (useRandomDealer) null else selectedDealerIndex
                 onStartGame(playerNames.toList(), dealerIndex)
             },
-            enabled  = !hasDuplicates,
-            modifier = Modifier.fillMaxWidth(0.8f)
+            enabled   = !hasDuplicates,
+            modifier  = Modifier.fillMaxWidth(),
+            textStyle = MaterialTheme.typography.titleMedium
         )
-
-        // ── Past Games ────────────────────────────────────────────────────────
-        // Only shown when there is at least one saved game on the device.
-        if (pastGames.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(40.dp))
-            // A divider with generous vertical padding clearly separates the
-            // setup section (above) from the historical games list (below).
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // titleLarge gives the section heading more visual weight than titleMedium,
-            // improving the hierarchy between the section label and the cards below it.
-            Text(
-                text = strings.pastGames,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            for (game in pastGames) {
-                PastGameCard(game = game, strings = strings)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
-
-    }   // end Column
-    }   // end Box
+    }
 }
 
-// ResumeGameCard is shown when there is an unfinished game saved from a previous session.
-//
-// It uses `primaryContainer` as its background to stand out from the "Past Games" cards
-// below, signalling that this is an active action rather than passive history.
-//
-// Tapping "Resume" calls onResume, which navigates straight into GameScreen with
-// the saved state (player names, round history, starting index).
+// Width of the compact toggles (player count, dealer mode) at the right of a row.
+private val SETUP_TOGGLE_WIDTH = 176.dp
+
+// A setting row inside the New game card: a muted label on the left and a
+// control on the right. `content` is a slot — any composable can be passed in.
 @Composable
-private fun ResumeGameCard(
-    game: InProgressGame,
-    strings: AppStrings,
-    onResume: () -> Unit
-) {
-    val roundsPlayed = game.rounds.size
-    // Builds e.g. "Round 3 · 2 rounds played" using the localized templates.
-    val roundLabel = strings.roundsPlayed(roundsPlayed)
-
-    // Capture primary color here so it can be used inside the Box below.
-    // Composable functions can only be called from within a @Composable scope,
-    // so we read MaterialTheme values before we enter the Card content lambda.
-    val accentColor = MaterialTheme.colorScheme.primary
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        // Elevated shadow makes the Resume card stand out from the Past Games list below
-        // and signals that it represents an active, time-sensitive action.
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+private fun LabeledRow(label: String, content: @Composable () -> Unit) {
+    Row(
+        modifier              = Modifier.fillMaxWidth(),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
     ) {
-        // Box layers its children on top of each other.
-        // The first child (the colored strip) sits at the start edge;
-        // the second child (the content) fills the remaining space.
-        Row(modifier = Modifier.fillMaxWidth()) {
-            // A narrow vertical strip in the primary color acts as an accent border
-            // on the left side of the card, giving it extra visual emphasis.
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()          // always spans the full card height, no matter how tall the content grows
-                    .background(accentColor)
-            )
-            Column(
-                modifier = Modifier
-                    .weight(1f)               // fill remaining horizontal space after the strip
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // titleMedium (vs the previous labelLarge) gives the card a clear heading
-                // that's immediately readable at a glance — matching the visual weight
-                // of a section title rather than a small chip label.
-                Text(
-                    text = strings.resumeGameTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    // Show which players are in the game.
-                    text = game.playerNames.joinToString(", "),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    // Show how far the game has progressed, e.g. "Round 4 · 3 rounds played".
-                    text = strings.resumeRoundDetail(game.currentRound, roundLabel),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                AppButton(
-                    text     = strings.resume,
-                    onClick  = onResume,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }   // end Row (accent strip + content)
+        Text(
+            text     = label,
+            style    = MaterialTheme.typography.labelLarge,
+            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        content()
     }
 }
 
-// PastGameCard displays a summary of one completed game.
-//
-// It shows:
-//   - the player names separated by commas
-//   - the winner's name and final score (or "Tie" if there were multiple winners)
-//   - how many rounds were played
-//   - the date the game was saved
+// One completed game in the "Past games" list:
+//   [trophy]  Alice                        +540
+//             Sat 13 Sep · 5 players · 8 rounds
+// A tie shows "Tie: Alice & Bob"; a game with no rounds shows no score.
 @Composable
-private fun PastGameCard(game: SavedGame, strings: AppStrings) {
-    // Compute the winner(s) from the final scores that were saved with the game.
-    // `findWinners` returns a list to handle the case where two players are tied.
+private fun PastGameRow(game: SavedGame, strings: AppStrings, locale: AppLocale) {
+    // `findWinners` returns several names on a tie, none when nobody scored.
     val winners = findWinners(game.finalScores)
-
-    // Build a human-readable winner line using the localized string templates.
-    val winnerText = when {
-        winners.isEmpty() -> strings.noRoundsPlayed
-        winners.size == 1 -> {
-            val score = game.finalScores[winners.first()] ?: 0
-            strings.winnerResult(winners.first(), score.withSign())
-        }
-        else -> strings.tieResult(winners.joinToString(" & "))
+    val title = when {
+        game.rounds.isEmpty() || winners.isEmpty() -> strings.noRoundsPlayed
+        winners.size == 1                           -> winners.first()
+        else                                        -> strings.tieResult(winners.joinToString(" & "))
     }
+    val subtitle = listOf(
+        formatGameDate(game.datestamp, locale),
+        strings.playerCount(game.playerNames.size),
+        strings.roundCount(game.rounds.size)
+    ).joinToString(" · ")
+    // The winning score, shown only when there really is a winner.
+    val winningScore = if (game.rounds.isNotEmpty() && winners.isNotEmpty()) {
+        game.finalScores[winners.first()]
+    } else null
 
-    // Format the timestamp as a readable date (e.g. "23/03/2026").
-    // The device locale comes from `LocalConfiguration`, which Compose observes:
-    // if the user changes the system language, this card recomposes with it.
-    // (`Locale.getDefault()` would be read once and never trigger a recomposition.)
-    val deviceLocale = LocalConfiguration.current.locales[0]
-    val dateStr = SimpleDateFormat("dd/MM/yyyy", deviceLocale)
-        .format(Date(game.datestamp))
-
-    val roundCount = game.rounds.size
-
-    // Card draws a rounded, elevated surface — a good visual container for a list item.
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+    SalonCard(
+        modifier       = Modifier.fillMaxWidth().testTag("past_game_${game.id}"),
+        contentPadding = PaddingValues(horizontal = Dimens.SpaceM, vertical = 12.dp)
+    ) {
+        Row(
+            // 48 dp minimum height: comfortable to scan and to tap in a future detail view.
+            modifier              = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Player names on the first line.
-            Text(
-                text = game.playerNames.joinToString(", "),
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+            Icon(
+                imageVector        = Icons.Default.EmojiEvents,
+                contentDescription = null, // decorative: the winner's name says it all
+                tint               = MaterialTheme.tarotColors.brass,
+                modifier           = Modifier.size(22.dp)
             )
-            // Winner (or tie) on the second line, with a small trophy icon on the left.
-            // Row arranges the icon and text side by side, vertically centered.
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // Only show the trophy when there is an actual winner (not a tie or no rounds).
-                // winners.size == 1 means a single player came out on top.
-                if (winners.size == 1) {
-                    Icon(
-                        imageVector = Icons.Default.EmojiEvents,
-                        contentDescription = null, // decorative icon — screen readers skip it
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = winnerText,
-                    style = MaterialTheme.typography.bodyMedium
+                    text     = title,
+                    style    = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text  = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            // Round count and date on the third line, separated by a dot.
-            Text(
-                text = "${strings.roundCount(roundCount)} · $dateStr",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (winningScore != null) {
+                ScoreText(score = winningScore, size = ScoreSize.M)
+            }
         }
     }
 }
 
-// @Preview lets Android Studio render this composable in the IDE without running the app.
-@Preview(showBackground = true)
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+private val previewInProgress = InProgressGame(
+    gameId        = "p",
+    playerNames   = listOf("Alice", "Bruno", "Chloé", "David"),
+    currentRound  = 5,
+    startingIndex = 0,
+    rounds        = listOf(
+        RoundResult(1, "Alice", Contract.GARDE, null, true,
+            mapOf("Alice" to 312, "Bruno" to -104, "Chloé" to -104, "David" to -104))
+    )
+)
+
+private val previewPastGames = listOf(
+    SavedGame(
+        id = "1", datestamp = System.currentTimeMillis(),
+        playerNames = listOf("Alice", "Bob", "Charlie"),
+        rounds = previewInProgress.rounds,
+        finalScores = mapOf("Alice" to 150, "Bob" to -75, "Charlie" to -75)
+    ),
+    SavedGame(
+        id = "2", datestamp = System.currentTimeMillis() - 86_400_000,
+        playerNames = listOf("Alice", "Bob", "Charlie", "Dave"),
+        rounds = previewInProgress.rounds,
+        finalScores = mapOf("Alice" to 50, "Bob" to 50, "Charlie" to -50, "Dave" to -50)
+    )
+)
+
+@Preview(heightDp = 1400)
 @Composable
-fun LandingScreenPreview() {
-    TarotCounterTheme {
-        LandingScreen()
+private fun LandingScreenPreview(@PreviewParameter(ThemeModeProvider::class) dark: Boolean) {
+    TarotCounterTheme(darkTheme = dark) {
+        androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.background) {
+            LandingScreen(inProgressGame = previewInProgress, pastGames = previewPastGames)
+        }
     }
 }
 
-// Tablet landscape preview — verifies that content is centered and not stretched
-// across the full width of a 10-inch tablet screen in landscape orientation.
+// Tablet landscape: the content stays centred at 600 dp instead of stretching.
 @Preview(showBackground = true, device = Devices.PIXEL_TABLET, widthDp = 1032, heightDp = 800)
 @Composable
-fun LandingScreenTabletLandscapePreview() {
+private fun LandingScreenTabletLandscapePreview() {
     TarotCounterTheme {
-        LandingScreen()
-    }
-}
-
-// Preview with sample past games so we can see the "Past Games" section in the IDE.
-@Preview(showBackground = true)
-@Composable
-fun LandingScreenWithHistoryPreview() {
-    TarotCounterTheme {
-        LandingScreen(
-            pastGames = listOf(
-                SavedGame(
-                    id = "1",
-                    datestamp = System.currentTimeMillis(),
-                    playerNames = listOf("Alice", "Bob", "Charlie"),
-                    rounds = emptyList(),
-                    finalScores = mapOf("Alice" to 150, "Bob" to -75, "Charlie" to -75)
-                ),
-                SavedGame(
-                    id = "2",
-                    datestamp = System.currentTimeMillis() - 86_400_000, // yesterday
-                    playerNames = listOf("Alice", "Bob", "Charlie", "Dave"),
-                    rounds = emptyList(),
-                    finalScores = mapOf("Alice" to 50, "Bob" to 50, "Charlie" to -50, "Dave" to -50)
-                )
-            )
-        )
+        LandingScreen(inProgressGame = previewInProgress, pastGames = previewPastGames)
     }
 }
