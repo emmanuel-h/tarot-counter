@@ -195,6 +195,18 @@ Write the notes:
 - In **French** (`<fr-FR>` tags) — bullet points, user-facing language
 - In **English** (`<en-US>` tags) — same bullets translated
 
+### Hard length limit — 500 characters per language
+
+Google Play rejects release notes longer than **500 characters per language** (the text
+between the tags, newlines and `- ` prefixes included). French usually runs ~20 % longer
+than English, so **write the French first** and size everything against it.
+
+- **Aim for ≤ 450 characters** per language to leave a safety margin.
+- Keep bullets short (one line, ~60 characters max) and keep at most ~8 bullets.
+- For a large release, list only the most visible changes and merge related ones
+  (e.g. "score history and game-over screen redesigned") — do not try to be exhaustive.
+- Never truncate mid-sentence to fit; rewrite instead.
+
 Format:
 ```
 <fr-FR>
@@ -206,21 +218,51 @@ Format:
 </en-US>
 ```
 
-Copy the full block to clipboard:
+Put each language in its own variable, then **run the length check before copying anything**.
+The check counts Unicode characters (not bytes — `é`, `«`, `…` count as one) and fails
+if either language exceeds 500:
+
+```bash
+FR="- …
+- …"
+
+EN="- …
+- …"
+
+# Count Unicode code points with Python so accented characters are measured the way Play does.
+check_len() {
+  python3 -c 'import sys; print(len(sys.argv[1]))' "$1"
+}
+FR_LEN=$(check_len "$FR")
+EN_LEN=$(check_len "$EN")
+echo "fr-FR: ${FR_LEN}/500   en-US: ${EN_LEN}/500"
+
+if (( FR_LEN > 500 || EN_LEN > 500 )); then
+  echo "ERROR: release notes exceed the 500-character Play Store limit — shorten and re-run." >&2
+  exit 1
+fi
+(( FR_LEN > 450 || EN_LEN > 450 )) && echo "WARNING: above the 450-character target; consider trimming."
+```
+
+**If the check fails, rewrite the bullets and run it again. Do not copy to the clipboard
+or show the notes as final until both languages pass.**
+
+Once both pass, copy the full block to the clipboard:
 
 ```bash
 NOTES="<fr-FR>
-- …
+${FR}
 </fr-FR>
 
 <en-US>
-- …
+${EN}
 </en-US>"
 
 WAYLAND_DISPLAY=wayland-0 wl-copy "$NOTES"
 ```
 
-Display the notes to the user and confirm they are in the clipboard.
+Display the notes to the user together with both character counts (e.g. `fr-FR: 443/500`)
+and confirm they are in the clipboard.
 
 ---
 
@@ -228,8 +270,12 @@ Display the notes to the user and confirm they are in the clipboard.
 
 ```bash
 gh release view "$TAG" --json assets \
-  --jq '.assets[] | select(.name | endswith(".aab")) | .browserDownloadUrl'
+  --jq '.assets[] | select(.name | endswith(".aab")) | .url'
 ```
+
+> Note: `gh` exposes the public download link as `url` (e.g.
+> `https://github.com/…/releases/download/v1.2.3/app-release.aab`). The older
+> `browserDownloadUrl` field no longer exists and returns an empty string.
 
 Display the URL clearly to the user.
 
