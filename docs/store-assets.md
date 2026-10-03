@@ -16,6 +16,12 @@ Every Google Play asset is generated from the app itself, so it can be refreshed
 
 They come from `StoreScreenshots` (`src/androidTest`), a parameterized instrumented class. It renders each screen with the same sample game (Alice, Bruno, Chloé, David, five rounds) in EN/FR × light/dark, then saves a PNG on the device. Animations are off (`LocalReducedMotion`) so no capture lands mid-count.
 
+### Tablets
+
+`store/screenshots/{tablet7,tablet10}/fr/light/` holds 3 screenshots per tablet size (`2_game`, `3_round_entry`, `4_game_over`), French and light theme only. They are 1080 × 1920 px like the phone set, but the frame's density is overridden so the screen lays out at the tablet's width: 600 dp for 7" and 800 dp for 10" (portrait). Content is capped at 600 dp, so the 10" shots show the centred column with felt margins, as on a real tablet. The sizes and screen list are set by `FormFactor` in `StoreScreenshots`.
+
+### Generating
+
 It is skipped unless it is asked for explicitly, so normal test runs are unaffected:
 
 ```bash
@@ -26,6 +32,8 @@ It is skipped unless it is asked for explicitly, so normal test runs are unaffec
 rm -rf store/screenshots
 adb pull /sdcard/Android/data/fr.mandarine.tarotcounter/files/store store/screenshots
 ```
+
+`storeScreenshots` chooses the sets: `phone`, `tablet`, or `true` for both. All of them run on the phone emulator.
 
 `leaveApksInstalledAfterRun` matters: without it, Gradle uninstalls the app after the run, and the files go with it.
 

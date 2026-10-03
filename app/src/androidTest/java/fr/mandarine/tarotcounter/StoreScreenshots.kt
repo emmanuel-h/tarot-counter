@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -28,11 +29,36 @@ import org.junit.runners.Parameterized
 import java.io.File
 
 /**
+ * The device class a screenshot set pretends to be.
+ *
+ * Every set is captured as a 1080 × 1920 px PNG; only the layout width in dp
+ * changes. [widthDp] = null keeps the real device density (phone); otherwise the
+ * frame's density is overridden so 1080 px span exactly [widthDp] dp, which is
+ * what a 7" (600 dp) or 10" (800 dp) tablet in portrait lays out at.
+ *
+ * [dir] is the sub-folder under `store/screenshots/` ("" = the phone set at the root,
+ * so existing README links keep working). [screens] lists the screenshots this set
+ * keeps (null = all five): tablets only need a few for the Play listing.
+ */
+enum class FormFactor(val widthDp: Float?, val dir: String, val screens: Set<String>?) {
+    PHONE(null, "", null),
+    TABLET_7(600f, "tablet7/", TABLET_SCREENS),
+    TABLET_10(800f, "tablet10/", TABLET_SCREENS)
+}
+
+/** The three screens shown on the tablet listings. */
+private val TABLET_SCREENS = setOf("2_game", "3_round_entry", "4_game_over")
+
+/**
  * Generates the Google Play screenshots (issue #205) — not a regular test.
  *
- * Every screen is rendered with realistic sample data in EN / FR × light / dark
- * and saved as a 1080 × 1920 PNG (9:16, within Play's 2:1 limit). It only runs
- * when explicitly asked for, so normal test runs are unaffected:
+ * Every screen is rendered with realistic sample data and saved as a 1080 × 1920
+ * PNG (9:16, within Play's 2:1 limit):
+ * - phone: all five screens in EN / FR × light / dark;
+ * - 7" and 10" tablets ([FormFactor]): three screens, French, light theme only.
+ *
+ * It only runs when explicitly asked for, so normal test runs are unaffected.
+ * `storeScreenshots` picks the sets: `phone`, `tablet`, or `true` for both.
  *
  *     ./gradlew connectedDebugAndroidTest \
  *         -Pandroid.testInstrumentationRunnerArguments.class=fr.mandarine.tarotcounter.StoreScreenshots \
@@ -42,22 +68,33 @@ import java.io.File
  * See docs/store-assets.md.
  */
 @RunWith(Parameterized::class)
-class StoreScreenshots(private val locale: AppLocale, private val dark: Boolean) {
+class StoreScreenshots(
+    private val locale: AppLocale,
+    private val dark: Boolean,
+    private val formFactor: FormFactor
+) {
 
     companion object {
-        // Parameterized runs every test once per (locale, theme) pair — or not at
-        // all when screenshots were not asked for: an empty parameter list
-        // registers no test, so normal runs report nothing (a JUnit assumption
-        // would be reported as a failure by the Android test runner).
+        // Parameterized runs every test once per (locale, theme, form factor) —
+        // or not at all when screenshots were not asked for: an empty parameter
+        // list registers no test, so normal runs report nothing (a JUnit
+        // assumption would be reported as a failure by the Android test runner).
         @JvmStatic
-        @Parameterized.Parameters(name = "{0}-dark={1}")
+        @Parameterized.Parameters(name = "{0}-dark={1}-{2}")
         fun combos(): List<Array<Any>> {
-            val asked = InstrumentationRegistry.getArguments().getString("storeScreenshots") == "true"
-            if (!asked) return emptyList()
-            return listOf(
-                arrayOf(AppLocale.EN, false), arrayOf(AppLocale.EN, true),
-                arrayOf(AppLocale.FR, false), arrayOf(AppLocale.FR, true)
-            )
+            val asked = InstrumentationRegistry.getArguments().getString("storeScreenshots")
+            // Phone: 2 locales × 2 themes. Tablets: French, light theme only.
+            val phone = listOf(AppLocale.EN, AppLocale.FR).flatMap { locale ->
+                listOf(false, true).map { dark -> arrayOf<Any>(locale, dark, FormFactor.PHONE) }
+            }
+            val tablet = listOf(FormFactor.TABLET_7, FormFactor.TABLET_10)
+                .map { arrayOf<Any>(AppLocale.FR, false, it) }
+            return when (asked) {
+                "true"   -> phone + tablet
+                "phone"  -> phone
+                "tablet" -> tablet
+                else     -> emptyList()
+            }
         }
 
         private val players = listOf("Alice", "Bruno", "Chloé", "David")
@@ -86,15 +123,25 @@ class StoreScreenshots(private val locale: AppLocale, private val dark: Boolean)
 
     // ── Rendering ─────────────────────────────────────────────────────────────
 
-    /** Renders [content] in a fixed 1080 × 1920 px frame with the right theme and locale. */
+    /** Renders [content] in a fixed 1080 × 1920 px frame with the right theme, locale and form factor. */
     private fun shoot(name: String, content: @Composable () -> Unit, actions: () -> Unit = {}) {
+        // Screens this form factor doesn't need: skip quietly (the run still passes).
+        if (formFactor.screens?.contains(name) == false) return
         composeTestRule.setContent {
+            // Density = pixels per dp. For a tablet set, pick the density that makes
+            // 1080 px equal the tablet's width in dp, so the screen lays out as on a
+            // real tablet while the PNG keeps the same pixel size. Font scale is kept.
+            val deviceDensity = LocalDensity.current
+            val frameDensity = formFactor.widthDp
+                ?.let { Density(density = 1080f / it, fontScale = deviceDensity.fontScale) }
+                ?: deviceDensity
             TarotCounterTheme(darkTheme = dark) {
                 CompositionLocalProvider(
                     LocalAppLocale provides locale,
                     LocalAppTheme provides if (dark) AppTheme.DARK else AppTheme.LIGHT,
                     // No count-up mid-capture.
-                    LocalReducedMotion provides true
+                    LocalReducedMotion provides true,
+                    LocalDensity provides frameDensity
                 ) {
                     val density = LocalDensity.current
                     // requiredSize in dp that equals exactly 1080 × 1920 px on this device.
@@ -119,7 +166,7 @@ class StoreScreenshots(private val locale: AppLocale, private val dark: Boolean)
     private fun save(name: String, bitmap: Bitmap) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val theme = if (dark) "dark" else "light"
-        val dir = File(context.getExternalFilesDir(null), "store/${locale.name.lowercase()}/$theme")
+        val dir = File(context.getExternalFilesDir(null), "store/${formFactor.dir}${locale.name.lowercase()}/$theme")
         dir.mkdirs()
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }

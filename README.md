@@ -247,7 +247,7 @@ TarotCounter/
 │   │   ├── test/           # Unit tests (JVM)
 │   │   └── androidTest/    # Instrumented tests (device/emulator)
 │   └── build.gradle.kts
-├── store/                  # Play Store screenshots (en/fr × light/dark) and feature graphics
+├── store/                  # Play Store screenshots (phone: en/fr × light/dark; 7"/10" tablet: fr) and feature graphics
 ├── tools/
 │   ├── icon/               # generate_icons.py: raster icons from the vector drawables
 │   └── store/              # feature_graphic.py: Play feature graphic
