@@ -267,16 +267,13 @@ class GameScreenTest {
     }
 
     @Test
-    fun details_form_shows_all_four_chelem_options() {
+    fun chelem_sheet_lists_every_outcome() {
         launchGame()
         selectAttacker()
         composeTestRule.onNodeWithText(label(Contract.PRISE)).performClick()
-        // The chelem outcomes live in a dropdown menu: open it, then look inside the popup.
-        composeTestRule.onNodeWithTag("chelem_dropdown").performClick()
+        composeTestRule.onNodeWithTag("bonus_row_chelem").performClick()
         Chelem.entries.forEach { chelem ->
-            composeTestRule
-                .onNode(hasText(chelem.localizedName(AppLocale.EN)) and hasAnyAncestor(isPopup()))
-                .assertIsDisplayed()
+            composeTestRule.onNodeWithTag("chelem_${chelem.name}").assertExists()
         }
     }
 
@@ -305,16 +302,15 @@ class GameScreenTest {
     }
 
     @Test
-    fun details_form_shows_player_names_as_bonus_options() {
+    fun details_form_shows_three_bonus_rows() {
+        // Salon (#200): Petit au bout, Poignée and Chelem rows, each showing "None".
         launchGame()
         selectAttacker()
         composeTestRule.onNodeWithText(guard).performClick()
-        players.forEach { name ->
-            assertTrue(
-                "$name should appear as a bonus-assignment option",
-                composeTestRule.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty()
-            )
+        listOf("bonus_row_petit", "bonus_row_poignee", "bonus_row_chelem").forEach {
+            composeTestRule.onNodeWithTag(it).assertExists()
         }
+        composeTestRule.onAllNodesWithText("None").assertCountEquals(3)
     }
 
     // ── Spec: confirming a round advances the round counter ───────────────────
@@ -660,101 +656,81 @@ class GameScreenTest {
     @Test
     fun declaring_too_many_atouts_shows_error_message() {
         // 3-player game: thresholds are simple=13, double=15, triple=18.
-        // Selecting triple (18) + simple (13) = 31 > 22 → error must appear.
+        // Alice triple (18) + Bob simple (13) = 31 > 22 → error on the row and in the sheet.
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
         selectAttacker("Alice")
         composeTestRule.onNodeWithText(guard).performClick()
+        composeTestRule.onNodeWithTag("bonus_row_poignee").performClick()
+        composeTestRule.onNodeWithTag("poignee_Alice_TRIPLE").performClick()
+        composeTestRule.onNodeWithTag("poignee_Bob_SIMPLE").performClick()
 
-        // The bonus grid has 4 rows × 3 players = 12 toggleable checkboxes.
-        // Row order in traversal: Petit (0-2), Poignée (3-5), Double (6-8), Triple (9-11).
-        // Tick Alice's triple-poignée box (index 9).
-        val boxes = composeTestRule.onAllNodes(
-            androidx.compose.ui.test.hasClickAction() and
-            androidx.compose.ui.test.isToggleable()
-        )
-        boxes[9].performClick()  // Alice — triple
-        boxes[3].performClick()  // Alice — simple  (13 + 18 = 31 > 22)
-
-        // Error message must be visible.
-        composeTestRule
-            .onNodeWithTag("atout_count_error")
-            .assertIsDisplayed()
+        // Shown twice: inside the sheet and on the row behind it.
+        composeTestRule.onAllNodesWithText("Too many trumps declared", substring = true)
+            .assertCountEquals(2)
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithTag("atout_count_error").assertIsDisplayed()
     }
 
     @Test
     fun declaring_too_many_atouts_disables_confirm_button() {
-        // 3-player game: triple (18) + simple (13) = 31 > 22 → Confirm disabled.
         launchGame(playerNames = listOf("Alice", "Bob", "Charlie"))
         selectAttacker("Alice")
         composeTestRule.onNodeWithText(guard).performClick()
-
-        val boxes = composeTestRule.onAllNodes(
-            androidx.compose.ui.test.hasClickAction() and
-            androidx.compose.ui.test.isToggleable()
-        )
-        boxes[9].performClick()  // Alice — triple (18)
-        boxes[3].performClick()  // Alice — simple (13)  → total 31
-
-        // Type the points last: the soft keyboard it opens would otherwise cover
-        // the checkboxes and swallow the taps above.
         composeTestRule.onNodeWithTag("points_input").performTextInput("50")
+        Espresso.closeSoftKeyboard()
+        composeTestRule.onNodeWithTag("bonus_row_poignee").performClick()
+        composeTestRule.onNodeWithTag("poignee_Alice_TRIPLE").performClick()
+        composeTestRule.onNodeWithTag("poignee_Bob_SIMPLE").performClick()
+        composeTestRule.onNodeWithText("Done").performClick()
 
         composeTestRule.onNodeWithText("Confirm round").assertIsNotEnabled()
     }
 
     @Test
-    fun valid_multi_player_atout_count_does_not_show_error() {
-        // 4-player game: Alice simple (10) + Bob simple (10) = 20 ≤ 22 → no error.
-        launchGame()   // uses default 3-player list "Alice", "Bob", "Charlie"
-        selectAttacker("Alice")
+    fun valid_atout_count_does_not_show_error() {
+        // 3 players: Alice simple (13) ≤ 22 → no error; the row names Alice.
+        launchGame()
+        selectAttacker()
         composeTestRule.onNodeWithText(guard).performClick()
-
-        // 3-player row layout: rows × 3 columns.
-        // Poignée row starts at index 3. Alice = index 3, Bob = index 4.
-        val boxes = composeTestRule.onAllNodes(
-            androidx.compose.ui.test.hasClickAction() and
-            androidx.compose.ui.test.isToggleable()
-        )
-        boxes[3].performClick()  // Alice — simple (3-player threshold = 13)
-        // Total = 13 ≤ 22 — no error.
-
-        composeTestRule
-            .onNodeWithTag("atout_count_error")
-            .assertDoesNotExist()
+        composeTestRule.onNodeWithTag("bonus_row_poignee").performClick()
+        composeTestRule.onNodeWithTag("poignee_Alice_SIMPLE").performClick()
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithTag("atout_count_error").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("bonus_row_poignee").assert(hasText("Alice"))
     }
 
     // ── Spec: bonus label cell is fully tappable (issue #36) ─────────────────
 
     @Test
-    fun tapping_bonus_label_text_shows_tooltip() {
+    fun petit_sheet_explains_the_bonus_and_selects_a_player() {
         launchGame()
         selectAttacker()
         composeTestRule.onNodeWithText(guard).performClick()
-
-        composeTestRule.onNodeWithText("Petit").performClick()
-
+        composeTestRule.onNodeWithTag("bonus_row_petit").performClick()
+        // The former tooltip text is now the sheet's explanation line.
         composeTestRule
-            .onNodeWithText(EnStrings.petitTooltipBody, substring = true)
+            .onNodeWithText(EnStrings.petitTooltipBody.replace('\n', ' '))
             .assertIsDisplayed()
+        // Picking a player closes the sheet and shows them on the row.
+        composeTestRule.onNodeWithTag("petit_Bob").performClick()
+        composeTestRule.onNodeWithTag("sheet_petit").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("bonus_row_petit").assert(hasText("Bob"))
     }
 
     @Test
-    fun tapping_bonus_label_shows_tooltip_title() {
+    fun chelem_sheet_asks_who_called_it_and_reminds_they_play_first() {
         launchGame()
         selectAttacker()
         composeTestRule.onNodeWithText(guard).performClick()
-
-        composeTestRule.onNodeWithText("Petit").performClick()
-
-        composeTestRule
-            .onAllNodesWithText("Petit")
-            .fetchSemanticsNodes()
-            .let { nodes ->
-                assertTrue(
-                    "Tooltip title 'Petit' should be visible after tapping the label",
-                    nodes.size >= 1
-                )
-            }
+        composeTestRule.onNodeWithTag("bonus_row_chelem").performClick()
+        composeTestRule.onNodeWithTag("chelem_player_Alice").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("chelem_ANNOUNCED_REALIZED").performClick()
+        // Only the taker can call it in a 3-player game.
+        composeTestRule.onNodeWithTag("chelem_player_Alice").performClick()
+        composeTestRule.onNodeWithText(EnStrings.chelemPlaysFirst("Alice")).assertExists()
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithTag("bonus_row_chelem")
+            .assert(hasText(Chelem.ANNOUNCED_REALIZED.localizedName(AppLocale.EN)))
     }
 
     // ── Spec: system back-button on game screen (issue #38) ───────────────────
@@ -1381,6 +1357,26 @@ class GameScreenTest {
         Espresso.closeSoftKeyboard()
         composeTestRule.onNodeWithTag("live_result")
             .assert(hasText("Made by 4 → Alice +116"))
+    }
+
+    // ── Bonus rows + sheets (issue #200) ──────────────────────────────────────
+
+    @Test
+    fun poignee_levels_are_exclusive_per_player_and_bonus_reaches_the_preview() {
+        // 3 players, Guard, 0 bouts, 60 points → +116 for Alice; a simple poignée
+        // by Alice (winning camp) adds 20 × 2 defenders = +40 → +156.
+        launchGame()
+        selectAttacker()
+        composeTestRule.onNodeWithText(guard).performClick()
+        composeTestRule.onNodeWithTag("points_input").performTextInput("60")
+        Espresso.closeSoftKeyboard()
+        composeTestRule.onNodeWithTag("bonus_row_poignee").performClick()
+        composeTestRule.onNodeWithTag("poignee_Alice_DOUBLE").performClick()
+        composeTestRule.onNodeWithTag("poignee_Alice_SIMPLE").performClick()
+        composeTestRule.onNodeWithTag("poignee_Alice_SIMPLE").assertIsSelected()
+        composeTestRule.onNodeWithTag("poignee_Alice_DOUBLE").assertIsNotSelected()
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithTag("live_result").assert(hasText("Made by 4 → Alice +156"))
     }
 }
 

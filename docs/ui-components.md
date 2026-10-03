@@ -340,123 +340,20 @@ A single-line text field with a paper-white fill (`surfaceContainerLowest`), 12 
 
 ---
 
-## FormLabel
+## BonusesSection (BonusSheets.kt, issue #200)
 
 ```kotlin
 @Composable
-fun FormLabel(text: String)
-```
-
-A small bold label placed above a form section (e.g. above the bouts dropdown or the bonus grid). Uses `MaterialTheme.typography.titleSmall` and fills the available width.
-
-```kotlin
-FormLabel(strings.numberOfBouts)
-```
-
-### Side-by-side form fields with aligned labels and inputs (IntrinsicSize pattern)
-
-When two form fields are placed in a `Row` side by side, both their **labels** and their **input controls** need to align vertically — even when one label is longer than the other (e.g. "Nombre de bouts (oudlers)" wraps to two lines in French while "Points" is always one line).
-
-Using `verticalAlignment = Alignment.Bottom` on the Row aligns the form fields but pushes the shorter column down, misaligning its label (issue #145). The correct pattern is:
-
-```kotlin
-Row(
-    modifier = Modifier
-        .fillMaxWidth()
-        // Row height = tallest column's natural (non-expanded) height.
-        // Required so fillMaxHeight() inside each Column has a concrete ceiling.
-        .height(IntrinsicSize.Min),
-    horizontalArrangement = Arrangement.spacedBy(16.dp)
-    // No verticalAlignment — each Column handles its own vertical layout.
-) {
-    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-        FormLabel(strings.numberOfBouts)  // label at top
-        Spacer(Modifier.weight(1f))       // pushes the field to the bottom
-        // … form field (e.g. dropdown)
-    }
-    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-        FormLabel(strings.pointsHeader)   // label at top — vertically aligned with the left label
-        Spacer(Modifier.weight(1f))       // pushes the field to the bottom
-        // … form field (e.g. OutlinedTextField)
-    }
-}
-```
-
-Key points:
-- `Modifier.height(IntrinsicSize.Min)` gives the Row a fixed height equal to the tallest column's content height (before any expansion). This is what makes `fillMaxHeight()` inside children meaningful.
-- `fillMaxHeight()` on each Column makes it expand to that shared height.
-- `Spacer(Modifier.weight(1f))` inside each Column acts as a flexible gap — it takes whatever vertical space remains after the label, pushing the form control to the bottom of the Column.
-- Result: labels are top-aligned, form controls are bottom-aligned, regardless of how much each label wraps.
-
----
-
-## BonusInfoIcon
-
-```kotlin
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BonusInfoIcon(title: String, body: String)
-```
-
-A small ⓘ `IconButton` (20 dp) that opens a `RichTooltip` when tapped. Use it next to standalone dropdowns where a full label row would not fit (e.g. next to the Chelem dropdown in the round form). The tooltip is persistent — it stays open until the user dismisses it.
-
-```kotlin
-BonusInfoIcon(title = strings.chelemLabel, body = strings.chelemTooltipBody)
-```
-
----
-
-## BonusLabelCell
-
-```kotlin
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BonusLabelCell(label: String, body: String)
-```
-
-A tappable cell showing a bonus name followed by a small ⓘ icon. Tapping anywhere on the cell opens a `RichTooltip` explaining the bonus. Used as the label column in `CompactBonusGrid`. Content-sized — the enclosing `Row` carries the weight modifier.
-
----
-
-## CompactBonusGrid
-
-```kotlin
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CompactBonusGrid(
-    playerNames: List<String>,
-    bonusLabels: List<String>,
-    bonusTooltips: List<String>,
-    petitAuBout: String?,     onPetit: (String?) -> Unit,
-    poignee: String?,         onPoignee: (String?) -> Unit,
-    doublePoignee: String?,   onDoublePoignee: (String?) -> Unit,
-    triplePoignee: String?,   onTriplePoignee: (String?) -> Unit
+fun BonusesSection(
+    playerNames: List<String>, taker: String, partner: String?,
+    petitAuBout: String?, onPetitAuBout: (String?) -> Unit,
+    poignees: PoigneeDeclarations, onPoignees: (PoigneeDeclarations) -> Unit,
+    atoutError: Boolean, atoutErrorText: String,
+    chelem: Chelem, chelemPlayer: String?, onChelem: (Chelem, String?) -> Unit
 )
 ```
 
-A compact grid showing four player-assigned bonuses (petit au bout, poignée, double poignée, triple poignée). The header row shows player names; each data row shows a bonus label + ⓘ on the left and one `Checkbox` per player on the right. Ticking a checked box clears the assignment (sets it back to `null`).
-
-**Layout weights:** the label column occupies `0.36f` of the total row width; each player column receives an equal share of the remaining `0.64f`. Player names in the header are centred over their checkbox column and truncated with ellipsis when the name exceeds the available width (5-player games on narrow screens).
-
----
-
-## PlayerChipSelector
-
-```kotlin
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun PlayerChipSelector(
-    label: String,
-    noneLabel: String,
-    selectedPlayer: String?,
-    playerNames: List<String>,
-    onSelect: (String?) -> Unit
-)
-```
-
-A `FlowRow` of `FilterChip`s — one "None" chip followed by one chip per player. Used for the **chelem player selector**. Tapping the already-selected player deselects them (passes `null` to `onSelect`).
-
-The partner selector in 5-player games uses an inline `ExposedDropdownMenuBox` (in `GameScreen.kt`) instead — label on the left, dropdown on the right, no "None" entry.
+The bonus block of the round entry. It replaces the former `CompactBonusGrid`, `BonusLabelCell`, `BonusInfoIcon`, `PlayerChipSelector` and `FormLabel`, which have all been removed. It shows three rows (Petit au bout, Poignée, Chelem), each with its current value. Tapping a row opens a `ModalBottomSheet`; see `docs/game-flow.md` for the contents of each sheet. Every sheet is built on a private `BonusSheetFrame`: title, one explanation line, content, then a **Done** button. The pure logic (`PoigneeDeclarations`, `chelemCandidates`, `isAnnouncedChelem`) is in `Bonuses.kt`.
 
 ---
 

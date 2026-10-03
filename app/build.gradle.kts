@@ -238,8 +238,9 @@ afterEvaluate {
                 "fr.mandarine.tarotcounter.ThemeModeProvider*," +
                 "fr.mandarine.tarotcounter.SettingsScreenKt*," +
                 "fr.mandarine.tarotcounter.RulesScreenKt*," +
-                // BonusRow is a composable compiled to its own class (lives in UiComponents.kt)
-                "fr.mandarine.tarotcounter.BonusRow*," +
+                // Bonus rows + bottom sheets (composables) and their private sheet enum
+                "fr.mandarine.tarotcounter.BonusSheetsKt*," +
+                "fr.mandarine.tarotcounter.BonusSheet," +
                 // Compose compiler-generated singletons
                 "fr.mandarine.tarotcounter.ComposableSingletons*," +
                 // Android Activity and DataStore storage (can't run on JVM)

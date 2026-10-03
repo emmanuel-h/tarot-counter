@@ -51,11 +51,13 @@ Scores are zero-sum. The taker receives `±(n−1) × roundScore` for 3/4-player
 
 ### Bonuses Tracked per Round
 
-Player-assigned bonuses are entered via a compact grid with one checkbox per player.
+The round entry shows a **Bonuses** card with three rows, each with its current value (e.g. "Poignée · (1) Alice"). Tapping a row opens a bottom sheet:
 
-- **Petit au bout** — single-select: the one player who captured the 1 of trump on the last trick
-- **Poignée / Double poignée / Triple poignée** — multi-select: any number of players can each independently show their own trump hand. Each declaration contributes its own bonus to the winning camp. The minimum trump count varies by player count (3 players: 13/15/18 · 4 players: 10/13/15 · 5 players: 8/10/13) and the tooltip in the UI always shows the correct threshold for the current game. **Atout validation**: if the total declared trump thresholds exceed the 22 trumps in the deck, an error is shown and the Confirm button is disabled.
-- **Chelem** — grand slam outcome selected from a dropdown (announced+won, announced+lost, unannounced+won, defenders realized, or none), with an additional player selector to record who called it. When an announced chelem is selected and a player is chosen, the app reminds the table that this player leads the first trick. The "Defenders realized" option covers the FFT-official scenario where the defending camp wins every trick without having announced it (+200 to each defender, per R-RO201206.pdf p.6).
+- **Petit au bout**: a single choice. Pick the player who captured the 1 of trump on the last trick, or None. Picking closes the sheet.
+- **Poignée**: for each player, choose **None / Simple / Double / Triple**. Any number of players may declare, one level each, and every declaration adds its bonus to the winning camp. The sheet shows the trump thresholds for the current player count (3 players: 13/15/18 · 4 players: 10/13/15 · 5 players: 8/10/13). **Atout validation**: if the declared thresholds add up to more than the 22 trumps in the deck, an error shows in the sheet and on the row, and Confirm is disabled.
+- **Chelem**: the outcome (none, announced and realized, announced and not realized, not announced and realized, defenders realized), then who called it (the taker, or the partner in a 5-player game). For an announced chelem, the sheet reminds the table that this player leads the first trick. "Defenders realized" covers the official FFT case where the defending camp wins every trick without announcing it (+200 to each defender, per R-RO201206.pdf p.6).
+
+Every bonus is included in the live result pill before the round is confirmed.
 
 ## Architecture
 
@@ -80,6 +82,8 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── SalonUi.kt             # Pure logic behind the Salon components (initials, sizes, suit glyphs)
 ├── GameDates.kt           # Past-game date formatting in the app language
 ├── Standings.kt           # Game screen logic: ranked standings, taker grid, last rounds
+├── Bonuses.kt             # Bonus logic: poignée declarations, chelem candidates
+├── BonusSheets.kt         # Bonus rows + bottom sheets (Petit au bout, Poignée, Chelem)
 └── ui/theme/              # "Salon" design tokens: colours (+ TarotColors), typography, shapes, spacing, contrast helper
 ```
 
@@ -196,6 +200,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ColorContrastTest.kt` | WCAG relative luminance and contrast ratio helpers |
 | `SalonPaletteTest.kt` | Every text/background pair of both themes ≥ 4.5:1; player tones |
 | `SalonUiTest.kt` | Salon component logic: player initials, avatar/score sizes, suit glyphs, top-bar action limit |
+| `BonusesTest.kt` | Bonus sheet logic: one poignée level per player, declarants order, chelem candidates, announced chelems |
 | `RoundPreviewTest.kt` | Live round result: win/short margin, distribution (3 and 5 players), bonuses, zero-sum |
 | `StandingsTest.kt` | Game screen logic: ranked standings (ties, leaders, trend), taker grid columns, last rounds |
 | `HomeLogicTest.kt` | Home screen logic: current leader(s), past-game date formatting, app → Java locale |
