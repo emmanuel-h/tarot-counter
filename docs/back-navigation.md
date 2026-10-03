@@ -8,7 +8,8 @@ The Android system back button (hardware key or gesture swipe) is handled consis
 
 | Screen | System back button |
 |---|---|
-| Game screen | Navigate directly to landing page (no dialog) |
+| Game screen — round entry open | Return to "Who took?" (the taker and the form are kept) |
+| Game screen — between rounds | Navigate directly to landing page (no dialog) |
 | Score history overlay | Navigate directly to landing page (no dialog) |
 | Final Score screen | Show a confirmation dialog first |
 
@@ -28,6 +29,14 @@ BackHandler(enabled = !showFinalScore) { onEndGame() }
 ```
 
 When `showScoreHistory` is true (history overlay is visible), this handler still fires and calls `onEndGame()`, which navigates to the landing page.
+
+A second handler, declared after the first so it takes priority, closes the round-entry view (issue #198):
+
+```kotlin
+BackHandler(enabled = !showFinalScore && !showScoreHistory && roundEntryOpen) {
+    roundEntryOpen = false
+}
+```
 
 ### Final Score screen
 
