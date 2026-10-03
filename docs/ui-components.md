@@ -175,7 +175,7 @@ fun SalonCard(
 )
 ```
 
-Paper surface (`colorScheme.surface`), 16 dp corners (`shapes.medium`), 1 dp hairline border (`colorScheme.outline`) and a soft 1 dp elevation. The optional `title` is drawn in Cormorant (`headlineMedium`) and marked as a heading for screen readers. Children are stacked with a 16 dp gap.
+Paper surface (`colorScheme.surface`), 16 dp corners (`shapes.medium`), 1 dp hairline border (`colorScheme.outline`) and a soft 1 dp elevation. The optional `title` is drawn in `headlineMedium` and marked as a heading for screen readers. Children are stacked with a 16 dp gap.
 
 ```kotlin
 SalonCard(title = strings.newGame, modifier = Modifier.fillMaxWidth()) {
@@ -233,7 +233,7 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier,
                   trailing: (@Composable () -> Unit)? = null)
 ```
 
-A left-aligned Cormorant title (`headlineSmall`, marked as a heading) with an optional trailing composable pushed to the right edge, e.g. a "See all" `AppTextButton`. It replaces the section headings of the redesigned screens (`FormLabel` remains for small form-field labels until the round-entry redesign, #199).
+A left-aligned title (`headlineSmall`, marked as a heading) with an optional trailing composable pushed to the right edge, e.g. a "See all" `AppTextButton`. It replaces the section headings of the redesigned screens (`FormLabel` remains for small form-field labels until the round-entry redesign, #199).
 
 ### ScoreText
 
@@ -260,7 +260,7 @@ fun SalonTopBar(
 class TopBarAction(val icon: ImageVector, val contentDescription: String, val onClick: () -> Unit)
 ```
 
-A 64 dp bar: optional back arrow, the title on the left (Cormorant `headlineMedium`, one line, ellipsised, marked as a heading), and up to two icon buttons on the right. All buttons have 48 dp touch targets. Passing three or more actions throws `IllegalArgumentException` (`requireValidTopBarActions`). **Replaces the old `ScreenHeader`**, which has been removed; Settings, Score history and Final score now use `SalonTopBar(title = …, onBack = onBack)`.
+A 64 dp bar: optional back arrow, the title on the left (`headlineMedium`, one line, ellipsised, marked as a heading), and up to two icon buttons on the right. All buttons have 48 dp touch targets. Passing three or more actions throws `IllegalArgumentException` (`requireValidTopBarActions`). **Replaces the old `ScreenHeader`**, which has been removed; Settings, Score history and Final score now use `SalonTopBar(title = …, onBack = onBack)`.
 
 ```kotlin
 SalonTopBar(

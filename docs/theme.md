@@ -11,7 +11,7 @@ Dynamic colour (Material You) is deliberately disabled: the Salon palette is app
 | `ui/theme/Color.kt` | Raw colour values for both themes and the player tones |
 | `ui/theme/Theme.kt` | `LightColorScheme`, `DarkColorScheme`, and the `TarotCounterTheme` composable |
 | `ui/theme/TarotColors.kt` | Extended colours Material has no slot for (`TarotColors`, `LocalTarotColors`, `MaterialTheme.tarotColors`) |
-| `ui/theme/Type.kt` | Cormorant Garamond and Figtree font families + the `Typography` scale |
+| `ui/theme/Type.kt` | Figtree font family + the `Typography` scale |
 | `ui/theme/Shape.kt` | Corner radii (`Shapes`) |
 | `ui/theme/Dimens.kt` | Spacing grid, screen margin, button heights, max content width |
 | `ui/theme/ColorContrast.kt` | WCAG `contrastRatio()` used to test readability |
@@ -83,26 +83,25 @@ Every text/background pair of both themes reaches the WCAG AA ratio of **4.5:1**
 
 ## Typography
 
-Two families are bundled as static TTF files under `res/font/` (both SIL Open Font License, downloaded from Google Fonts):
+The whole app uses **one** font family, so every screen reads the same. Hierarchy comes from size and weight only, never from a second typeface. Figtree is bundled as static TTF files under `res/font/` (SIL Open Font License, downloaded from Google Fonts):
 
 | Family | Weights | Files | Used for |
 |---|---|---|---|
-| **Cormorant Garamond** | 600, 700 | `cormorant_garamond_semibold.ttf`, `cormorant_garamond_bold.ttf` | Display: screen titles, player names, big numbers |
-| **Figtree** | 400, 500, 600 | `figtree_regular.ttf`, `figtree_medium.ttf`, `figtree_semibold.ttf` | All UI text: body, labels, buttons |
+| **Figtree** | 400, 500, 600, 700 | `figtree_regular.ttf`, `figtree_medium.ttf`, `figtree_semibold.ttf`, `figtree_bold.ttf` | Every text style: titles, big numbers, body, labels, buttons |
 
-Static files are used instead of variable fonts because Android 7.x (API 24–25, the app's minimum) ignores the weight axis of variable fonts. Cinzel, the previous heading font, was removed.
+Static files are used instead of variable fonts because Android 7.x (API 24–25, the app's minimum) ignores the weight axis of variable fonts. Cormorant Garamond (the former display serif) and Cinzel (the heading font before it) were removed so the app no longer mixes typefaces.
 
 ### Type scale
 
 | Style | Family | Weight | Size | Typical use |
 |---|---|---|---|---|
-| `displayLarge` | Cormorant | 600 | 56 sp | Points being entered |
-| `displayMedium` | Cormorant | 700 | 40 sp | Winner name |
-| `displaySmall` | Cormorant | 700 | 32 sp | Leader score |
-| `headlineLarge` | Cormorant | 700 | 28 sp | App title |
-| `headlineMedium` | Cormorant | 600 | 26 sp | Screen titles ("Round 5", "New game") |
-| `headlineSmall` | Cormorant | 600 | 24 sp | Section titles ("Who took?") |
-| `titleLarge` | Cormorant | 600 | 22 sp | Smaller section titles ("Past games") |
+| `displayLarge` | Figtree | 600 | 56 sp | Points being entered |
+| `displayMedium` | Figtree | 700 | 40 sp | Winner name |
+| `displaySmall` | Figtree | 700 | 32 sp | Leader score |
+| `headlineLarge` | Figtree | 700 | 28 sp | App title |
+| `headlineMedium` | Figtree | 600 | 26 sp | Screen titles ("Round 5", "New game") |
+| `headlineSmall` | Figtree | 600 | 24 sp | Section titles ("Who took?") |
+| `titleLarge` | Figtree | 600 | 22 sp | Smaller section titles ("Past games") |
 | `titleMedium` | Figtree | 600 | 16 sp | List item titles |
 | `titleSmall` | Figtree | 600 | 14 sp | Small titles |
 | `bodyLarge` / `Medium` / `Small` | Figtree | 400 | 16 / 14 / 13 sp | Running text |
@@ -112,7 +111,7 @@ Static files are used instead of variable fonts because Android 7.x (API 24–25
 
 ### Tabular figures
 
-Every style turns on the OpenType features `tnum` and `lnum` (`fontFeatureSettings = "tnum, lnum"`). `tnum` gives every digit the same width, so score columns line up: `+312` and `−48` stay right-aligned digit for digit. `lnum` switches Cormorant Garamond from its default *old-style* figures (where "1" looks like a small-caps "I" and some digits dip below the line) to lining figures that sit on the baseline — "Round 1" reads correctly. Because both are part of every style, any number in the app is aligned without extra work.
+Every style turns on the OpenType features `tnum` and `lnum` (`fontFeatureSettings = "tnum, lnum"`). `tnum` gives every digit the same width, so score columns line up: `+312` and `−48` stay right-aligned digit for digit. `lnum` forces lining figures that sit on the baseline (some fonts default to *old-style* figures that dip below the line), so "Round 1" always reads correctly. Because both are part of every style, any number in the app is aligned without extra work.
 
 ## Shapes
 

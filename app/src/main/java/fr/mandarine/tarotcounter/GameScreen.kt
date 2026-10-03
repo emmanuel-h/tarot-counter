@@ -529,7 +529,7 @@ fun GameScreen(
             //                [G. sans ×4] [G. contre ×6]
             //   Bouts (0)(1)(2)(3)         needs 41     bout chips
             //   ┌ Points scored   (Attack|Defense) ┐
-            //   │ 47 / 91                           │    big Cormorant number
+            //   │ 47 / 91                           │    big number
             //   │ ✓ Made by 6 → Chloé +186          │    live result pill
             //   └───────────────────────────────────┘
             //   Partner (5 players)  avatar chips
@@ -1128,7 +1128,7 @@ private fun EntryLabel(text: String, helper: String? = null) {
     }
 }
 
-// The four contracts as a 2 × 2 grid of cards: name in Cormorant on the left,
+// The four contracts as a 2 × 2 grid of cards: name in a title style on the left,
 // multiplier on the right. The selected card is filled felt green, its multiplier
 // in brass.
 @Composable
@@ -1224,7 +1224,7 @@ private fun BoutChips(bouts: Int, label: String, helper: String, onSelect: (Int)
     }
 }
 
-// The points card: a large Cormorant number with "/ 91", an Attack | Defense toggle,
+// The points card: a large number with "/ 91", an Attack | Defense toggle,
 // and the live result pill once a valid number is typed.
 @Composable
 private fun PointsCard(

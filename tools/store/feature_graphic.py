@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Draws the Google Play feature graphic (1024 x 500) in the Salon style (issue #205):
-felt green, the app icon in its brass ring, the Cormorant wordmark, a brass
+felt green, the app icon in its brass ring, the Figtree wordmark, a brass
 double hairline with the four suits, and a one-line tagline.
 
     python3 tools/store/feature_graphic.py
@@ -69,8 +69,8 @@ def graphic(lang):
 
     # Wordmark, then brass hairlines with suits, then tagline.
     x0 = 430
-    title = ImageFont.truetype(str(FONTS / "cormorant_garamond_bold.ttf"), 92)
-    draw.text((x0, 118), TITLES[lang], font=title, fill=IVORY)
+    title = ImageFont.truetype(str(FONTS / "figtree_bold.ttf"), 76)
+    draw.text((x0, 136), TITLES[lang], font=title, fill=IVORY)
 
     y = 262
     suits = ImageFont.truetype(SUIT_FONT, 26)

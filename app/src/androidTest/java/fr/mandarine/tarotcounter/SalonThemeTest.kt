@@ -10,7 +10,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import fr.mandarine.tarotcounter.ui.theme.CormorantGaramond
 import fr.mandarine.tarotcounter.ui.theme.DarkColorScheme
 import fr.mandarine.tarotcounter.ui.theme.DarkTarotColors
 import fr.mandarine.tarotcounter.ui.theme.Figtree
@@ -102,21 +101,27 @@ class SalonThemeTest {
     }
 
     @Test
-    fun typography_uses_cormorant_for_titles_and_figtree_for_ui_text() {
-        var headlineFamily: Any? = null
-        var bodyFamily: Any? = null
+    fun typography_uses_figtree_for_every_style() {
+        var families: List<Any?> = emptyList()
         var bodyFeatures: String? = null
         composeTestRule.setContent {
             TarotCounterTheme {
-                headlineFamily = MaterialTheme.typography.headlineMedium.fontFamily
-                bodyFamily = MaterialTheme.typography.bodyLarge.fontFamily
+                // All 15 Material 3 styles: one font family across the whole app.
+                families = with(MaterialTheme.typography) {
+                    listOf(
+                        displayLarge, displayMedium, displaySmall,
+                        headlineLarge, headlineMedium, headlineSmall,
+                        titleLarge, titleMedium, titleSmall,
+                        bodyLarge, bodyMedium, bodySmall,
+                        labelLarge, labelMedium, labelSmall
+                    ).map { it.fontFamily }
+                }
                 bodyFeatures = MaterialTheme.typography.bodyLarge.fontFeatureSettings
             }
         }
         composeTestRule.waitForIdle()
-        assertEquals(CormorantGaramond, headlineFamily)
-        assertEquals(Figtree, bodyFamily)
-        // Tabular figures so score columns line up.
+        assertEquals(15, families.size)
+        families.forEach { assertEquals(Figtree, it) }
         // Tabular (tnum) + lining (lnum) figures so score columns line up.
         assertEquals("tnum, lnum", bodyFeatures)
     }

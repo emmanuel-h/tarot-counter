@@ -351,7 +351,7 @@ fun scoreColor(total: Int): Color =
  * a soft, low shadow.
  *
  * @param title           Optional heading drawn at the top of the card
- *                        (Cormorant, e.g. "New game").
+ *                        (e.g. "New game").
  * @param contentPadding  Space between the border and the content.
  * @param content         The card body. `ColumnScope.() -> Unit` means the lambda
  *                        runs *inside* a Column, so children stack vertically and
@@ -571,7 +571,7 @@ private fun RowScope.DoubleHairline(color: Color) {
 }
 
 /**
- * A left-aligned section title in Cormorant, with an optional trailing action
+ * A left-aligned section title, with an optional trailing action
  * (e.g. a "See all" link) pushed to the right edge.
  *
  * @param title    The section title.
@@ -650,7 +650,7 @@ fun ScoreText(
  *
  * All buttons have 48 dp touch targets (Material's accessibility minimum).
  *
- * @param title                  Screen title (Cormorant).
+ * @param title                  Screen title (headlineMedium).
  * @param onBack                 Back-arrow callback; `null` hides the arrow.
  * @param backContentDescription Screen-reader label of the back arrow;
  *                               defaults to the localized "Back to game".

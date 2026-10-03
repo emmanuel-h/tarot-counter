@@ -35,7 +35,7 @@ adb pull /sdcard/Android/data/fr.mandarine.tarotcounter/files/store store/screen
 
 - felt green with a slight vignette,
 - the icon in its brass ring,
-- the Cormorant wordmark (the localized app name: "Tarot Counter" / "Tarot"),
+- the Figtree Bold wordmark (the localized app name: "Tarot Counter" / "Tarot"),
 - a brass double hairline with the four suits,
 - a tagline.
 

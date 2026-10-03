@@ -36,7 +36,7 @@ The landing screen lets users configure a game before it starts. It currently ha
 
 The screen is one scrollable column, capped at 600 dp and centred on tablets. `imePadding()` keeps the focused name field above the keyboard.
 
-1. **Top bar**: the app name as a Cormorant wordmark (`headlineLarge`) on the left, the settings gear on the right (48 dp touch target). It replaces the old centred title and the emoji suits row.
+1. **Top bar**: the app name as a bold wordmark (`headlineLarge`) on the left, the settings gear on the right (48 dp touch target). It replaces the old centred title and the emoji suits row.
 2. **Resume card**: a `FeltCard` shown at the **top** when an unfinished game is saved. It shows:
    - a brass "GAME IN PROGRESS" overline
    - the next round number

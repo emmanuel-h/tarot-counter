@@ -101,7 +101,7 @@ fun RulesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
-// A section: Cormorant heading (left-aligned) then a body paragraph.
+// A section: heading (left-aligned) then a body paragraph.
 @Composable
 private fun RulesSection(title: String, body: String) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {

@@ -226,7 +226,7 @@ fun FinalScoreScreen(
 }
 
 // The felt-green winner card: trophy, "WINNER" (or "IT'S A TIE!"), the name(s)
-// in Cormorant, the winning score in brass, and "8 rounds · 4 players".
+// in a display style, the winning score in brass, and "8 rounds · 4 players".
 @Composable
 private fun WinnerCard(winners: List<String>, score: Int, detail: String, strings: AppStrings) {
     FeltCard(

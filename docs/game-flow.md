@@ -101,7 +101,7 @@ Round entry turns scoring into a guided panel that shows the result **before** t
 │ Bouts (oudlers)     needs 41 │
 │ ( 0 ) ( 1 ) (•2 ) ( 3 )      │  bout chips, needs = requiredPoints()
 │ ┌ Points scored (Attack|Defense) ┐
-│ │ 47 / 91                    │ │  large Cormorant number
+│ │ 47 / 91                    │ │  large number
 │ │ ✓ Made by 6 → Chloé +124   │ │  live result pill
 │ └────────────────────────────┘ │
 │ Partner called by the taker  │  5 players only: avatar chips

@@ -121,7 +121,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 |---|---|
 | Language | Kotlin 2.2.10 |
 | UI | Jetpack Compose (BOM 2024.09.00) |
-| Design system | Material 3 with the "Salon" design tokens — ivory/felt-green palette with a WCAG-checked dark variant, dynamic color disabled; bundled Cormorant Garamond (display) + Figtree (UI) fonts with tabular figures |
+| Design system | Material 3 with the "Salon" design tokens — ivory/felt-green palette with a WCAG-checked dark variant, dynamic color disabled; a single bundled font, Figtree, for all text, with tabular figures |
 | Persistence | DataStore 1.1.1 + kotlinx.serialization 1.7.3 |
 | Splash screen | androidx core-splashscreen 1.2.0 |
 | Min SDK | 24 (Android 7.0) |
