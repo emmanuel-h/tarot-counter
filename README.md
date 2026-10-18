@@ -19,6 +19,7 @@ TarotCounter guides players through a game round by round:
 11. **Motion, haptics and accessibility**: screens fade through into each other. After each round the standings count up to the new totals and the rows slide into their new ranks. Tapping a taker and confirming a round give light haptic feedback. Everything is instant when Android's **Remove animations** setting is on. All tap targets are at least 48 dp, every icon and avatar has a screen-reader label, and the layout was checked at 200 % font size and on a 10" tablet in landscape.
 12. **Salon look from the first frame**: a felt-green launcher icon with the three bouts in a brass ring, and a matching splash screen (ivory, or night felt in dark mode) that hands over to the app without a white flash.
 13. **Player statistics**: the leaderboard icon on the home screen opens one card per player, computed from the saved games: games played, wins (ties count for every co-winner), take rate, average final score and success rate per contract. See [`docs/statistics.md`](docs/statistics.md).
+14. **Play Store review prompt**: on the Game Over screen of the 3rd finished game, the app asks Google Play to show its in-app "Rate this app" sheet (In-App Review API). It is asked only once, never mid-game, and the game flow is the same whether or not the player rates. See [`docs/review-prompt.md`](docs/review-prompt.md).
 
 The app rotates the **dealer** each round and lets the user explicitly select the **attacker** (the player who won the bidding), determines win/loss, and computes each player's score for the round.
 
@@ -111,6 +112,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── BonusSheets.kt         # Bonus rows + bottom sheets (Petit au bout, Poignée, Chelem)
 ├── ScoreChart.kt          # Game over chart data: cumulative series, bounds, x labels
 ├── ScoreHistoryLogic.kt   # Score history layout logic: sideways scroll, leader columns
+├── ReviewPrompt.kt        # Play Store review: pure "should ask" policy + Play In-App Review launcher
 └── ui/theme/              # "Salon" design tokens: colours (+ TarotColors), typography, shapes, spacing, contrast helper
 ```
 
@@ -133,6 +135,7 @@ app/src/main/java/fr/mandarine/tarotcounter/
 | Design system | Material 3 with the "Salon" design tokens — ivory/felt-green palette with a WCAG-checked dark variant, dynamic color disabled; a single bundled font, Figtree, for all text, with tabular figures |
 | Persistence | DataStore 1.1.1 + kotlinx.serialization 1.7.3 |
 | Splash screen | androidx core-splashscreen 1.2.0 |
+| In-app review | Google Play review-ktx 2.0.2 |
 | Min SDK | 24 (Android 7.0) |
 | Target SDK | 36 (Android 15) |
 | Build | AGP 9.1.0, Gradle 9.3.1, Java 11 |
@@ -240,10 +243,12 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ScoreSheetTest.kt` | Shared score sheet: header lines (EN/FR), tie, ranking, round labels and running totals, text format, image layout |
 | `HomeLogicTest.kt` | Home screen logic: current leader(s), past-game date formatting, app → Java locale |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
+| `ReviewPromptTest.kt` | Play review prompt: threshold / already-asked policy, finished-game counting, `shouldRequestReview`, `markReviewRequested` |
+| `PlayReviewLauncherTest.kt` | Play In-App Review launch against `FakeReviewManager` (instrumented) |
 | `LandingScreenTest.kt` | Home screen: top bar, resume card, New Game card (player count, name fields with avatars, duplicate validation, dealer), past-game rows |
 | `StatisticsScreenTest.kt` | Statistics screen: empty state, one card per player, back arrow |
 | `SettingsScreenTest.kt` | Settings: groups, theme/language toggles, feedback row, version, rules page (tables, close, system back) |
-| `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
+| `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button, review prompt on Game Over |
 | `ScoreHistoryScreenTest.kt` | Score history: table (header avatars, totals, sideways scroll), round cards, empty state, toggle, back navigation |
 | `FinalScoreScreenTest.kt` | Game over: winner card, tie, ranking order, chart description, See all rounds, stacked actions, leave confirmation, share dialog |
 | `SalonThemeTest.kt` | Theme wiring: light/dark tokens, `scoreColor()`, fonts, shapes |
@@ -308,6 +313,7 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/statistics.md`](docs/statistics.md) — player statistics: figures, rules, name matching, limitations
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen
+- [`docs/review-prompt.md`](docs/review-prompt.md) — Play Store in-app review prompt: when it is asked, persisted counter/flag, tests
 - [`docs/score-color.md`](docs/score-color.md) — score colour-coding convention: `scoreColor()` helper, where it is used, winner column
 - [`docs/theme.md`](docs/theme.md) — "Salon" design tokens: light/dark palettes, player tones, contrast guarantee, typography, shapes, spacing
 - [`docs/back-navigation.md`](docs/back-navigation.md) — system back button behaviour per screen, BackHandler implementation, confirmation dialog

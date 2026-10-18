@@ -28,6 +28,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -1506,6 +1508,81 @@ class GameScreenTest {
         // Five players are active, so a partner is called — never the dead dealer.
         composeTestRule.onNodeWithTag("partner_Charlie").performScrollTo().assertExists()
         composeTestRule.onNodeWithTag("partner_Alice").assertDoesNotExist()
+    }
+
+    // ── Spec: Play Store review prompt (issue #223) ───────────────────────────
+
+    /**
+     * Renders [GameScreen] with a [FakeGameStorage] seeded with [finishedGames] and a
+     * fake `requestReview` that counts its calls (the real Play launch is covered by
+     * PlayReviewLauncherTest). Returns the storage and a call-count reader.
+     */
+    private fun launchGameWithReview(
+        finishedGames: Int,
+        reviewRequested: Boolean = false
+    ): Pair<FakeGameStorage, () -> Int> {
+        val storage = FakeGameStorage()
+        storage.seedReviewState(finishedGames, reviewRequested)
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            storage
+        )
+        viewModel.initGame(players, inProgressGame = null)
+        var calls = 0
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                GameScreen(
+                    viewModel     = viewModel,
+                    requestReview = { calls++; true }
+                )
+            }
+        }
+        return storage to { calls }
+    }
+
+    /** Skips one round and ends the game, landing on Game Over. */
+    private fun finishGame() {
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule.onNodeWithText("End Game").performClick()
+        composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
+    }
+
+    @Test
+    fun review_is_requested_on_game_over_of_the_third_finished_game() {
+        val (storage, calls) = launchGameWithReview(finishedGames = 2)
+        finishGame()
+        // The prompt waits a moment after Game Over appears; wait for it.
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { calls() == 1 }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { storage.reviewRequested }
+        assertEquals(3, storage.finishedGameCount)
+    }
+
+    @Test
+    fun review_is_not_requested_before_the_threshold() {
+        val (storage, calls) = launchGameWithReview(finishedGames = 0)
+        finishGame()
+        composeTestRule.mainClock.advanceTimeBy(3_000)
+        composeTestRule.waitForIdle()
+        assertEquals(0, calls())
+        assertFalse(storage.reviewRequested)
+    }
+
+    @Test
+    fun review_is_not_requested_mid_game_even_past_the_threshold() {
+        val (_, calls) = launchGameWithReview(finishedGames = 5)
+        composeTestRule.onNodeWithText("Skip round").performClick()
+        composeTestRule.mainClock.advanceTimeBy(3_000)
+        composeTestRule.waitForIdle()
+        assertEquals(0, calls())
+    }
+
+    @Test
+    fun review_is_not_requested_again_once_asked() {
+        val (_, calls) = launchGameWithReview(finishedGames = 5, reviewRequested = true)
+        finishGame()
+        composeTestRule.mainClock.advanceTimeBy(3_000)
+        composeTestRule.waitForIdle()
+        assertEquals(0, calls())
     }
 }
 

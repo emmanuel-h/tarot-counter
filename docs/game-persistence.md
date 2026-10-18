@@ -101,7 +101,7 @@ MainActivity
 
 ### Component responsibilities
 
-**`GameStorage`** — thin I/O layer. Reads and writes JSON strings to DataStore. No business logic. Manages two independent keys: one for the completed-game list, one for the single in-progress entry.
+**`GameStorage`** — thin I/O layer. Reads and writes JSON strings to DataStore. No business logic. Manages two independent keys: one for the completed-game list, one for the single in-progress entry. It also stores the user preferences (`app_locale`, `app_theme`) and, for the Play Store review prompt, `finished_game_count` (Int, incremented once per finished game, not capped) and `review_requested` (Boolean) — see [`review-prompt.md`](review-prompt.md).
 
 **`GameViewModel`** — bridges storage and UI. Exposes two `StateFlow`s for the UI to observe, and launches coroutines to write without blocking the main thread. `saveGame()` atomically saves the completed game and clears the in-progress entry.
 

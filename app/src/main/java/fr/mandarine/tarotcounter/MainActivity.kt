@@ -53,6 +53,10 @@ class MainActivity : ComponentActivity() {
             // activity is permanently finished (e.g. user presses the system back button).
             val gameViewModel: GameViewModel = viewModel()
 
+            // Wraps the Google Play In-App Review API (issue #223). `remember` keeps the
+            // same instance across recompositions instead of rebuilding it every frame.
+            val reviewLauncher = remember { PlayReviewLauncher(this@MainActivity) }
+
             // `collectAsState()` subscribes to these StateFlows and converts them into
             // Compose state. Any DataStore update automatically triggers a recomposition.
             val pastGames      by gameViewModel.pastGames.collectAsState()
@@ -171,6 +175,9 @@ class MainActivity : ComponentActivity() {
                                 // Called when the user presses "New Game" on FinalScoreScreen.
                                 // The game is already saved at this point — just navigate away.
                                 onEndGame = { currentScreen = Screen.SETUP },
+                                // Shows Play's review sheet over Game Over when GameScreen asks.
+                                // `this@MainActivity` is the Activity the sheet is attached to.
+                                requestReview = { reviewLauncher.launch(this@MainActivity) },
                                 modifier  = screenModifier
                             )
                         }

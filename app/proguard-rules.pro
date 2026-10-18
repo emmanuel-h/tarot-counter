@@ -26,3 +26,9 @@
 # Compose libraries bundle their own consumer ProGuard rules inside their AARs,
 # so no extra rules are required here.  The proguard-android-optimize.txt
 # baseline (referenced in build.gradle.kts) covers the Android framework side.
+
+# ── Google Play In-App Review (issue #223) ────────────────────────────────────
+# review-ktx references a compile-time-only annotation from Play Services
+# (NoNullnessRewrite) that is not shipped at runtime. It has no effect on
+# behaviour, so R8 is told not to fail on the missing class.
+-dontwarn com.google.android.gms.common.annotation.NoNullnessRewrite

@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +41,14 @@ private val LOCALE_KEY = stringPreferencesKey("app_locale")
 // The key under which the user's chosen theme is stored ("LIGHT" or "DARK").
 private val THEME_KEY = stringPreferencesKey("app_theme")
 
+// How many games the user has finished (issue #223). Unlike the saved-games list,
+// which is capped at MAX_SAVED_GAMES, this counter keeps growing.
+// `intPreferencesKey` stores an Int instead of a String.
+private val FINISHED_GAMES_KEY = intPreferencesKey("finished_game_count")
+
+// true once the Play Store review flow has been launched, so it is never shown again.
+private val REVIEW_REQUESTED_KEY = booleanPreferencesKey("review_requested")
+
 // How many past games to keep on the device.
 // Older games beyond this limit are dropped when a new game is saved.
 private const val MAX_SAVED_GAMES = 20
@@ -66,6 +76,11 @@ interface GameStorageInterface {
     suspend fun clearInProgressGame()
     suspend fun saveLocale(locale: AppLocale)
     suspend fun saveTheme(theme: AppTheme)
+    // ── Review prompt (issue #223) ──
+    fun loadFinishedGameCount(): Flow<Int>
+    fun loadReviewRequested(): Flow<Boolean>
+    suspend fun incrementFinishedGameCount()
+    suspend fun markReviewRequested()
 }
 
 // GameStorage handles all DataStore read and write operations for saved games.
@@ -188,6 +203,36 @@ class GameStorage(private val context: Context) : GameStorageInterface {
             }.take(MAX_SAVED_GAMES)   // always enforce the storage cap
 
             prefs[GAMES_KEY] = json.encodeToString(updated)
+        }
+    }
+
+    // ── Review prompt (issue #223) ────────────────────────────────────────────
+
+    // Emits how many games have been finished so far (0 when never written).
+    // `?: 0` is the Elvis operator: "use 0 if the left side is null".
+    override fun loadFinishedGameCount(): Flow<Int> =
+        context.dataStore.data
+            .catch { emit(emptyPreferences()) }
+            .map { prefs -> prefs[FINISHED_GAMES_KEY] ?: 0 }
+
+    // Emits true once the review flow has been launched.
+    override fun loadReviewRequested(): Flow<Boolean> =
+        context.dataStore.data
+            .catch { emit(emptyPreferences()) }
+            .map { prefs -> prefs[REVIEW_REQUESTED_KEY] ?: false }
+
+    // Adds one to the finished-games counter. Doing the read and the write inside
+    // the same `edit` block makes the increment atomic (no lost updates).
+    override suspend fun incrementFinishedGameCount() {
+        context.dataStore.edit { prefs ->
+            prefs[FINISHED_GAMES_KEY] = (prefs[FINISHED_GAMES_KEY] ?: 0) + 1
+        }
+    }
+
+    // Remembers that the review flow has been launched.
+    override suspend fun markReviewRequested() {
+        context.dataStore.edit { prefs ->
+            prefs[REVIEW_REQUESTED_KEY] = true
         }
     }
 }
