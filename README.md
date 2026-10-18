@@ -6,7 +6,7 @@ An Android app for tracking scores in **French Tarot**, a classic French trick-t
 
 TarotCounter guides players through a game round by round:
 
-1. **Home / setup** — a Salon top bar shows the app name with a **⚙** settings button. If a game is in progress, a felt-green **resume card** comes first: round number, avatar stack, current leader and score, **Resume** button. A **New Game** card groups the setup: choose 3, 4 or 5 players, enter optional names (each field shows the seat's coloured avatar), and choose the **first dealer** (random or a specific player). Duplicate names are flagged inline in real time, and Start stays disabled until every name is unique.
+1. **Home / setup** — a Salon top bar shows the app name with a **⚙** settings button. If a game is in progress, a felt-green **resume card** comes first: round number, avatar stack, current leader and score, **Resume** button. A **New Game** card groups the setup: choose 3, 4, 5 or 6 players (at 6 the dealer sits out each round; at 4 this is an option, see [dead player](docs/dead-player.md)), enter optional names (each field shows the seat's coloured avatar), and choose the **first dealer** (random or a specific player). Duplicate names are flagged inline in real time, and Start stays disabled until every name is unique.
 2. **Game screen, between rounds**: the scores come first. A dealer chip sits under the "Round N" title (with undo and history icon buttons). After round 1 comes a ranked **Standings** card: rank, avatar, name, a small ▲/▼ trend since the last round, and the score; leaders are highlighted in brass. Then **"Who took?"**: one large avatar tile per player (3 / 2×2 / 3+2). Then **Last rounds**: the latest 3, with **See all** opening the history. The bottom bar holds **End Game** (red text) and **Skip round**.
 3. **Round entry**: tapping a taker tile opens "ROUND 5 · Chloé takes" (the back arrow changes the taker). Pick one of four **contract cards** (name + ×multiplier), then the **bouts** chips (0–3, with "needs 41"). Enter the **points** in a large number field with an **Attack | Defense** toggle; defense points are converted with `takerPoints = 91 − defenderPoints`. A **live result** pill ("Made by 6 → Chloé +124" / "Short by 4 → …") updates as you type, bonuses included. Then choose the partner (avatar chips, 5 players) and bonuses, and tap **Confirm round**.
 4. **Score history screen**: open it from the chart icon, **See all** or **See all rounds**. A **Table | List** toggle switches views. The **Table** has a pinned header of avatars and names, running totals, brass-tinted leader column(s), and scrolls sideways for 5 players on narrow phones. The **List** shows one card per round, newest first: an "R4" badge, taker avatar, contract, bouts and points, a Won/Lost chip and the taker's score change; skipped rounds are muted. Before the first round, an empty state is shown.
@@ -60,6 +60,10 @@ roundScore = (25 + |scoredPoints − requiredPoints(bouts)|) × multiplier
 ```
 
 Scores are zero-sum. The taker receives `±(n−1) × roundScore` for 3/4-player games, `±2 × roundScore` in 5-player games (partner gets `±1 × roundScore`); each defender receives `∓roundScore`.
+
+### Dead Player (6 players, optional at 4)
+
+At a table of **6**, the dealer of each round sits out (« le mort ») and scores **0**; the five others play a normal 5-player round (called partner, 5-player poignée thresholds). At a table of **4**, the same rule is an option on the New Game card (the other three play a 3-player round). The dealer rotates, so everybody sits out in turn. 8-player tables are not supported: no FFT rule covers them. See [`docs/dead-player.md`](docs/dead-player.md).
 
 ### Bonuses Tracked per Round
 
@@ -227,6 +231,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ScoreHistoryLogicTest.kt` | Score history: when the table scrolls sideways, leader columns |
 | `ScoreChartTest.kt` | Game over chart data: cumulative series, y bounds (zero included), x-axis labels |
 | `BonusesTest.kt` | Bonus sheet logic: one poignée level per player, declarants order, chelem candidates, announced chelems |
+| `DeadPlayerTest.kt` | Dead player: table sizes, active players, scoring at 6 and at 4 with a dead dealer, rotation, persistence and pre-#231 JSON |
 | `RoundPreviewTest.kt` | Live round result: win/short margin, distribution (3 and 5 players), bonuses, zero-sum |
 | `StandingsTest.kt` | Game screen logic: ranked standings (ties, leaders, trend), taker grid columns, last rounds |
 | `PlayerStatsTest.kt` | Statistics: games/wins (ties), take rate, success per contract, average score, name matching, order, strings |
@@ -260,6 +265,7 @@ TarotCounter/
 │   ├── ui-components.md      # Shared UI components: App* buttons, AutoSizeText, Salon components
 │   ├── game-flow.md          # Game mechanics specification
 │   ├── player-setup.md       # Setup screen behaviour
+│   ├── dead-player.md        # 6-player tables, optional dead dealer at 4
 │   ├── settings.md           # Settings page (grouped cards) and the rules page
 │   ├── score-history.md      # Score history: sticky table, round cards
 │   ├── motion-accessibility.md # Transitions, animated standings, reduced motion, haptics, a11y
@@ -291,6 +297,7 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/ui-components.md`](docs/ui-components.md) — shared UI building blocks: `AppButton`, `AutoSizeText`, the button convention, and the Salon components (`SalonCard`, `PlayerAvatar`, `SalonTopBar`…)
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
+- [`docs/dead-player.md`](docs/dead-player.md) — 6-player tables and the optional dead dealer at 4
 - [`docs/settings.md`](docs/settings.md) — settings page: theme toggle, language toggle, feedback button, navigation wiring
 - [`docs/score-history.md`](docs/score-history.md) — score history screen: table view, list view, toggle, navigation
 - [`docs/statistics.md`](docs/statistics.md) — player statistics: figures, rules, name matching, limitations

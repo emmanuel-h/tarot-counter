@@ -98,6 +98,10 @@ class GameViewModel internal constructor(
     // Set once by initGame(); does not change during the session.
     private var _displayNames: List<String> = emptyList()
 
+    // True when the dealer sits out each round (6 players, or 4 with the option on —
+    // issue #231). Set once by initGame().
+    private var _dealerSitsOut: Boolean = false
+
     // Observable round counter. `mutableIntStateOf` is a Compose snapshot primitive:
     // any composable that reads `currentRound` automatically recomposes when it changes.
     // `private set` prevents callers from mutating it directly.
@@ -112,6 +116,7 @@ class GameViewModel internal constructor(
     val displayNames: List<String> get() = _displayNames
     val startingIndex: Int get() = _startingIndex
     val gameId: String get() = _gameId
+    val dealerSitsOut: Boolean get() = _dealerSitsOut
 
     // The display name of the player whose turn it is to *deal* the cards this round.
     // Deals rotate through players in setup order starting from a random first dealer.
@@ -125,6 +130,16 @@ class GameViewModel internal constructor(
             return _displayNames[index]
         }
 
+    // The player sitting out this round — the dealer when the sit-out rule applies —
+    // or null when everybody plays.
+    val deadPlayer: String?
+        get() = if (_dealerSitsOut && _displayNames.isNotEmpty()) currentDealer else null
+
+    // The players who play this round, in seat order: only they can take, be called
+    // as partner or declare bonuses.
+    val activePlayers: List<String>
+        get() = activePlayers(_displayNames, currentDealer, _dealerSitsOut)
+
     // Initializes (or restores) a game session.
     //
     // displayNames         : resolved player names — blank entries must have been replaced
@@ -133,12 +148,21 @@ class GameViewModel internal constructor(
     // startingIndexOverride: optional index of the player chosen to deal first (0-based).
     //                        Only used for a fresh start (inProgressGame == null).
     //                        Null means the first dealer is picked randomly (legacy behaviour).
+    // dealerSitsOut        : the user's "dealer sits out" choice for a fresh start. It is
+    //                        resolved against the table size (always on at 6, never at 3/5).
     fun initGame(
         displayNames: List<String>,
         inProgressGame: InProgressGame?,
-        startingIndexOverride: Int? = null
+        startingIndexOverride: Int? = null,
+        dealerSitsOut: Boolean = false
     ) {
         _displayNames  = displayNames
+        // A resumed game keeps its own setting; resolving again guarantees a table
+        // of 6 always has a dead player, whatever was stored.
+        _dealerSitsOut = resolveDealerSitsOut(
+            displayNames.size,
+            inProgressGame?.dealerSitsOut ?: dealerSitsOut
+        )
         _gameId        = inProgressGame?.gameId?.ifBlank { UUID.randomUUID().toString() }
                             ?: UUID.randomUUID().toString()
         // Priority: restored index > explicit choice > random.
@@ -166,10 +190,12 @@ class GameViewModel internal constructor(
         // previewRound (GameModels.kt) holds the scoring: win check, base score,
         // distribution and bonuses. The round-entry view uses the same function for
         // its live result, so what the user sees is exactly what gets recorded.
-        val preview = previewRound(_displayNames, takerName, contract, details)
+        // The dead player (if any) is left out of the scoring and recorded with 0.
+        val dead    = deadPlayer
+        val preview = previewRound(_displayNames, takerName, contract, details, dead)
         val won     = preview.won
         val scores  = preview.playerScores
-        roundHistory.add(RoundResult(currentRound, takerName, contract, details, won, scores))
+        roundHistory.add(RoundResult(currentRound, takerName, contract, details, won, scores, dead))
         currentRound++
         saveInProgressGame(buildProgressSnapshot())
     }
@@ -203,7 +229,8 @@ class GameViewModel internal constructor(
                 takerName   = currentDealer,
                 contract    = null,
                 details     = null,
-                won         = null
+                won         = null,
+                deadPlayer  = deadPlayer
             )
         )
         currentRound++
@@ -223,7 +250,8 @@ class GameViewModel internal constructor(
                     datestamp   = System.currentTimeMillis(),
                     playerNames = _displayNames,
                     rounds      = roundHistory.toList(),
-                    finalScores = computeFinalTotals(_displayNames, roundHistory)
+                    finalScores = computeFinalTotals(_displayNames, roundHistory),
+                    dealerSitsOut = _dealerSitsOut
                 )
             )
         } else {
@@ -240,7 +268,8 @@ class GameViewModel internal constructor(
         playerNames   = _displayNames,
         currentRound  = currentRound,
         startingIndex = _startingIndex,
-        rounds        = roundHistory.toList()
+        rounds        = roundHistory.toList(),
+        dealerSitsOut = _dealerSitsOut
     )
 
     // Saves the completed game to the past-games list and clears the in-progress state.

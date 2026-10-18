@@ -72,7 +72,8 @@ fun playerKey(name: String): String = name.trim().lowercase()
  * Rules:
  * - Games without any scored round (no rounds, or only skipped ones) are ignored:
  *   they have no winner and no taker.
- * - Skipped rounds never count as played or taken.
+ * - Skipped rounds never count as played or taken, nor do rounds the player sat
+ *   out as the dead dealer (issue #231).
  * - A win is finishing with the best final total ([findWinners]); on a tie
  *   every co-winner gets the win.
  * - The displayed name is the spelling of the first game in [games] that contains
@@ -111,7 +112,8 @@ fun computePlayerStats(games: List<SavedGame>): List<PlayerStats> {
             val acc = accs.getOrPut(key) { Acc(name.trim()) }
             acc.games++
             if (key in winners) acc.wins++
-            acc.rounds += scored.size
+            // A round the player sat out (dead dealer, issue #231) was not played by them.
+            acc.rounds += scored.count { it.deadPlayer == null || playerKey(it.deadPlayer) != key }
             acc.total  += totals[name] ?: 0
         }
 

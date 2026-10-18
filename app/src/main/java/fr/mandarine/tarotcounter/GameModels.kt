@@ -116,6 +116,47 @@ data class RoundDetails(
         get() = triplePoignees.ifEmpty { listOfNotNull(triplePoignee) }
 }
 
+// ── Table size and the dead player (issue #231) ─────────────────────────────
+//
+// The FFT rules cover 3, 4 and 5 players. A table of 6 is played with the common
+// convention used by every Tarot scorer: the dealer of each round "sits out" (French:
+// « le mort »). They deal the cards but do not play, and the five others play a
+// normal 5-player round (called partner, 5-player poignée thresholds).
+// The same idea is offered as an option at a table of 4: the dealer sits out and the
+// three others play a 3-player round.
+//
+// The dead player scores 0 for that round. Because the dealer rotates every round,
+// everybody sits out in turn.
+//
+// 8 players (offered by one competitor) is deliberately not supported: no FFT rule
+// covers it — it would need three dead players per round, or two tables.
+
+/** The table sizes offered on the new-game screen. */
+val TABLE_SIZES = listOf(3, 4, 5, 6)
+
+/** True when the dealer must sit out at a table of [tableSize] players (only at 6). */
+fun dealerSitsOutMandatory(tableSize: Int): Boolean = tableSize == 6
+
+/** True when the user may choose whether the dealer sits out (only at 4). */
+fun dealerSitsOutOptional(tableSize: Int): Boolean = tableSize == 4
+
+// Turns the user's choice into the rule actually applied for this table size:
+//   6 players → always true (5 active players is the only playable form)
+//   4 players → whatever the user picked
+//   3 or 5    → always false (nobody can sit out: 2 or 4 active players is no Tarot)
+fun resolveDealerSitsOut(tableSize: Int, requested: Boolean): Boolean = when {
+    dealerSitsOutMandatory(tableSize) -> true
+    dealerSitsOutOptional(tableSize)  -> requested
+    else                              -> false
+}
+
+/**
+ * The players who actually play this round: everyone but the dealer when the dealer
+ * sits out, else the whole table. `filter` keeps the seat order.
+ */
+fun activePlayers(tableNames: List<String>, dealer: String, dealerSitsOut: Boolean): List<String> =
+    if (dealerSitsOut) tableNames.filter { it != dealer } else tableNames
+
 // Returns the minimum number of points the taker needs to win, based on
 // how many bouts (oudlers) they hold in their tricks.
 //
@@ -506,7 +547,10 @@ data class SavedGame(
     val datestamp: Long,
     val playerNames: List<String>,
     val rounds: List<RoundResult>,
-    val finalScores: Map<String, Int>
+    val finalScores: Map<String, Int>,
+    // True when the dealer sat out every round (6 players, or 4 with the option on).
+    // Defaults to false so games saved before issue #231 still load.
+    val dealerSitsOut: Boolean = false
 )
 
 // InProgressGame captures the state of a game that has not been ended yet.
@@ -533,7 +577,10 @@ data class InProgressGame(
     val playerNames: List<String>,
     val currentRound: Int,
     val startingIndex: Int,
-    val rounds: List<RoundResult>
+    val rounds: List<RoundResult>,
+    // True when the dealer sits out each round (issue #231). The default keeps
+    // in-progress games saved by older versions loadable.
+    val dealerSitsOut: Boolean = false
 )
 
 // Returns the name(s) of the player(s) with the highest cumulative total.
@@ -564,7 +611,10 @@ data class RoundResult(
     val contract: Contract?,                  // null = skipped
     val details: RoundDetails?,               // null = skipped
     val won: Boolean?,                        // null = skipped, true = taker won, false = taker lost
-    val playerScores: Map<String, Int> = emptyMap()  // empty for skipped rounds
+    val playerScores: Map<String, Int> = emptyMap(),  // empty for skipped rounds
+    // The player who sat out this round (the dealer at a table of 6, or of 4 with the
+    // option on), or null when everybody played. Default null = older saved rounds.
+    val deadPlayer: String? = null
 )
 
 // The player(s) currently in the lead of an unfinished game, and their score.
@@ -602,26 +652,36 @@ data class RoundPreview(
 // Computes a round's result from the form values. This is the single scoring path:
 // GameViewModel.recordPlayed() calls it too, so the preview can never disagree with
 // the score that is finally recorded.
+//
+// playerNames : the whole table, in seat order.
+// deadPlayer  : the player sitting out this round (issue #231), or null. They are
+//               left out of the scoring and get an explicit 0 in the result, so the
+//               round stays zero-sum among the players who actually played.
 fun previewRound(
     playerNames: List<String>,
     takerName: String,
     contract: Contract,
-    details: RoundDetails
+    details: RoundDetails,
+    deadPlayer: String? = null
 ): RoundPreview {
+    // Only the active players take part in the scoring.
+    val active = playerNames.filter { it != deadPlayer }
     val won   = takerWon(details.bouts, details.points)
     val score = calculateRoundScore(contract, details.bouts, details.points)
     val base  = computePlayerScores(
-        allPlayers  = playerNames,
+        allPlayers  = active,
         takerName   = takerName,
         partnerName = details.partnerName,
         won         = won,
         roundScore  = score
     )
-    // 3/4-player: every non-taker is a defender; 5-player with a partner: exactly 3.
-    val numDefenders = if (details.partnerName != null) 3 else playerNames.size - 1
+    // 3/4 active players: every non-taker is a defender; 5 with a partner: exactly 3.
+    val numDefenders = if (details.partnerName != null) 3 else active.size - 1
+    val scores = applyBonuses(base, contract, details, takerName, won, numDefenders)
     return RoundPreview(
         won          = won,
         margin       = abs(details.points - requiredPoints(details.bouts)),
-        playerScores = applyBonuses(base, contract, details, takerName, won, numDefenders)
+        // `+ (key to value)` returns a new map with one more entry.
+        playerScores = if (deadPlayer != null) scores + (deadPlayer to 0) else scores
     )
 }

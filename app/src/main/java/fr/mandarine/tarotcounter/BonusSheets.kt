@@ -62,7 +62,9 @@ private enum class BonusSheet { PETIT, POIGNEE, CHELEM }
 /**
  * The bonus rows of the round entry and the three sheets behind them.
  *
- * @param playerNames  Players in seat order (drives avatar colours).
+ * @param playerNames  Players who play this round, in seat order (the choices).
+ * @param seatNames    The whole table in seat order (drives avatar colours). Differs
+ *                     from [playerNames] when the dealer sits out (issue #231).
  * @param taker        The round's taker (chelem candidate).
  * @param partner      The called partner in a 5-player game, else null.
  * @param petitAuBout  Player who won the Petit on the last trick, or null.
@@ -75,6 +77,7 @@ private enum class BonusSheet { PETIT, POIGNEE, CHELEM }
 @Composable
 fun BonusesSection(
     playerNames: List<String>,
+    seatNames: List<String> = playerNames,
     taker: String,
     partner: String?,
     petitAuBout: String?,
@@ -104,7 +107,7 @@ fun BonusesSection(
                     label   = strings.petit,
                     value   = petitAuBout,
                     none    = strings.noneOption,
-                    seat    = playerNames.indexOf(petitAuBout),
+                    seat    = seatNames.indexOf(petitAuBout),
                     tag     = "bonus_row_petit",
                     onClick = { openSheet = BonusSheet.PETIT }
                 )
@@ -115,7 +118,7 @@ fun BonusesSection(
                     value   = declarants.joinToString(", ").ifEmpty { null },
                     none    = strings.noneOption,
                     // A single declarant gets their avatar; several are listed by name.
-                    seat    = if (declarants.size == 1) playerNames.indexOf(declarants.first()) else -1,
+                    seat    = if (declarants.size == 1) seatNames.indexOf(declarants.first()) else -1,
                     isError = atoutError,
                     tag     = "bonus_row_poignee",
                     onClick = { openSheet = BonusSheet.POIGNEE }
@@ -148,6 +151,7 @@ fun BonusesSection(
     when (openSheet) {
         BonusSheet.PETIT -> PetitSheet(
             playerNames = playerNames,
+            seatNames   = seatNames,
             selected    = petitAuBout,
             strings     = strings,
             onSelect    = { onPetitAuBout(it); openSheet = null },
@@ -155,6 +159,7 @@ fun BonusesSection(
         )
         BonusSheet.POIGNEE -> PoigneeSheet(
             playerNames    = playerNames,
+            seatNames      = seatNames,
             poignees       = poignees,
             onPoignees     = onPoignees,
             atoutError     = atoutError,
@@ -163,7 +168,7 @@ fun BonusesSection(
             onDismiss      = { openSheet = null }
         )
         BonusSheet.CHELEM -> ChelemSheet(
-            playerNames  = playerNames,
+            seatNames    = seatNames,
             candidates   = chelemCandidates(taker, partner, playerNames.size),
             chelem       = chelem,
             chelemPlayer = chelemPlayer,
@@ -303,6 +308,7 @@ private fun ChoiceRow(
 @Composable
 private fun PetitSheet(
     playerNames: List<String>,
+    seatNames: List<String>,
     selected: String?,
     strings: AppStrings,
     onSelect: (String?) -> Unit,
@@ -317,8 +323,8 @@ private fun PetitSheet(
     ) {
         Column {
             ChoiceRow(strings.noneOption, selected == null, { onSelect(null) }, "petit_none")
-            playerNames.forEachIndexed { seat, name ->
-                ChoiceRow(name, selected == name, { onSelect(name) }, "petit_$name", avatarSeat = seat)
+            playerNames.forEach { name ->
+                ChoiceRow(name, selected == name, { onSelect(name) }, "petit_$name", avatarSeat = seatNames.indexOf(name))
             }
         }
     }
@@ -329,6 +335,7 @@ private fun PetitSheet(
 @Composable
 private fun PoigneeSheet(
     playerNames: List<String>,
+    seatNames: List<String>,
     poignees: PoigneeDeclarations,
     onPoignees: (PoigneeDeclarations) -> Unit,
     atoutError: Boolean,
@@ -352,7 +359,8 @@ private fun PoigneeSheet(
         // One shared size so every segment of every row uses the same font size.
         val segmentSize = rememberSharedAutoSizeState(strings.noneOption)
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-            playerNames.forEachIndexed { seat, name ->
+            playerNames.forEach { name ->
+                val seat = seatNames.indexOf(name)
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
@@ -397,7 +405,7 @@ private fun PoigneeSheet(
 // with the reminder that an announced chelem's caller leads the first trick.
 @Composable
 private fun ChelemSheet(
-    playerNames: List<String>,
+    seatNames: List<String>,
     candidates: List<String>,
     chelem: Chelem,
     chelemPlayer: String?,
@@ -442,7 +450,7 @@ private fun ChelemSheet(
                         // Tapping the selected player again clears the choice.
                         onClick    = { onChelem(chelem, if (chelemPlayer == name) null else name) },
                         tag        = "chelem_player_$name",
-                        avatarSeat = playerNames.indexOf(name)
+                        avatarSeat = seatNames.indexOf(name)
                     )
                 }
                 if (isAnnouncedChelem(chelem) && chelemPlayer != null) {
