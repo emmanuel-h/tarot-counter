@@ -34,6 +34,10 @@ The Game Over screen is shown when the user taps **End Game** during a game (aft
 └──────────────────────────────┘
 ```
 
+## Share (issue #234)
+
+The share icon in the top bar (shown once a round has been played) opens a dialog: **As text** or **As image**. Then the Android share sheet opens. See [`share-score-sheet.md`](share-score-sheet.md).
+
 ## Winner card
 
 1. `computeFinalTotals()` (`GameModels.kt`) sums each player's round scores.
