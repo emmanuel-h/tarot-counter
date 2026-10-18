@@ -1470,5 +1470,42 @@ class GameScreenTest {
         composeTestRule.onNodeWithText("End the game?").assertDoesNotExist()
         composeTestRule.onNodeWithText("Game Over").assertIsDisplayed()
     }
+
+    // ── Dead player / 6-player tables (issue #231) ────────────────────────────
+
+    @Test
+    fun six_player_game_has_no_taker_tile_for_the_dealer_and_names_them_in_the_chip() {
+        val six = listOf("Alice", "Bob", "Charlie", "Dave", "Eve", "Fanny")
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            FakeGameStorage()
+        )
+        // Alice deals round 1, so she sits out.
+        viewModel.initGame(six, inProgressGame = null, startingIndexOverride = 0)
+        composeTestRule.setContent {
+            TarotCounterTheme { GameScreen(viewModel = viewModel) }
+        }
+        composeTestRule.onNodeWithTag("taker_tile_Alice").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("taker_tile_Bob").assertExists()
+        composeTestRule.onNodeWithText("Dealer: Alice · sits out").assertExists()
+    }
+
+    @Test
+    fun six_player_round_entry_offers_partners_but_not_the_dead_player() {
+        val six = listOf("Alice", "Bob", "Charlie", "Dave", "Eve", "Fanny")
+        val viewModel = GameViewModel(
+            ApplicationProvider.getApplicationContext<Application>(),
+            FakeGameStorage()
+        )
+        viewModel.initGame(six, inProgressGame = null, startingIndexOverride = 0)
+        composeTestRule.setContent {
+            TarotCounterTheme { GameScreen(viewModel = viewModel) }
+        }
+        selectAttacker("Bob")
+        composeTestRule.onNodeWithText(guard).performClick()
+        // Five players are active, so a partner is called — never the dead dealer.
+        composeTestRule.onNodeWithTag("partner_Charlie").performScrollTo().assertExists()
+        composeTestRule.onNodeWithTag("partner_Alice").assertDoesNotExist()
+    }
 }
 

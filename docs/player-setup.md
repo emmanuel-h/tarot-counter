@@ -75,7 +75,9 @@ All three are covered by `HomeLogicTest`.
 
 ### Player count selection
 
-A compact `SingleChoiceSegmentedButtonRow` with three segments (3, 4, 5) sits on the right of the "Players" label. The selected segment is filled felt green. The default is **3 players**.
+A compact `SingleChoiceSegmentedButtonRow` with four segments (3, 4, 5, 6) sits on the right of the "Players" label. The selected segment is filled felt green. The default is **3 players**.
+
+At **6** players a short note explains that the dealer sits out each round. At **4** players a **Dealer sits out (No | Yes)** toggle appears (off by default). The resolved choice is the third argument of `onStartGame(names, dealerIndex, dealerSitsOut)`. See [`dead-player.md`](dead-player.md).
 
 ### Player name inputs
 

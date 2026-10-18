@@ -23,6 +23,8 @@ import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.performScrollTo
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,7 +57,7 @@ class LandingScreenTest {
      * default no-op `{ _, _ -> }`.
      */
     private fun launch(
-        onStartGame: (List<String>, Int?) -> Unit = { _, _ -> },
+        onStartGame: (List<String>, Int?, Boolean) -> Unit = { _, _, _ -> },
         onNavigateToSettings: () -> Unit = {},
         onNavigateToStatistics: () -> Unit = {}
     ) {
@@ -258,7 +260,7 @@ class LandingScreenTest {
     @Test
     fun start_game_callback_receives_three_names_by_default() {
         var capturedNames: List<String>? = null
-        launch(onStartGame = { names, _ -> capturedNames = names })
+        launch(onStartGame = { names, _, _ -> capturedNames = names })
 
         composeTestRule.onNodeWithText("Start Game").performClick()
 
@@ -270,7 +272,7 @@ class LandingScreenTest {
     @Test
     fun start_game_callback_receives_five_names_when_chip_5_selected() {
         var capturedNames: List<String>? = null
-        launch(onStartGame = { names, _ -> capturedNames = names })
+        launch(onStartGame = { names, _, _ -> capturedNames = names })
 
         composeTestRule.onNodeWithText("5").performClick()
         composeTestRule.onNodeWithText("Start Game").performClick()
@@ -453,7 +455,7 @@ class LandingScreenTest {
     fun start_game_callback_receives_null_dealer_index_when_random_is_selected() {
         // Default mode is Random — the dealer index passed to onStartGame must be null.
         var capturedDealerIndex: Int? = -1  // sentinel: will be overwritten by the callback
-        launch(onStartGame = { _, dealerIndex -> capturedDealerIndex = dealerIndex })
+        launch(onStartGame = { _, dealerIndex, _ -> capturedDealerIndex = dealerIndex })
 
         composeTestRule.onNodeWithText("Start Game").performClick()
 
@@ -467,7 +469,7 @@ class LandingScreenTest {
     fun start_game_callback_receives_non_null_dealer_index_when_choose_is_selected() {
         // When the user picks "Choose", the callback must receive a non-null index.
         var capturedDealerIndex: Int? = -1
-        launch(onStartGame = { _, dealerIndex -> capturedDealerIndex = dealerIndex })
+        launch(onStartGame = { _, dealerIndex, _ -> capturedDealerIndex = dealerIndex })
 
         composeTestRule.onNodeWithText("Choose").performClick()
         composeTestRule.onNodeWithText("Start Game").performClick()
@@ -482,7 +484,7 @@ class LandingScreenTest {
     fun start_game_callback_receives_correct_index_when_second_player_chosen_as_dealer() {
         // Tap "Choose", then tap Player 2. The callback must report index 1.
         var capturedDealerIndex: Int? = -1
-        launch(onStartGame = { _, dealerIndex -> capturedDealerIndex = dealerIndex })
+        launch(onStartGame = { _, dealerIndex, _ -> capturedDealerIndex = dealerIndex })
 
         composeTestRule.onNodeWithText("Choose").performClick()
         // "Player 2" is also the name field's placeholder: match only the dealer
@@ -499,4 +501,46 @@ class LandingScreenTest {
         )
     }
 
+
+    // ── Dead player / 6-player tables (issue #231) ────────────────────────────
+
+    @Test
+    fun three_players_shows_no_sit_out_control() {
+        launch()
+        composeTestRule.onNodeWithTag("sit_out_on").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("sit_out_note").assertDoesNotExist()
+    }
+
+    @Test
+    fun six_players_shows_six_name_fields_and_the_sit_out_note() {
+        var sitsOut: Boolean? = null
+        var names: List<String> = emptyList()
+        launch(onStartGame = { n, _, dead -> names = n; sitsOut = dead })
+
+        composeTestRule.onNodeWithTag("player_count_6").performClick()
+        field(5).assertExists()
+        composeTestRule.onNodeWithTag("sit_out_note").assertExists()
+        // At 6 the sit-out is mandatory: no toggle is offered.
+        composeTestRule.onNodeWithTag("sit_out_on").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Start Game").performScrollTo().performClick()
+
+        assertEquals(6, names.size)
+        assertEquals(true, sitsOut)
+    }
+
+    @Test
+    fun four_players_sit_out_toggle_is_off_by_default_and_can_be_turned_on() {
+        var sitsOut: Boolean? = null
+        launch(onStartGame = { _, _, dead -> sitsOut = dead })
+
+        composeTestRule.onNodeWithTag("player_count_4").performClick()
+        composeTestRule.onNodeWithTag("sit_out_off").assertIsSelected()
+        composeTestRule.onNodeWithText("Start Game").performScrollTo().performClick()
+        assertEquals(false, sitsOut)
+
+        composeTestRule.onNodeWithTag("sit_out_on").performClick()
+        composeTestRule.onNodeWithTag("sit_out_note").assertExists()
+        composeTestRule.onNodeWithText("Start Game").performScrollTo().performClick()
+        assertEquals(true, sitsOut)
+    }
 }

@@ -125,7 +125,7 @@ class MainActivity : ComponentActivity() {
                                 // "Player N" / "Joueur N"), then initialize the ViewModel session.
                                 // `dealerIndex` is the user's chosen first-dealer index, or null
                                 // to let the app pick randomly (the default behaviour).
-                                onStartGame = { rawNames, dealerIndex ->
+                                onStartGame = { rawNames, dealerIndex, dealerSitsOut ->
                                     val appStrings = appStrings(currentLocale)
                                     val resolvedNames = rawNames.mapIndexed { i, name ->
                                         name.ifBlank { appStrings.playerFallback(i + 1) }
@@ -133,7 +133,9 @@ class MainActivity : ComponentActivity() {
                                     gameViewModel.initGame(
                                         displayNames          = resolvedNames,
                                         inProgressGame        = null,
-                                        startingIndexOverride = dealerIndex
+                                        startingIndexOverride = dealerIndex,
+                                        // Issue #231: dealer sits out at 6 (or 4 by choice).
+                                        dealerSitsOut         = dealerSitsOut
                                     )
                                     gameViewModel.clearInProgressGame()
                                     currentScreen = Screen.GAME

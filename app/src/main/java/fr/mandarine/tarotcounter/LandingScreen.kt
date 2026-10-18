@@ -57,8 +57,9 @@ import fr.mandarine.tarotcounter.ui.theme.tarotColors
 //   │ └──────────────────────────┘ │
 //   │ ═════════ ♠ ♥ ♦ ♣ ═════════  │  SuitDivider
 //   │ ┌── New game ──────────────┐ │  SalonCard
-//   │ │ Players       (3 | 4 | 5)│ │
+//   │ │ Players   (3 | 4 | 5 | 6)│ │
 //   │ │ (A) Alice                │ │  PlayerNameField per seat
+//   │ │ Dealer sits out (No|Yes) │ │  4 players only; at 6 a note instead
 //   │ │ First dealer (Random|Choose)│
 //   │ │ [      Start game      ] │ │
 //   │ └──────────────────────────┘ │
@@ -66,9 +67,11 @@ import fr.mandarine.tarotcounter.ui.theme.tarotColors
 //   └──────────────────────────────┘
 //
 // onStartGame:          called when the user presses "Start game".
-//                         names      : raw names entered by the user (blank = use fallback).
-//                         dealerIndex: index of the chosen first dealer in `names`, or null
-//                                      to let the app pick a random dealer.
+//                         names        : raw names entered by the user (blank = use fallback).
+//                         dealerIndex  : index of the chosen first dealer in `names`, or null
+//                                        to let the app pick a random dealer.
+//                         dealerSitsOut: true when the dealer sits out each round (always
+//                                        true at 6 players, the user's choice at 4).
 // onResumeGame:         called when the user taps "Resume" — passes the saved state back
 //                       to MainActivity so GameScreen can be initialized from it.
 // onNavigateToSettings: called when the user taps the gear icon.
@@ -80,7 +83,7 @@ fun LandingScreen(
     modifier: Modifier = Modifier,
     inProgressGame: InProgressGame? = null,
     pastGames: List<SavedGame> = emptyList(),
-    onStartGame: (names: List<String>, dealerIndex: Int?) -> Unit = { _, _ -> },
+    onStartGame: (names: List<String>, dealerIndex: Int?, dealerSitsOut: Boolean) -> Unit = { _, _, _ -> },
     onResumeGame: (InProgressGame) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToStatistics: () -> Unit = {}
@@ -210,7 +213,7 @@ private fun ResumeGameCard(
 private fun NewGameCard(
     strings: AppStrings,
     locale: AppLocale,
-    onStartGame: (names: List<String>, dealerIndex: Int?) -> Unit
+    onStartGame: (names: List<String>, dealerIndex: Int?, dealerSitsOut: Boolean) -> Unit
 ) {
     // `remember` keeps a value alive across recompositions (UI redraws).
     // `mutableIntStateOf` creates an integer that, when changed, triggers a redraw.
@@ -225,6 +228,10 @@ private fun NewGameCard(
     var useRandomDealer by remember { mutableStateOf(true) }
     var selectedDealerIndex by remember { mutableIntStateOf(0) }
 
+    // The "dealer sits out" choice for a table of 4 (issue #231). Off by default so
+    // a 4-player game stays a normal 4-player game unless the user asks otherwise.
+    var sitOutAtFour by remember { mutableStateOf(false) }
+
     // Blank fields fall back to "Player N", so two blank fields never clash and a
     // typed "Player 1" does clash with a blank first field.
     val resolvedNames = playerNames.mapIndexed { i, name ->
@@ -237,9 +244,9 @@ private fun NewGameCard(
 
     SalonCard(modifier = Modifier.fillMaxWidth(), title = strings.newGame) {
 
-        // ── Player count: label on the left, 3 | 4 | 5 on the right ───────────
+        // ── Player count: label on the left, 3 | 4 | 5 | 6 on the right ───────
         LabeledRow(label = strings.playersLabel) {
-            val playerCountOptions = listOf(3, 4, 5)
+            val playerCountOptions = TABLE_SIZES
             val playerLabelSize    = rememberSharedAutoSizeState()
             SingleChoiceSegmentedButtonRow(modifier = Modifier.width(SETUP_TOGGLE_WIDTH)) {
                 playerCountOptions.forEachIndexed { index, n ->
@@ -255,7 +262,8 @@ private fun NewGameCard(
                             selectedDealerIndex = 0
                         },
                         icon     = {},
-                        colors   = salonSegmentedButtonColors()
+                        colors   = salonSegmentedButtonColors(),
+                        modifier = Modifier.testTag("player_count_$n")
                     ) {
                         AutoSizeText(
                             text            = n.toString(),
@@ -283,6 +291,37 @@ private fun NewGameCard(
                         .testTag("player_name_field_$i")
                 )
             }
+        }
+
+        // ── Dead player (issue #231) ──────────────────────────────────────────
+        // At 4 players the user may let the dealer sit out (3 play); at 6 the
+        // dealer always sits out, so only an explanation is shown.
+        if (dealerSitsOutOptional(selectedPlayers)) {
+            LabeledRow(label = strings.dealerSitsOutLabel) {
+                val sitOutSize = rememberSharedAutoSizeState(locale)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.width(SETUP_TOGGLE_WIDTH)) {
+                    listOf(false to strings.sitOutOff, true to strings.sitOutOn)
+                        .forEachIndexed { index, (on, label) ->
+                            SegmentedButton(
+                                shape    = SegmentedButtonDefaults.itemShape(index, 2),
+                                selected = sitOutAtFour == on,
+                                onClick  = { sitOutAtFour = on },
+                                icon     = {},
+                                colors   = salonSegmentedButtonColors(),
+                                modifier = Modifier.testTag(if (on) "sit_out_on" else "sit_out_off")
+                            ) {
+                                AutoSizeText(
+                                    text            = label,
+                                    modifier        = Modifier.padding(horizontal = 1.dp),
+                                    sharedSizeState = sitOutSize
+                                )
+                            }
+                        }
+                }
+            }
+            if (sitOutAtFour) SetupNote(strings.dealerSitsOutAtFour, tag = "sit_out_note")
+        } else if (dealerSitsOutMandatory(selectedPlayers)) {
+            SetupNote(strings.dealerSitsOutAtSix, tag = "sit_out_note")
         }
 
         // ── First dealer: Random | Choose ─────────────────────────────────────
@@ -337,13 +376,28 @@ private fun NewGameCard(
             text      = strings.startGame,
             onClick   = {
                 val dealerIndex = if (useRandomDealer) null else selectedDealerIndex
-                onStartGame(playerNames.toList(), dealerIndex)
+                onStartGame(
+                    playerNames.toList(),
+                    dealerIndex,
+                    resolveDealerSitsOut(selectedPlayers, sitOutAtFour)
+                )
             },
             enabled   = !hasDuplicates,
             modifier  = Modifier.fillMaxWidth(),
             textStyle = MaterialTheme.typography.titleMedium
         )
     }
+}
+
+// A short muted explanation inside the New game card (e.g. the dead-player rule).
+@Composable
+private fun SetupNote(text: String, tag: String) {
+    Text(
+        text     = text,
+        style    = MaterialTheme.typography.bodySmall,
+        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.testTag(tag)
+    )
 }
 
 // Width of the compact toggles (player count, dealer mode) at the right of a row.

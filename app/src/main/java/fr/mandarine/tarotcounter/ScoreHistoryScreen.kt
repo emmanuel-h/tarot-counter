@@ -396,6 +396,15 @@ private fun RoundCard(
                         }
                         OutcomeChip(won = round.won == true, strings = strings)
                     }
+                    // Issue #231: name the player who sat out this round, if any.
+                    round.deadPlayer?.let { dead ->
+                        Text(
+                            text     = strings.satOut(dead),
+                            style    = MaterialTheme.typography.bodySmall,
+                            color    = muted,
+                            modifier = Modifier.testTag("round_sat_out_${round.roundNumber}")
+                        )
+                    }
                 }
                 round.playerScores[round.takerName]?.let { ScoreText(score = it, size = ScoreSize.M) }
             }

@@ -106,6 +106,13 @@ fun GameScreen(
     val displayNames   = viewModel.displayNames
     // The dealer rotates each round — they deal the cards but are not necessarily the attacker.
     val currentDealer  = viewModel.currentDealer
+    // Issue #231: at a table of 6 (or 4 with the option on) the dealer sits out.
+    // `activePlayers` are the ones who actually play this round; `deadPlayer` is the
+    // one sitting out, or null when everybody plays.
+    val activePlayers  = viewModel.activePlayers
+    val deadPlayer     = viewModel.deadPlayer
+    // A partner is called whenever five players are active (5 players, or 6 minus the dead).
+    val partnerGame    = activePlayers.size == 5
 
     // The player who won the bidding and took the contract (the attacker).
     // null = no attacker selected yet.
@@ -304,7 +311,8 @@ fun GameScreen(
             poignees.toList(),
             doublePoignees.toList(),
             triplePoignees.toList(),
-            displayNames.size
+            // Poignée thresholds depend on how many players actually play.
+            activePlayers.size
         )
     } else 0
     // True when the combined trump declarations exceed the 22 available in the deck.
@@ -507,7 +515,9 @@ fun GameScreen(
             // ── Between rounds: scores first, then "Who took?" ─────────────────
             BetweenRoundsContent(
                 currentDealer = currentDealer,
+                deadPlayer    = deadPlayer,
                 displayNames  = displayNames,
+                activePlayers = activePlayers,
                 roundHistory  = roundHistory,
                 selectedTaker = selectedAttacker,
                 strings       = strings,
@@ -567,14 +577,15 @@ fun GameScreen(
                             details     = RoundDetails(
                                 bouts          = bouts,
                                 points         = takerPoints,
-                                partnerName    = if (displayNames.size == 5) selectedPartner else null,
+                                partnerName    = if (partnerGame) selectedPartner else null,
                                 petitAuBout    = petitAuBout,
                                 poignees       = poignees.toList(),
                                 doublePoignees = doublePoignees.toList(),
                                 triplePoignees = triplePoignees.toList(),
                                 chelem         = chelem,
                                 chelemPlayer   = chelemPlayer
-                            )
+                            ),
+                            deadPlayer  = deadPlayer
                         )
                     } else null
 
@@ -596,12 +607,14 @@ fun GameScreen(
                         onDone        = { keyboardController?.hide() }
                     )
 
-                    // ── Partner (5-player games only) ─────────────────────────
-                    // The taker calls a silent partner; the taker can't call themself.
-                    if (displayNames.size == 5) {
+                    // ── Partner (5 active players only) ───────────────────────
+                    // The taker calls a silent partner; the taker can't call themself,
+                    // and the player sitting out can't be called either.
+                    if (partnerGame) {
                         PartnerChips(
                             label    = strings.partnerCalledByTaker,
-                            players  = displayNames,
+                            players  = activePlayers,
+                            seatNames = displayNames,
                             taker    = taker,
                             selected = selectedPartner,
                             // Tapping the selected partner again clears the choice.
@@ -617,9 +630,11 @@ fun GameScreen(
             if (selectedContract != null) {
                 Spacer(Modifier.height(Dimens.SpaceL))
                 BonusesSection(
-                    playerNames    = displayNames,
+                    // Only active players can win the Petit, show a poignée or slam.
+                    playerNames    = activePlayers,
+                    seatNames      = displayNames,
                     taker          = taker,
-                    partner        = if (displayNames.size == 5) selectedPartner else null,
+                    partner        = if (partnerGame) selectedPartner else null,
                     petitAuBout    = petitAuBout,
                     onPetitAuBout  = { petitAuBout = it },
                     poignees       = PoigneeDeclarations(poignees, doublePoignees, triplePoignees),
@@ -700,7 +715,7 @@ fun GameScreen(
                             RoundDetails(
                                 bouts          = bouts,
                                 points         = points,
-                                partnerName    = if (displayNames.size == 5) selectedPartner else null,
+                                partnerName    = if (partnerGame) selectedPartner else null,
                                 petitAuBout    = petitAuBout,
                                 // Always write the multi-player list fields; the legacy
                                 // nullable fields stay null so nothing is double-counted.
@@ -757,7 +772,9 @@ private enum class GameOverlay { NONE, HISTORY, FINAL_SCORE }
 @Composable
 private fun BetweenRoundsContent(
     currentDealer: String,
+    deadPlayer: String?,
     displayNames: List<String>,
+    activePlayers: List<String>,
     roundHistory: List<RoundResult>,
     selectedTaker: String?,
     strings: AppStrings,
@@ -776,8 +793,10 @@ private fun BetweenRoundsContent(
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)
     ) {
         // The dealer deals the cards; any player may take, so this is context only.
+        // When the dealer sits out (issue #231) the chip says so.
         DealerChip(
-            text     = strings.dealerLabel(currentDealer),
+            text     = if (deadPlayer != null) strings.dealerSitsOutChip(deadPlayer)
+                       else strings.dealerLabel(currentDealer),
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
@@ -800,8 +819,10 @@ private fun BetweenRoundsContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            // The player sitting out cannot take, so only active players get a tile.
             TakerTiles(
-                names         = displayNames,
+                names         = activePlayers,
+                seatNames     = displayNames,
                 selectedTaker = selectedTaker,
                 onTakerChosen = onTakerChosen
             )
@@ -994,17 +1015,20 @@ private fun TrendArrow(lastDelta: Int?) {
 private fun TakerTiles(
     names: List<String>,
     selectedTaker: String?,
-    onTakerChosen: (String) -> Unit
+    onTakerChosen: (String) -> Unit,
+    // The whole table in seat order: an avatar keeps its seat colour even when the
+    // player sitting out is missing from `names`.
+    seatNames: List<String> = names
 ) {
     val columns = takerGridColumns(names.size)
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
         // chunked(n) splits the list into rows of n (the last row may be shorter).
-        names.withIndex().chunked(columns).forEach { row ->
+        names.chunked(columns).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                for ((seat, name) in row) {
+                for (name in row) {
                     TakerTile(
                         name     = name,
-                        seat     = seat,
+                        seat     = seatNames.indexOf(name),
                         selected = name == selectedTaker,
                         onClick  = { onTakerChosen(name) },
                         modifier = Modifier.weight(1f)
@@ -1378,7 +1402,9 @@ private fun PartnerChips(
     players: List<String>,
     taker: String,
     selected: String?,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
+    // Whole table in seat order, for avatar colours (see TakerTiles).
+    seatNames: List<String> = players
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         EntryLabel(label)
@@ -1387,8 +1413,9 @@ private fun PartnerChips(
             horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
             verticalArrangement   = Arrangement.spacedBy(Dimens.SpaceS)
         ) {
-            players.forEachIndexed { seat, name ->
-                if (name == taker) return@forEachIndexed
+            players.forEach { name ->
+                if (name == taker) return@forEach
+                val seat = seatNames.indexOf(name)
                 val isSelected = name == selected
                 val scheme = MaterialTheme.colorScheme
                 Surface(

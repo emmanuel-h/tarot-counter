@@ -274,6 +274,20 @@ data class AppStrings(
     val statMadeOutOf: (won: Int, taken: Int) -> String,
     // Shown instead of a number when there is nothing to compute (e.g. never taken).
     val statNone: String,
+    // ── Dead player / 6-player tables (issue #231) ────────────────────────────
+    // Label of the "dealer sits out" toggle on the new-game card (table of 4).
+    val dealerSitsOutLabel: String,
+    // Explanation shown on the new-game card at 6 players, where the sit-out is mandatory.
+    val dealerSitsOutAtSix: String,
+    // Explanation shown under the toggle at 4 players.
+    val dealerSitsOutAtFour: String,
+    // Two options of the toggle.
+    val sitOutOff: String,
+    val sitOutOn: String,
+    // Game-screen chip when the dealer sits out: "Dealer: David · sits out".
+    val dealerSitsOutChip: (dealer: String) -> String,
+    // Muted line on a history round card: "David sat out".
+    val satOut: (name: String) -> String,
 )
 
 // ── English strings ───────────────────────────────────────────────────────────
@@ -439,10 +453,17 @@ val EnStrings = AppStrings(
     rulesScoreFormulaBody    = "(25 + |actual − required|) × contract multiplier\n\nThe taker wins if their points ≥ the required threshold.\nOn a win the taker collects from defenders; on a loss the taker pays each defender.",
 
     rulesDistributionTitle   = "Score Distribution",
-    rulesDistributionBody    = "3 or 4 players — no partner:\n• Taker: ±(players − 1) × score\n• Each defender: ∓score\n\n5 players — with called partner:\n• Taker: ±2 × score\n• Partner: ±1 × score\n• Each defender: ∓score\n\nEvery round is zero-sum.",
+    rulesDistributionBody    = "3 or 4 players — no partner:\n• Taker: ±(players − 1) × score\n• Each defender: ∓score\n\n5 players — with called partner:\n• Taker: ±2 × score\n• Partner: ±1 × score\n• Each defender: ∓score\n\n6 players — the dealer sits out (scores 0) and the five others play as above. At 4 players this is optional (3 play).\n\nEvery round is zero-sum.",
 
     rulesBonusTitle          = "Bonuses",
     rulesBonusBody           = "Petit au bout — Petit (1 of trumps) won on the last trick:\n+10 × multiplier to the achieving camp.\n\nPoignée — trumps shown before play:\n• Simple: 20 pts per player\n• Double: 30 pts per player\n• Triple: 40 pts per player\nBonus always goes to the winning camp.\n\nChelem — all tricks won by the same team:\n• Announced & realized: +400 pts\n• Not announced, realized: +200 pts\n• Announced, not realized: −200 pts\n• Defenders realized: −200 pts (taker pays each defender)",
+    dealerSitsOutLabel  = "Dealer sits out",
+    dealerSitsOutAtSix  = "At 6 players the dealer sits out each round and scores 0; the other five play a 5-player round.",
+    dealerSitsOutAtFour = "The dealer sits out each round and scores 0; the other three play a 3-player round.",
+    sitOutOff           = "No",
+    sitOutOn            = "Yes",
+    dealerSitsOutChip   = { dealer -> "Dealer: $dealer · sits out" },
+    satOut              = { name -> "$name sat out" },
 )
 
 // ── French strings ────────────────────────────────────────────────────────────
@@ -606,10 +627,17 @@ val FrStrings = AppStrings(
     rulesScoreFormulaBody    = "(25 + |points réels − seuil|) × multiplicateur du contrat\n\nLe preneur gagne si ses points sont supérieurs au seuil requis.\nEn cas de victoire il encaisse ; en cas de défaite il paye chaque défenseur.",
 
     rulesDistributionTitle   = "Répartition des scores",
-    rulesDistributionBody    = "3 ou 4 joueurs — sans appelé :\n• Preneur : (joueurs − 1) × score\n• Chaque défenseur : score\n\n5 joueurs — avec appelé :\n• Preneur : 2 × score\n• Appelé : score\n• Chaque défenseur : score\n\nChaque manche est à somme nulle.",
+    rulesDistributionBody    = "3 ou 4 joueurs — sans appelé :\n• Preneur : (joueurs − 1) × score\n• Chaque défenseur : score\n\n5 joueurs — avec appelé :\n• Preneur : 2 × score\n• Appelé : score\n• Chaque défenseur : score\n\n6 joueurs — le donneur ne joue pas (il marque 0), les cinq autres jouent comme ci-dessus. À 4 joueurs c'est en option (3 jouent).\n\nChaque manche est à somme nulle.",
 
     rulesBonusTitle          = "Bonus",
     rulesBonusBody           = "Petit au bout — le Petit (1 d'atout) remporté au dernier pli :\n+10 × multiplicateur pour le camp qui le réalise.\n\nPoignée — atouts déclarés avant le jeu :\n• Simple : 20 pts par joueur\n• Double : 30 pts par joueur\n• Triple : 40 pts par joueur\nLe bonus va toujours au camp gagnant.\n\nChelem — tous les plis remportés par la même équipe :\n• Annoncé et réalisé : +400 pts\n• Non annoncé, réalisé : +200 pts\n• Annoncé, non réalisé : −200 pts\n• Défense réalise : −200 pts (le preneur paye chaque défenseur)",
+    dealerSitsOutLabel  = "Le donneur ne joue pas",
+    dealerSitsOutAtSix  = "À 6 joueurs, le donneur ne joue pas la donne (il est « mort ») et marque 0 ; les cinq autres jouent une donne à 5.",
+    dealerSitsOutAtFour = "À chaque donne, le donneur ne joue pas et marque 0 ; les trois autres jouent une donne à 3.",
+    sitOutOff           = "Non",
+    sitOutOn            = "Oui",
+    dealerSitsOutChip   = { dealer -> "Donneur : $dealer · ne joue pas" },
+    satOut              = { name -> "$name ne jouait pas" },
 )
 
 // Returns the AppStrings for the given locale.

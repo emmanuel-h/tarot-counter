@@ -227,6 +227,8 @@ Scores are zero-sum — the total across all players is always 0.
 | 3 players | ±2 × roundScore | — | ∓roundScore |
 | 4 players | ±3 × roundScore | — | ∓roundScore |
 | 5 players | ±2 × roundScore | ±1 × roundScore | ∓roundScore |
+| 6 players (dealer sits out) | as 5 players | as 5 players | as 5 players; the dead player gets 0 |
+| 4 players, dealer sits out | as 3 players | — | as 3 players; the dead player gets 0 |
 
 The sign is **+** when the taker won, **−** when the taker lost. The same sign applies to the partner in 5-player games; defenders receive the opposite sign.
 

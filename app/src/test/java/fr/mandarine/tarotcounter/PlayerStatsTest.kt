@@ -206,4 +206,19 @@ class PlayerStatsTest {
         assertEquals("Statistics", EnStrings.statistics)
         assertEquals("Statistiques", FrStrings.statistics)
     }
+
+    @Test fun `rounds a player sat out as dead dealer do not count as played`() {
+        val four = listOf("A", "B", "C", "D")
+        val r1 = played(1, "A", Contract.GARDE, true, mapOf("A" to 100, "B" to -50, "C" to -50, "D" to 0))
+            .copy(deadPlayer = "D")
+        val r2 = played(2, "B", Contract.PRISE, false, mapOf("A" to 25, "B" to -50, "C" to 25, "D" to 0))
+            .copy(deadPlayer = " d ")   // matched with the same key as the player name
+        val r3 = played(3, "D", Contract.PRISE, true, mapOf("A" to -25, "B" to 0, "C" to -25, "D" to 50))
+            .copy(deadPlayer = "B")
+        val result = stats(game("g", four, r1, r2, r3))
+        assertEquals(1, result.of("D").roundsPlayed)
+        assertEquals(2, result.of("B").roundsPlayed)
+        assertEquals(3, result.of("A").roundsPlayed)
+        assertEquals(100, result.of("D").takePercent)
+    }
 }
