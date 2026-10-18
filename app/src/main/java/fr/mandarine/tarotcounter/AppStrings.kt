@@ -288,6 +288,20 @@ data class AppStrings(
     val dealerSitsOutChip: (dealer: String) -> String,
     // Muted line on a history round card: "David sat out".
     val satOut: (name: String) -> String,
+
+    // ── Share the score sheet (issue #234) ────────────────────────────────────
+    // Top-bar action label on the Game Over screen, and the dialog title.
+    val shareScoreSheet: String,
+    val shareDialogTitle: String,
+    val shareAsText: String,
+    val shareAsImage: String,
+    // "Winner: Alice (+150)" — first line of the shared sheet (a tie uses tieResult).
+    val shareWinner: (name: String, formattedScore: String) -> String,
+    // Section titles of the shared sheet.
+    val shareRankingTitle: String,
+    val shareRoundsTitle: String,
+    // Shown if the share sheet cannot be opened (e.g. the image failed to save).
+    val shareFailed: String,
 )
 
 // ── English strings ───────────────────────────────────────────────────────────
@@ -432,6 +446,14 @@ val EnStrings = AppStrings(
     statSuccessByContract = "Success by contract",
     statMadeOutOf         = { won, taken -> "$won/$taken made" },
     statNone              = "–",
+    shareScoreSheet       = "Share score sheet",
+    shareDialogTitle      = "Share the score sheet",
+    shareAsText           = "As text",
+    shareAsImage          = "As image",
+    shareWinner           = { name, score -> "Winner: $name ($score)" },
+    shareRankingTitle     = "Final ranking",
+    shareRoundsTitle      = "Round by round",
+    shareFailed           = "Could not share the score sheet",
 
     settings                 = "Settings",
     settingsTitle            = "Settings",
@@ -606,6 +628,14 @@ val FrStrings = AppStrings(
     statSuccessByContract = "Réussite par contrat",
     statMadeOutOf         = { won, taken -> "$won/$taken réussies" },
     statNone              = "–",
+    shareScoreSheet       = "Partager la feuille de score",
+    shareDialogTitle      = "Partager la feuille de score",
+    shareAsText           = "En texte",
+    shareAsImage          = "En image",
+    shareWinner           = { name, score -> "Gagnant·e : $name ($score)" },
+    shareRankingTitle     = "Classement final",
+    shareRoundsTitle      = "Manche par manche",
+    shareFailed           = "Impossible de partager la feuille de score",
 
     settings                 = "Paramètres",
     settingsTitle            = "Paramètres",

@@ -1,5 +1,6 @@
 package fr.mandarine.tarotcounter
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -26,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,12 +38,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -53,13 +57,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.mandarine.tarotcounter.ui.theme.Dimens
 import fr.mandarine.tarotcounter.ui.theme.tarotColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * The game-over screen (Salon redesign, issue #201):
  *
  * ```
  * ┌──────────────────────────────┐
- * │ ←  Game Over                 │
+ * │ ←  Game Over             [⇪] │   share icon → "As text / As image" dialog
  * │ ┌── felt card ─────────────┐ │
  * │ │        [trophy]          │ │
  * │ │ WINNER                   │ │   "IT'S A TIE!" + every co-winner on a tie
@@ -87,6 +94,9 @@ import fr.mandarine.tarotcounter.ui.theme.tarotColors
  * @param onBack       "Back to game": return to the active game.
  * @param onNewGame    "New Game": navigate back to setup.
  * @param onMainMenu   "Main Menu": navigate to the landing screen.
+ * @param onShare      Called with the format picked in the share dialog (issue #234).
+ *                     Null (the default) = build the score sheet and open the
+ *                     Android share sheet; tests pass a lambda to observe the choice.
  */
 @Composable
 fun FinalScoreScreen(
@@ -95,9 +105,43 @@ fun FinalScoreScreen(
     onBack: () -> Unit,
     onNewGame: () -> Unit,
     onMainMenu: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShare: ((ShareFormat) -> Unit)? = null
 ) {
-    val strings = appStrings(LocalAppLocale.current)
+    val locale  = LocalAppLocale.current
+    val strings = appStrings(locale)
+    val context = LocalContext.current
+    // A coroutine scope tied to this screen: drawing the image runs off the main thread.
+    val scope   = rememberCoroutineScope()
+
+    // ── Share the score sheet (issue #234) ────────────────────────────────────
+    // The default action builds the localized sheet (ScoreSheet.kt) and hands it
+    // to the Android share sheet (ScoreSheetShare.kt).
+    val share: (ShareFormat) -> Unit = onShare ?: { format ->
+        val sheet = buildScoreSheet(
+            playerNames  = playerNames,
+            roundHistory = roundHistory,
+            locale       = locale,
+            dateText     = formatGameDate(System.currentTimeMillis(), locale)
+        )
+        when (format) {
+            ShareFormat.TEXT  -> shareScoreSheetText(context, sheet)
+            ShareFormat.IMAGE -> scope.launch {
+                // Dispatchers.IO = a background thread pool meant for disk work.
+                val file = withContext(Dispatchers.IO) { writeScoreSheetImage(context, sheet) }
+                if (file != null) shareScoreSheetImage(context, sheet, file)
+                else Toast.makeText(context, strings.shareFailed, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    var showShareDialog by remember { mutableStateOf(false) }
+    if (showShareDialog) {
+        ShareDialog(
+            strings   = strings,
+            onPick    = { format -> showShareDialog = false; share(format) },
+            onDismiss = { showShareDialog = false }
+        )
+    }
 
     // "See all rounds" opens the round-by-round table on top of this screen;
     // its back arrow returns here (not to the game).
@@ -150,7 +194,14 @@ fun FinalScoreScreen(
                 .padding(bottom = Dimens.SpaceL),
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)
         ) {
-            SalonTopBar(title = strings.gameOver, onBack = onBack)
+            SalonTopBar(
+                title   = strings.gameOver,
+                onBack  = onBack,
+                // Nothing to share before the first round.
+                actions = if (roundHistory.isEmpty()) emptyList() else listOf(
+                    TopBarAction(Icons.Default.Share, strings.shareScoreSheet) { showShareDialog = true }
+                )
+            )
 
             // ── Winner card ───────────────────────────────────────────────────
             // Pops in once (scale + fade) to give the result a sense of occasion.
@@ -223,6 +274,30 @@ fun FinalScoreScreen(
             }
         }
     }
+}
+
+// "Share the score sheet" dialog: two stacked choices and Cancel.
+@Composable
+private fun ShareDialog(strings: AppStrings, onPick: (ShareFormat) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(strings.shareDialogTitle) },
+        text  = {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                AppOutlinedButton(
+                    text     = strings.shareAsText,
+                    onClick  = { onPick(ShareFormat.TEXT) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                AppOutlinedButton(
+                    text     = strings.shareAsImage,
+                    onClick  = { onPick(ShareFormat.IMAGE) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = { AppTextButton(text = strings.cancel, onClick = onDismiss) }
+    )
 }
 
 // The felt-green winner card: trophy, "WINNER" (or "IT'S A TIE!"), the name(s)

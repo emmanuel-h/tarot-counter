@@ -10,7 +10,7 @@ TarotCounter guides players through a game round by round:
 2. **Game screen, between rounds**: the scores come first. A dealer chip sits under the "Round N" title (with undo and history icon buttons). After round 1 comes a ranked **Standings** card: rank, avatar, name, a small ▲/▼ trend since the last round, and the score; leaders are highlighted in brass. Then **"Who took?"**: one large avatar tile per player (3 / 2×2 / 3+2). Then **Last rounds**: the latest 3, with **See all** opening the history. The bottom bar holds **End Game** (red text) and **Skip round**.
 3. **Round entry**: tapping a taker tile opens "ROUND 5 · Chloé takes" (the back arrow changes the taker). Pick one of four **contract cards** (name + ×multiplier), then the **bouts** chips (0–3, with "needs 41"). Enter the **points** in a large number field with an **Attack | Defense** toggle; defense points are converted with `takerPoints = 91 − defenderPoints`. A **live result** pill ("Made by 6 → Chloé +124" / "Short by 4 → …") updates as you type, bonuses included. Then choose the partner (avatar chips, 5 players) and bonuses, and tap **Confirm round**.
 4. **Score history screen**: open it from the chart icon, **See all** or **See all rounds**. A **Table | List** toggle switches views. The **Table** has a pinned header of avatars and names, running totals, brass-tinted leader column(s), and scrolls sideways for 5 players on narrow phones. The **List** shows one card per round, newest first: an "R4" badge, taker avatar, contract, bouts and points, a Won/Lost chip and the taker's score change; skipped rounds are muted. Before the first round, an empty state is shown.
-5. **End Game / Game Over**: tap **End Game** at any point to see the results. A felt-green **winner card** shows the trophy, the winner (or every co-winner on a tie), their score, and the rounds and player counts. Below it come a **ranking** with avatars and a **Score over time** line chart (one line per player in their colour, zero baseline, round ticks). **See all rounds** opens the round-by-round table. The actions are stacked: **New Game**, **Main Menu**, **Back to game**.
+5. **End Game / Game Over**: tap **End Game** at any point to see the results. A felt-green **winner card** shows the trophy, the winner (or every co-winner on a tie), their score, and the rounds and player counts. Below it come a **ranking** with avatars and a **Score over time** line chart (one line per player in their colour, zero baseline, round ticks). **See all rounds** opens the round-by-round table. The actions are stacked: **New Game**, **Main Menu**, **Back to game**. The **share** icon in the top bar sends the score sheet **as text** or **as a PNG image** through the Android share sheet (see [`docs/share-score-sheet.md`](docs/share-score-sheet.md)).
 6. **Colour-coded scores** — positive scores appear in green and negative scores in red across all score views (standings, ScoreHistoryScreen, FinalScoreScreen); colours adapt to light/dark theme automatically
 7. **Auto-save & Resume** — the game state is saved after every round. If the app is closed mid-game, the resume card appears at the top of the home screen the next time it is opened.
 8. **Past Games** — completed games are saved to the device. The home screen lists them, one row each: trophy, winner (or tie), date in the app language, player and round counts, and the winner's score.
@@ -99,6 +99,8 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── ScoreHistoryScreen.kt  # Score history: sticky-header table + round cards, with toggle
 ├── FinalScoreScreen.kt    # Game over: winner card, ranking, score-over-time chart
 ├── StatisticsScreen.kt    # Per-player statistics across saved games
+├── ScoreSheet.kt          # Shareable score sheet: content, text format, image layout (pure)
+├── ScoreSheetShare.kt     # Draws the score-sheet PNG, sends share intents (FileProvider)
 ├── PlayerStats.kt         # Pure statistics logic: games, wins, take rate, success per contract, average
 ├── UiComponents.kt        # Shared UI: App* buttons, AutoSizeText, Salon components (SalonCard, PlayerAvatar, SalonTopBar…)
 ├── UiComponentsPreviews.kt # Light + dark @Previews of every Salon component
@@ -235,6 +237,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `RoundPreviewTest.kt` | Live round result: win/short margin, distribution (3 and 5 players), bonuses, zero-sum |
 | `StandingsTest.kt` | Game screen logic: ranked standings (ties, leaders, trend), taker grid columns, last rounds |
 | `PlayerStatsTest.kt` | Statistics: games/wins (ties), take rate, success per contract, average score, name matching, order, strings |
+| `ScoreSheetTest.kt` | Shared score sheet: header lines (EN/FR), tie, ranking, round labels and running totals, text format, image layout |
 | `HomeLogicTest.kt` | Home screen logic: current leader(s), past-game date formatting, app → Java locale |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
 | `LandingScreenTest.kt` | Home screen: top bar, resume card, New Game card (player count, name fields with avatars, duplicate validation, dealer), past-game rows |
@@ -242,7 +245,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `SettingsScreenTest.kt` | Settings: groups, theme/language toggles, feedback row, version, rules page (tables, close, system back) |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history: table (header avatars, totals, sideways scroll), round cards, empty state, toggle, back navigation |
-| `FinalScoreScreenTest.kt` | Game over: winner card, tie, ranking order, chart description, See all rounds, stacked actions, leave confirmation |
+| `FinalScoreScreenTest.kt` | Game over: winner card, tie, ranking order, chart description, See all rounds, stacked actions, leave confirmation, share dialog |
 | `SalonThemeTest.kt` | Theme wiring: light/dark tokens, `scoreColor()`, fonts, shapes |
 | `SalonTopBarTest.kt` | Salon top bar: title, localized back arrow, actions, 48 dp touch targets |
 | `UiComponentsTest.kt` | Shared components: App* buttons, bonus grid, chip selector, score rows, Salon card/avatar/stack/header/score/text field |
@@ -270,6 +273,7 @@ TarotCounter/
 │   ├── score-history.md      # Score history: sticky table, round cards
 │   ├── motion-accessibility.md # Transitions, animated standings, reduced motion, haptics, a11y
 │   ├── final-score.md        # Game over screen: winner card, ranking, score chart
+│   ├── share-score-sheet.md  # Share the final score sheet as text or image
 │   ├── statistics.md         # Player statistics across saved games
 │   ├── game-persistence.md   # How completed games are saved and displayed
 │   ├── score-color.md        # Score colour-coding convention and scoreColor() helper
@@ -300,6 +304,7 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/dead-player.md`](docs/dead-player.md) — 6-player tables and the optional dead dealer at 4
 - [`docs/settings.md`](docs/settings.md) — settings page: theme toggle, language toggle, feedback button, navigation wiring
 - [`docs/score-history.md`](docs/score-history.md) — score history screen: table view, list view, toggle, navigation
+- [`docs/share-score-sheet.md`](docs/share-score-sheet.md) — share the score sheet: text format, PNG layout, FileProvider
 - [`docs/statistics.md`](docs/statistics.md) — player statistics: figures, rules, name matching, limitations
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen

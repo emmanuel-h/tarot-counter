@@ -244,6 +244,8 @@ afterEvaluate {
                 "fr.mandarine.tarotcounter.ThemeModeProvider*," +
                 "fr.mandarine.tarotcounter.SettingsScreenKt*," +
                 "fr.mandarine.tarotcounter.StatisticsScreenKt*," +
+                // Android Bitmap drawing + share intents (pure parts live in ScoreSheet.kt)
+                "fr.mandarine.tarotcounter.ScoreSheetShareKt*," +
                 "fr.mandarine.tarotcounter.RulesScreenKt*," +
                 // Bonus rows + bottom sheets (composables) and their private sheet enum
                 "fr.mandarine.tarotcounter.BonusSheetsKt*," +

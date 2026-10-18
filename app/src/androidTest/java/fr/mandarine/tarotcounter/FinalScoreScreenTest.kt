@@ -50,7 +50,8 @@ class FinalScoreScreenTest {
         roundHistory: List<RoundResult> = emptyList(),
         onBack: () -> Unit = {},
         onNewGame: () -> Unit = {},
-        onMainMenu: () -> Unit = {}
+        onMainMenu: () -> Unit = {},
+        onShare: ((ShareFormat) -> Unit)? = null
     ) {
         composeTestRule.setContent {
             TarotCounterTheme {
@@ -59,7 +60,8 @@ class FinalScoreScreenTest {
                     roundHistory = roundHistory,
                     onBack       = onBack,
                     onNewGame    = onNewGame,
-                    onMainMenu   = onMainMenu
+                    onMainMenu   = onMainMenu,
+                    onShare      = onShare
                 )
             }
         }
@@ -469,5 +471,38 @@ class FinalScoreScreenTest {
         composeTestRule.onNodeWithTag("score_chart").assertDoesNotExist()
         composeTestRule.onNodeWithTag("ranking_card").assertDoesNotExist()
     }
-}
 
+    // ── Spec: share the score sheet (issue #234) ─────────────────────────────
+
+    private val oneRound = listOf(
+        RoundResult(1, "Alice", Contract.GARDE, null, true,
+            mapOf("Alice" to 50, "Bob" to -25, "Charlie" to -25))
+    )
+
+    @Test
+    fun share_action_is_hidden_without_rounds() {
+        launchFinal()
+        composeTestRule.onNodeWithContentDescription("Share score sheet").assertDoesNotExist()
+    }
+
+    @Test
+    fun share_dialog_offers_text_and_image() {
+        var picked: ShareFormat? = null
+        launchFinal(roundHistory = oneRound, onShare = { picked = it })
+        composeTestRule.onNodeWithContentDescription("Share score sheet").performClick()
+        composeTestRule.onNodeWithText("Share the score sheet").assertIsDisplayed()
+        composeTestRule.onNodeWithText("As image").performClick()
+        assertTrue(picked == ShareFormat.IMAGE)
+        // The dialog closes after a choice.
+        composeTestRule.onNodeWithText("Share the score sheet").assertDoesNotExist()
+    }
+
+    @Test
+    fun share_as_text_reports_the_text_format() {
+        var picked: ShareFormat? = null
+        launchFinal(roundHistory = oneRound, onShare = { picked = it })
+        composeTestRule.onNodeWithContentDescription("Share score sheet").performClick()
+        composeTestRule.onNodeWithText("As text").performClick()
+        assertTrue(picked == ShareFormat.TEXT)
+    }
+}
