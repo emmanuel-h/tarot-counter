@@ -611,7 +611,9 @@ fun GameScreen(
                                 chelem         = chelem,
                                 chelemPlayer   = chelemPlayer
                             ),
-                            deadPlayer  = deadPlayer
+                            deadPlayer  = deadPlayer,
+                            // The game's own house rules (issue #236).
+                            rules       = viewModel.gameRules
                         )
                     } else null
 

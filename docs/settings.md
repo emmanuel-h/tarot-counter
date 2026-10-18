@@ -17,6 +17,14 @@ A back arrow (←) returns the user to the landing screen.
 │ ┌──────────────────────────────┐ │
 │ │ [palette] Theme (Light|Dark) │ │
 │ └──────────────────────────────┘ │
+│ SCORING                          │
+│ ┌──────────────────────────────┐ │
+│ │ [star] Petit au bout         │ │
+│ │ (× contract | Flat 10)       │ │
+│ │ [hand] Poignée               │ │
+│ │ (Flat | × contract)          │ │
+│ │ House rules note             │ │
+│ └──────────────────────────────┘ │
 │ LANGUAGE                         │
 │ ┌──────────────────────────────┐ │
 │ │ [globe] (English | Français) │ │
@@ -40,6 +48,7 @@ Each group has an upper-case heading above a `SalonCard` of list rows. Every row
 | Group | Control | Values | Persisted via |
 |-------|---------|--------|---------------|
 | Appearance | Theme toggle | **Light / Dark** (text labels) | `GameViewModel.setTheme()` → DataStore |
+| Scoring | Petit au bout / Poignée toggles | **× contract / Flat 10** and **Flat / × contract**; the first segment is FFT (default). See [house-rules.md](house-rules.md) | `GameViewModel.setScoringRules()` → DataStore |
 | Language | Language toggle | **English / Français** (each written in its own language, not flag emoji) | `GameViewModel.setLocale()` → DataStore |
 | Help | Rules › | Opens the full-screen rules page | Local `remember` state |
 | Help | Send Feedback › | Opens the default email client | Android Intent (`mailto:`) |

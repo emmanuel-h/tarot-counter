@@ -66,6 +66,10 @@ Scores are zero-sum. The taker receives `±(n−1) × roundScore` for 3/4-player
 
 At a table of **6**, the dealer of each round sits out (« le mort ») and scores **0**; the five others play a normal 5-player round (called partner, 5-player poignée thresholds). At a table of **4**, the same rule is an option on the New Game card (the other three play a 3-player round). The dealer rotates, so everybody sits out in turn. 8-player tables are not supported: no FFT rule covers them. See [`docs/dead-player.md`](docs/dead-player.md).
 
+### House Rules (Settings › Scoring)
+
+Two common variants can replace the FFT scoring. Both default to FFT: **Petit au bout** is × contract (FFT) or a flat 10, and **Poignée** is flat (FFT) or × contract. A game captures the rules when it starts and keeps them, so changing the setting only affects new games. See [`docs/house-rules.md`](docs/house-rules.md).
+
 ### Bonuses Tracked per Round
 
 The round entry shows a **Bonuses** card with three rows, each with its current value (e.g. "Poignée · (1) Alice"). Tapping a row opens a bottom sheet:
@@ -237,6 +241,7 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `ScoreChartTest.kt` | Game over chart data: cumulative series, y bounds (zero included), x-axis labels |
 | `BonusesTest.kt` | Bonus sheet logic: one poignée level per player, declarants order, chelem candidates, announced chelems |
 | `DeadPlayerTest.kt` | Dead player: table sizes, active players, scoring at 6 and at 4 with a dead dealer, rotation, persistence and pre-#231 JSON |
+| `HouseRulesTest.kt` | House scoring rules: FFT defaults, flat petit au bout, poignée × contract, capture at game start, resume, old JSON |
 | `RoundPreviewTest.kt` | Live round result: win/short margin, distribution (3 and 5 players), bonuses, zero-sum |
 | `StandingsTest.kt` | Game screen logic: ranked standings (ties, leaders, trend), taker grid columns, last rounds |
 | `PlayerStatsTest.kt` | Statistics: games/wins (ties), take rate, success per contract, average score, name matching, order, strings |
@@ -274,6 +279,7 @@ TarotCounter/
 │   ├── game-flow.md          # Game mechanics specification
 │   ├── player-setup.md       # Setup screen behaviour
 │   ├── dead-player.md        # 6-player tables, optional dead dealer at 4
+│   ├── house-rules.md        # House scoring rules (Settings › Scoring)
 │   ├── settings.md           # Settings page (grouped cards) and the rules page
 │   ├── score-history.md      # Score history: sticky table, round cards
 │   ├── motion-accessibility.md # Transitions, animated standings, reduced motion, haptics, a11y
@@ -307,6 +313,7 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/game-flow.md`](docs/game-flow.md) — complete game mechanics, data models, round history format
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
 - [`docs/dead-player.md`](docs/dead-player.md) — 6-player tables and the optional dead dealer at 4
+- [`docs/house-rules.md`](docs/house-rules.md) — house scoring rules in Settings (petit au bout, poignée)
 - [`docs/settings.md`](docs/settings.md) — settings page: theme toggle, language toggle, feedback button, navigation wiring
 - [`docs/score-history.md`](docs/score-history.md) — score history screen: table view, list view, toggle, navigation
 - [`docs/share-score-sheet.md`](docs/share-score-sheet.md) — share the score sheet: text format, PNG layout, FileProvider

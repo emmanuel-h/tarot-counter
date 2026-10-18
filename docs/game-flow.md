@@ -314,7 +314,7 @@ The bar is a direct child of the outer (non-scrollable) `Column`, which also own
 - `takerWon(bouts, points)` — returns `true` if points ≥ `requiredPoints(bouts)`.
 - `calculateRoundScore(contract, bouts, points)` — returns the base round score before distribution.
 - `computePlayerScores(allPlayers, takerName, partnerName, won, roundScore)` — returns a `Map<String, Int>` of player → score for the round.
-- `petitAuBoutBonus(contract)` — returns `10 × contract.multiplier`. Direction (which camp benefits) is determined in GameScreen by comparing the achiever's name against the taker/partner.
+- `petitAuBoutBonus(contract, rules)` — returns `10 × contract.multiplier` (FFT), or a flat 10 with the house rule ([house-rules.md](house-rules.md)). Direction (which camp benefits) is determined in GameScreen by comparing the achiever's name against the taker/partner.
 - `poigneeThresholds(playerCount)` — returns a `Triple<Int, Int, Int>` with the minimum trump counts for (simple, double, triple) Poignée, varying by player count (3 → 13/15/18, 4 → 10/13/15, 5 → 8/10/13). Used by `AppStrings` to show the correct threshold in each tooltip.
 - `poigneeBonus(poignee, doublePoignee, triplePoignee)` — legacy single-player helper, returns 20 / 30 / 40 / 0. Kept for backward compat and unit tests.
 - `totalPoigneeBonus(poignees, doublePoignees, triplePoignees)` — multi-player replacement (issue #149): sums `size×20 + size×30 + size×40` across all declarants. Used by `applyBonuses`.

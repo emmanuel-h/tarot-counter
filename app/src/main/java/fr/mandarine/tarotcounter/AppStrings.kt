@@ -302,6 +302,17 @@ data class AppStrings(
     val shareRoundsTitle: String,
     // Shown if the share sheet cannot be opened (e.g. the image failed to save).
     val shareFailed: String,
+    // ── House scoring rules (issue #236) ──────────────────────────────────────
+    // Heading of the Settings group.
+    val scoringLabel: String,
+    val petitAuBoutRuleLabel: String,
+    val poigneeRuleLabel: String,
+    // Toggle options: multiplied by the contract, a flat 10, flat amounts.
+    val ruleTimesContract: String,
+    val ruleFlatTen: String,
+    val ruleFlat: String,
+    // Note under the two toggles.
+    val houseRulesNote: String,
 )
 
 // ── English strings ───────────────────────────────────────────────────────────
@@ -478,7 +489,7 @@ val EnStrings = AppStrings(
     rulesDistributionBody    = "3 or 4 players — no partner:\n• Taker: ±(players − 1) × score\n• Each defender: ∓score\n\n5 players — with called partner:\n• Taker: ±2 × score\n• Partner: ±1 × score\n• Each defender: ∓score\n\n6 players — the dealer sits out (scores 0) and the five others play as above. At 4 players this is optional (3 play).\n\nEvery round is zero-sum.",
 
     rulesBonusTitle          = "Bonuses",
-    rulesBonusBody           = "Petit au bout — Petit (1 of trumps) won on the last trick:\n+10 × multiplier to the achieving camp.\n\nPoignée — trumps shown before play:\n• Simple: 20 pts per player\n• Double: 30 pts per player\n• Triple: 40 pts per player\nBonus always goes to the winning camp.\n\nChelem — all tricks won by the same team:\n• Announced & realized: +400 pts\n• Not announced, realized: +200 pts\n• Announced, not realized: −200 pts\n• Defenders realized: −200 pts (taker pays each defender)",
+    rulesBonusBody           = "Petit au bout — Petit (1 of trumps) won on the last trick:\n+10 × multiplier to the achieving camp (house rule: a flat 10).\n\nPoignée — trumps shown before play:\n• Simple: 20 pts per player\n• Double: 30 pts per player\n• Triple: 40 pts per player\nBonus always goes to the winning camp (house rule: × multiplier).\n\nChelem — all tricks won by the same team:\n• Announced & realized: +400 pts\n• Not announced, realized: +200 pts\n• Announced, not realized: −200 pts\n• Defenders realized: −200 pts (taker pays each defender)",
     dealerSitsOutLabel  = "Dealer sits out",
     dealerSitsOutAtSix  = "At 6 players the dealer sits out each round and scores 0; the other five play a 5-player round.",
     dealerSitsOutAtFour = "The dealer sits out each round and scores 0; the other three play a 3-player round.",
@@ -486,6 +497,13 @@ val EnStrings = AppStrings(
     sitOutOn            = "Yes",
     dealerSitsOutChip   = { dealer -> "Dealer: $dealer · sits out" },
     satOut              = { name -> "$name sat out" },
+    scoringLabel         = "Scoring",
+    petitAuBoutRuleLabel = "Petit au bout",
+    poigneeRuleLabel     = "Poignée",
+    ruleTimesContract    = "× contract",
+    ruleFlatTen          = "Flat 10",
+    ruleFlat             = "Flat",
+    houseRulesNote       = "House rules. The first option of each row is the official FFT rule (default). Changes apply to new games only.",
 )
 
 // ── French strings ────────────────────────────────────────────────────────────
@@ -660,7 +678,7 @@ val FrStrings = AppStrings(
     rulesDistributionBody    = "3 ou 4 joueurs — sans appelé :\n• Preneur : (joueurs − 1) × score\n• Chaque défenseur : score\n\n5 joueurs — avec appelé :\n• Preneur : 2 × score\n• Appelé : score\n• Chaque défenseur : score\n\n6 joueurs — le donneur ne joue pas (il marque 0), les cinq autres jouent comme ci-dessus. À 4 joueurs c'est en option (3 jouent).\n\nChaque manche est à somme nulle.",
 
     rulesBonusTitle          = "Bonus",
-    rulesBonusBody           = "Petit au bout — le Petit (1 d'atout) remporté au dernier pli :\n+10 × multiplicateur pour le camp qui le réalise.\n\nPoignée — atouts déclarés avant le jeu :\n• Simple : 20 pts par joueur\n• Double : 30 pts par joueur\n• Triple : 40 pts par joueur\nLe bonus va toujours au camp gagnant.\n\nChelem — tous les plis remportés par la même équipe :\n• Annoncé et réalisé : +400 pts\n• Non annoncé, réalisé : +200 pts\n• Annoncé, non réalisé : −200 pts\n• Défense réalise : −200 pts (le preneur paye chaque défenseur)",
+    rulesBonusBody           = "Petit au bout — le Petit (1 d'atout) remporté au dernier pli :\n+10 × multiplicateur pour le camp qui le réalise (règle maison : 10 fixe).\n\nPoignée — atouts déclarés avant le jeu :\n• Simple : 20 pts par joueur\n• Double : 30 pts par joueur\n• Triple : 40 pts par joueur\nLe bonus va toujours au camp gagnant (règle maison : × multiplicateur).\n\nChelem — tous les plis remportés par la même équipe :\n• Annoncé et réalisé : +400 pts\n• Non annoncé, réalisé : +200 pts\n• Annoncé, non réalisé : −200 pts\n• Défense réalise : −200 pts (le preneur paye chaque défenseur)",
     dealerSitsOutLabel  = "Le donneur ne joue pas",
     dealerSitsOutAtSix  = "À 6 joueurs, le donneur ne joue pas la donne (il est « mort ») et marque 0 ; les cinq autres jouent une donne à 5.",
     dealerSitsOutAtFour = "À chaque donne, le donneur ne joue pas et marque 0 ; les trois autres jouent une donne à 3.",
@@ -668,6 +686,13 @@ val FrStrings = AppStrings(
     sitOutOn            = "Oui",
     dealerSitsOutChip   = { dealer -> "Donneur : $dealer · ne joue pas" },
     satOut              = { name -> "$name ne jouait pas" },
+    scoringLabel         = "Décompte",
+    petitAuBoutRuleLabel = "Petit au bout",
+    poigneeRuleLabel     = "Poignée",
+    ruleTimesContract    = "× contrat",
+    ruleFlatTen          = "10 fixe",
+    ruleFlat             = "Fixe",
+    houseRulesNote       = "Règles maison. La première option de chaque ligne est la règle officielle FFT (par défaut). Les changements s'appliquent aux nouvelles parties.",
 )
 
 // Returns the AppStrings for the given locale.

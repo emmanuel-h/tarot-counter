@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 import org.junit.Assert.assertEquals
+import androidx.compose.ui.test.assertIsSelected
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -287,6 +288,34 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithTag("rules_screen").assertDoesNotExist()
         composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
         assert(!left) { "Back from the rules page must stay in Settings" }
+    }
+
+    // ── House scoring rules (issue #236) ──────────────────────────────────────
+
+    @Test
+    fun scoring_group_defaults_to_the_fft_options() {
+        launch()
+        composeTestRule.onNodeWithTag("house_rules_note").performScrollTo().assertIsDisplayed()
+        // Index 0 of each toggle is the FFT rule.
+        composeTestRule.onNodeWithTag("rule_petit_0").assertIsSelected()
+        composeTestRule.onNodeWithTag("rule_poignee_0").assertIsSelected()
+    }
+
+    @Test
+    fun tapping_house_rule_options_reports_the_new_rules() {
+        var rules = ScoringRules.FFT
+        composeTestRule.setContent {
+            TarotCounterTheme {
+                SettingsScreen(
+                    scoringRules         = rules,
+                    onScoringRulesChange = { rules = it }
+                )
+            }
+        }
+        composeTestRule.onNodeWithTag("rule_petit_1").performScrollTo().performClick()
+        assertEquals(ScoringRules(petitAuBoutMultiplied = false), rules)
+        composeTestRule.onNodeWithTag("rule_poignee_1").performScrollTo().performClick()
+        assertEquals(ScoringRules(petitAuBoutMultiplied = false, poigneeMultiplied = true), rules)
     }
 }
 

@@ -134,4 +134,18 @@ class FakeGameStorage : GameStorageInterface {
         markReviewCallCount++
         _reviewRequested.value = true
     }
+
+    // ── House scoring rules (issue #236) ──────────────────────────────────────
+    private val _scoringRules = MutableStateFlow(ScoringRules.FFT)
+    var lastSavedScoringRules: ScoringRules? = null; private set
+
+    /** Pre-populate the stored house rules. */
+    fun seedScoringRules(rules: ScoringRules) { _scoringRules.value = rules }
+
+    override fun loadScoringRules(): Flow<ScoringRules> = _scoringRules.asStateFlow()
+
+    override suspend fun saveScoringRules(rules: ScoringRules) {
+        lastSavedScoringRules = rules
+        _scoringRules.value = rules
+    }
 }
