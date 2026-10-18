@@ -96,12 +96,57 @@ python3 tools/store/feature_graphic.py
 
 The Play Store icon `ic_launcher.png` (512 × 512) comes from `tools/icon/generate_icons.py`; see `docs/icon-design.md`.
 
+## Listing text (issues #226, #227, #228)
+
+The Play listing's title and descriptions are versioned under `store/listing/`, so a wording change is reviewed like code:
+
+```
+store/listing/
+├── en-US/
+│   ├── title.txt               ≤ 30 characters
+│   ├── short_description.txt   ≤ 80 characters
+│   └── full_description.txt    ≤ 4000 characters
+└── fr-FR/
+    └── (same three files)
+```
+
+Folder names are Play language codes. The trailing newline is dropped; everything else, blank lines included, is sent as is (plain text, no HTML). Limits are counted in Unicode characters, as Play counts them, so `é` or `–` count as one.
+
+| | fr-FR | en-US |
+|---|---|---|
+| Title | « Compteur Tarot: Score & Points » (30) | "French Tarot Score Counter" (26) |
+| Short description | « Compteur de points pour le tarot à 3, 4 ou 5 : contrats, poignées, chelem. » (74) | "Score keeper for French Tarot, 3–5 players: contracts, bonuses, history." (72) |
+
+Writing guidelines:
+
+- **First lines**: what the app does, for 3, 4 or 5 players, and **free, no ads, no account**.
+- **Keywords in sentences**, never as a list: compteur, calcul des points, feuille de marque, règles FFT, prise / garde / garde sans / garde contre, bouts, petit au bout, poignée, chelem, appel au roi; French Tarot, score keeper, scoresheet, calculator. Keyword stuffing and other apps' names are against Play policy.
+- **Claim only what the app does.** The app has no permission at all, so "no internet access, your games stay on your phone" is true; keep it true if a permission is ever added.
+
+The French title follows the « Compteur Tarot – Score & Points » proposal of #228, but that is 31 characters, so the dash became a colon. The English title carries **French** because English "tarot" searches are full of fortune-telling apps.
+
+The launcher label (`app_name`: "Tarot Counter" / « Tarot ») stays as it is: a short label fits under an icon, and the Play title only needs to rank. So the feature graphic wordmark, which uses `app_name`, needs no regeneration. See `docs/app-name.md`.
+
+**"AI" badge in Play search.** It cannot be checked from the API. Our guess is that Play marks text it translated or summarised automatically (for example the English listing showing the French title before an en-US title existed), not text we wrote. Once both languages have their own title and descriptions, check the badge again in Play search.
+
+Check the text without sending anything, then publish it:
+
+```bash
+python3 -m unittest discover tools/store                    # limits, files, dry-run calls
+python3 tools/store/publish-play.py --listing --dry-run     # prints the PATCH calls and lengths
+python3 tools/store/publish-play.py --listing --validate-only
+python3 tools/store/publish-play.py --listing
+```
+
+`--listing` sends one `PATCH edits/{id}/listings/{language}` per folder, inside the same edit as `--bundle` and `--screenshots` when they are combined. PATCH changes only the three text fields; images stay untouched. Text over a limit, an empty file or a missing file stops the script before it signs in.
+
 ## Publishing to Google Play
 
-`tools/store/publish-play.py` talks to the Play Developer Publishing API: it uploads the bundle and its R8 mapping, releases it on a track with the notes in each language, and with `--screenshots` empties and refills the listing's screenshot slots. All of it goes into one *edit* (Play's transaction) committed once, and a failure deletes the edit, so the listing never shows half an update. `/release-store` runs it; `--dry-run` prints the calls without sending any, and `--validate-only` has Play check the edit and then throws it away.
+`tools/store/publish-play.py` talks to the Play Developer Publishing API: it uploads the bundle and its R8 mapping, releases it on a track with the notes in each language, with `--screenshots` empties and refills the listing's screenshot slots, and with `--listing` sets the title and descriptions (see above). All of it goes into one *edit* (Play's transaction) committed once, and a failure deletes the edit, so the listing never shows half an update. `/release-store` runs it; `--dry-run` prints the calls without sending any, and `--validate-only` has Play check the edit and then throws it away.
 
 ```bash
 python3 tools/store/publish-play.py --screenshots                # listing images alone
+python3 tools/store/publish-play.py --listing                    # listing text alone
 python3 tools/store/publish-play.py --bundle … --mapping … --track production \
     --release-name 3.1.0 --notes-dir notes/ [--screenshots]
 ```

@@ -1,0 +1,20 @@
+The score keeper for French Tarot, the classic French card game, for 3, 4 or 5 players. Enter each hand in a few seconds and the app does the scoring for you, following the official French Tarot Federation (FFT) rules. Free, no ads, no account.
+
+Put the paper scoresheet away: pick the taker, the contract (prise, garde, garde sans or garde contre), the number of bouts (oudlers) and the points scored. The result shows live, before you even confirm: made or failed, by how much, and what every player wins or loses.
+
+Every bonus is counted: petit au bout, single, double or triple poignée (with the trump thresholds for your player count) and chelem, announced or not. In a 5-player game, pick the partner the taker called with the king, and the score is split between the taker, the partner and the defense. Counted the defense's points instead? Enter them as they are and the calculator converts them.
+
+Features:
+• Live result of the hand, bonuses included
+• Standings updated after every hand
+• Hand-by-hand history, as a table or a list
+• Score chart at the end of the game
+• Auto-save: resume an unfinished game right where you left it
+• Undo the last hand if you made a mistake
+• Automatic dealer rotation
+• Finished games kept with the winner and score
+• Tarot rules available in the app
+• Light or dark theme
+• In English and French
+
+No ads, no in-app purchases, no account to create: the app has no internet access and your games stay on your phone.

@@ -1,0 +1,20 @@
+Le compteur de points pour vos parties de tarot à 3, 4 ou 5 joueurs. Saisissez chaque donne en quelques secondes et l'application fait le calcul des points selon les règles officielles de la FFT. Gratuit, sans publicité, sans compte.
+
+Fini la feuille de marque griffonnée sur un coin de nappe : choisissez le preneur, le contrat (prise, garde, garde sans ou garde contre), le nombre de bouts et les points réalisés. Le résultat de la donne s'affiche en direct, avant même de valider : contrat fait ou chuté, de combien, et ce que chaque joueur gagne ou perd.
+
+Les annonces sont toutes prises en compte : petit au bout, poignée simple, double ou triple (avec les seuils d'atouts selon le nombre de joueurs) et chelem, annoncé ou non. À 5 joueurs, avec l'appel au roi, désignez le partenaire appelé et le score est réparti entre le preneur, son partenaire et la défense. Vous avez compté les points de la défense ? Saisissez-les directement, la conversion est automatique.
+
+Fonctionnalités :
+• Résultat en direct de la donne, primes comprises
+• Classement mis à jour après chaque donne
+• Historique des donnes, en tableau ou en liste
+• Graphique de l'évolution des scores en fin de partie
+• Sauvegarde automatique : reprenez une partie interrompue là où vous l'aviez laissée
+• Annulation de la dernière donne en cas d'erreur
+• Rotation automatique du donneur
+• Parties terminées conservées, avec le gagnant et le score
+• Règles du tarot consultables dans l'application
+• Thème clair ou sombre
+• En français et en anglais
+
+Pas de publicité, pas d'achat intégré, pas de compte à créer : l'application n'a pas accès à Internet et vos parties restent sur votre téléphone.

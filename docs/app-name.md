@@ -36,3 +36,17 @@ the app falls back to the device's system language.
 
 Both systems use the same naming convention so they stay consistent when the device language and
 in-app language match.
+
+## Play Store Listing Title
+
+The title on Google Play is separate from both: it is set from `store/listing/{fr-FR,en-US}/title.txt`
+by `tools/store/publish-play.py --listing` (see `docs/store-assets.md`).
+
+| Play language | Listing title |
+|---|---|
+| fr-FR | Compteur Tarot: Score & Points |
+| en-US | French Tarot Score Counter |
+
+The listing title is written to be found in Play search (30 characters at most), while the launcher
+label only has to fit under the icon. So `app_name` deliberately stays "Tarot Counter" / "Tarot"
+(decision of issue #228), and the feature graphic, whose wordmark uses `app_name`, is unchanged.
