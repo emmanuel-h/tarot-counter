@@ -157,10 +157,17 @@ for:
 
 If any shot fails, fix the cause and run 7b again. Never publish a set you have not seen.
 
-**7d. Commit the screenshots:**
+**7d. Redraw the captioned phone shots** (Play's phone slots use them, issue #225),
+and look at a couple of them — the caption above, the whole screen below:
 
 ```bash
-git add store/screenshots
+python3 tools/store/caption_screenshots.py
+```
+
+**7e. Commit the screenshots:**
+
+```bash
+git add store/screenshots store/captioned
 git commit -m "chore(store): regenerate screenshots for ${NEW_NAME}"
 ```
 

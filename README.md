@@ -28,7 +28,7 @@ The app rotates the **dealer** each round and lets the user explicitly select th
 | ![Home](store/screenshots/en/light/1_home.png) | ![Game](store/screenshots/en/light/2_game.png) | ![Round entry](store/screenshots/en/light/3_round_entry.png) | ![Game over](store/screenshots/en/light/4_game_over.png) |
 | ![Home, dark](store/screenshots/en/dark/1_home.png) | ![Game, dark](store/screenshots/en/dark/2_game.png) | ![Round entry, dark](store/screenshots/en/dark/3_round_entry.png) | ![Game over, dark](store/screenshots/en/dark/4_game_over.png) |
 
-French screenshots and the feature graphic live in [`store/`](store/); see [`docs/store-assets.md`](docs/store-assets.md) to regenerate them.
+French screenshots, the captioned Play versions (`store/captioned/`) and the feature graphic live in [`store/`](store/); see [`docs/store-assets.md`](docs/store-assets.md) to regenerate them.
 
 ## Game Rules Summary
 
@@ -247,10 +247,10 @@ TarotCounter/
 │   │   ├── test/           # Unit tests (JVM)
 │   │   └── androidTest/    # Instrumented tests (device/emulator)
 │   └── build.gradle.kts
-├── store/                  # Play Store screenshots (phone: en/fr × light/dark; 7"/10" tablet: fr) and feature graphics
+├── store/                  # Play Store screenshots (phone: en/fr × light/dark, raw and captioned; 7"/10" tablet: fr) and feature graphics
 ├── tools/
 │   ├── icon/               # generate_icons.py: raster icons from the vector drawables
-│   └── store/              # feature_graphic.py: Play feature graphic
+│   └── store/              # feature_graphic.py, caption_screenshots.py, publish-play.py: Play listing assets
 ├── docs/
 │   ├── ui-components.md      # Shared UI components: App* buttons, AutoSizeText, Salon components
 │   ├── game-flow.md          # Game mechanics specification

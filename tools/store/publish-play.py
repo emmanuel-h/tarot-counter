@@ -11,7 +11,8 @@ Everything goes into one edit, and the edit is committed once at the end, so the
 listing never shows half an update. With --bundle, the bundle and its R8 mapping
 are uploaded and released on TRACK with the notes in DIR/<language>.txt (file
 names are Play language codes: en-US.txt, fr-FR.txt). With --screenshots, the
-screenshot slots listed in LISTINGS are emptied and refilled from store/screenshots/.
+screenshot slots listed in LISTINGS are emptied and refilled from store/ (captioned
+phone shots from store/captioned/, raw tablet shots from store/screenshots/).
 
 The service account key is read from $PLAY_SERVICE_ACCOUNT, or
 ~/.config/tarotcounter/play-service-account.json — see docs/store-assets.md.
@@ -27,21 +28,22 @@ SCOPE = "https://www.googleapis.com/auth/androidpublisher"
 API = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{PKG}"
 UPLOAD = f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{PKG}"
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SCREENSHOTS = os.path.join(REPO, "store", "screenshots")
+STORE = os.path.join(REPO, "store")
 DEFAULT_KEY = os.path.expanduser("~/.config/tarotcounter/play-service-account.json")
 
 # Which files fill which Play slot, per listing language. Paths are relative to
-# store/screenshots/ and uploaded in the order given. Play shows phone shots in
+# store/ and uploaded in the order given. Phone shots are the captioned versions
+# (tools/store/caption_screenshots.py, issue #225); tablet shots are raw. Play shows phone shots in
 # this order: every screen in light, then the three most striking in dark (Play
 # takes at most 8). Tablet shots exist in French only; a slot that is not listed
 # here is left as it is on Play rather than emptied.
 PHONE = ["light/1_home", "light/2_game", "light/3_round_entry", "light/4_game_over",
          "light/5_history", "dark/2_game", "dark/3_round_entry", "dark/4_game_over"]
 LISTINGS = {
-    "en-US": {"phoneScreenshots": [f"en/{s}.png" for s in PHONE]},
-    "fr-FR": {"phoneScreenshots": [f"fr/{s}.png" for s in PHONE],
-              "sevenInchScreenshots": sorted(glob.glob("tablet7/fr/light/*.png", root_dir=SCREENSHOTS)),
-              "tenInchScreenshots": sorted(glob.glob("tablet10/fr/light/*.png", root_dir=SCREENSHOTS))},
+    "en-US": {"phoneScreenshots": [f"captioned/en/{s}.png" for s in PHONE]},
+    "fr-FR": {"phoneScreenshots": [f"captioned/fr/{s}.png" for s in PHONE],
+              "sevenInchScreenshots": sorted(glob.glob("screenshots/tablet7/fr/light/*.png", root_dir=STORE)),
+              "tenInchScreenshots": sorted(glob.glob("screenshots/tablet10/fr/light/*.png", root_dir=STORE))},
 }
 
 
@@ -124,14 +126,15 @@ def publish_screenshots(play, edit):
             if not 2 <= len(shots) <= 8:
                 raise PlayError(f"{language} {slot}: {len(shots)} screenshots; Play takes 2 to 8")
             for shot in shots:
-                if not os.path.isfile(os.path.join(SCREENSHOTS, shot)):
-                    raise PlayError(f"{language} {slot}: missing store/screenshots/{shot}")
+                if not os.path.isfile(os.path.join(STORE, shot)):
+                    raise PlayError(f"{language} {slot}: missing store/{shot}"
+                                    + (" (run tools/store/caption_screenshots.py)" if shot.startswith("captioned/") else ""))
     for language, slots in LISTINGS.items():
         for slot, shots in slots.items():
             play.call("DELETE", f"{API}/edits/{edit}/listings/{language}/{slot}")
             for shot in shots:
                 play.upload(f"{UPLOAD}/edits/{edit}/listings/{language}/{slot}",
-                            os.path.join(SCREENSHOTS, shot), "image/png")
+                            os.path.join(STORE, shot), "image/png")
 
 
 def main():
