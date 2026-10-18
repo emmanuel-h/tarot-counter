@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -47,7 +48,7 @@ import fr.mandarine.tarotcounter.ui.theme.tarotColors
 // LandingScreen is the home screen (Salon redesign, issue #197). From top to bottom:
 //
 //   ┌──────────────────────────────┐
-//   │ Tarot Counter            [⚙] │  SalonTopBar: wordmark + settings
+//   │ Tarot Counter       [≡] [⚙] │  SalonTopBar: wordmark + statistics + settings
 //   │ ┌── felt card ─────────────┐ │  only when a game is in progress
 //   │ │ GAME IN PROGRESS   (A)(B)│ │
 //   │ │ Round 5                  │ │
@@ -71,6 +72,7 @@ import fr.mandarine.tarotcounter.ui.theme.tarotColors
 // onResumeGame:         called when the user taps "Resume" — passes the saved state back
 //                       to MainActivity so GameScreen can be initialized from it.
 // onNavigateToSettings: called when the user taps the gear icon.
+// onNavigateToStatistics: called when the user taps the statistics (leaderboard) icon.
 // inProgressGame:       a game that was interrupted mid-session, or null if there is none.
 // pastGames:            list of completed games; defaults to empty for the @Preview below.
 @Composable
@@ -80,7 +82,8 @@ fun LandingScreen(
     pastGames: List<SavedGame> = emptyList(),
     onStartGame: (names: List<String>, dealerIndex: Int?) -> Unit = { _, _ -> },
     onResumeGame: (InProgressGame) -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToStatistics: () -> Unit = {}
 ) {
     // Read the active locale from the composition tree.
     val locale  = LocalAppLocale.current
@@ -104,11 +107,13 @@ fun LandingScreen(
                 .padding(bottom = Dimens.SpaceXl),
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)
         ) {
-            // ── Top bar: wordmark on the left, settings on the right ──────────
+            // ── Top bar: wordmark on the left, statistics + settings on the right ──
             SalonTopBar(
                 title      = strings.appTitle,
                 titleStyle = MaterialTheme.typography.headlineLarge,
                 actions    = listOf(
+                    // Statistics across saved games (issue #229).
+                    TopBarAction(Icons.Default.Leaderboard, strings.statistics, onNavigateToStatistics),
                     TopBarAction(Icons.Default.Settings, strings.settings, onNavigateToSettings)
                 )
             )
