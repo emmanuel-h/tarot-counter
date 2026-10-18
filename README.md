@@ -28,7 +28,7 @@ The app rotates the **dealer** each round and lets the user explicitly select th
 | ![Home](store/screenshots/en/light/1_home.png) | ![Game](store/screenshots/en/light/2_game.png) | ![Round entry](store/screenshots/en/light/3_round_entry.png) | ![Game over](store/screenshots/en/light/4_game_over.png) |
 | ![Home, dark](store/screenshots/en/dark/1_home.png) | ![Game, dark](store/screenshots/en/dark/2_game.png) | ![Round entry, dark](store/screenshots/en/dark/3_round_entry.png) | ![Game over, dark](store/screenshots/en/dark/4_game_over.png) |
 
-French screenshots, the captioned Play versions (`store/captioned/`) and the feature graphic live in [`store/`](store/); see [`docs/store-assets.md`](docs/store-assets.md) to regenerate them.
+French screenshots, the captioned Play versions (`store/captioned/`), the feature graphic and the Play listing text (title, short and full descriptions in [`store/listing/`](store/listing/)) live in [`store/`](store/); see [`docs/store-assets.md`](docs/store-assets.md) to regenerate or publish them.
 
 ## Game Rules Summary
 

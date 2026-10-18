@@ -15,3 +15,6 @@ local.properties
 
 # Play publishing service-account key — lives in ~/.config/tarotcounter/, never here
 *service-account*.json
+
+# Python bytecode (tools/ scripts and their tests)
+__pycache__/

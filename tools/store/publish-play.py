@@ -3,7 +3,7 @@
 
     python3 tools/store/publish-play.py [--bundle AAB --mapping TXT --track TRACK
                                          --release-name NAME --notes-dir DIR]
-                                        [--screenshots]
+                                        [--screenshots] [--listing]
                                         [--validate-only] [--changes-not-sent-for-review]
                                         [--dry-run]
 
@@ -13,6 +13,8 @@ are uploaded and released on TRACK with the notes in DIR/<language>.txt (file
 names are Play language codes: en-US.txt, fr-FR.txt). With --screenshots, the
 screenshot slots listed in LISTINGS are emptied and refilled from store/ (captioned
 phone shots from store/captioned/, raw tablet shots from store/screenshots/).
+With --listing, the title, short and full descriptions of each language are set from
+store/listing/<language>/{title,short_description,full_description}.txt.
 
 The service account key is read from $PLAY_SERVICE_ACCOUNT, or
 ~/.config/tarotcounter/play-service-account.json — see docs/store-assets.md.
@@ -29,6 +31,7 @@ API = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications
 UPLOAD = f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{PKG}"
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 STORE = os.path.join(REPO, "store")
+LISTING = os.path.join(STORE, "listing")
 DEFAULT_KEY = os.path.expanduser("~/.config/tarotcounter/play-service-account.json")
 
 # Which files fill which Play slot, per listing language. Paths are relative to
@@ -44,6 +47,14 @@ LISTINGS = {
     "fr-FR": {"phoneScreenshots": [f"captioned/fr/{s}.png" for s in PHONE],
               "sevenInchScreenshots": sorted(glob.glob("screenshots/tablet7/fr/light/*.png", root_dir=STORE)),
               "tenInchScreenshots": sorted(glob.glob("screenshots/tablet10/fr/light/*.png", root_dir=STORE))},
+}
+
+# Listing text: file name in store/listing/<language>/ -> (Play API field, Play's
+# limit in characters). Play counts Unicode characters, as Python's len() does.
+LISTING_TEXT = {
+    "title.txt": ("title", 30),
+    "short_description.txt": ("shortDescription", 80),
+    "full_description.txt": ("fullDescription", 4000),
 }
 
 
@@ -106,6 +117,40 @@ def release_notes(notes_dir):
     return notes
 
 
+def listing_text(root):
+    """Read every store/listing/<language>/ folder into the body of a listings PATCH.
+
+    Each folder must hold the three files of LISTING_TEXT; a missing file or one
+    over Play's limit raises PlayError, so nothing is sent with bad text."""
+    listings = {}
+    for folder in sorted(glob.glob(os.path.join(root, "*", ""))):
+        language = os.path.basename(os.path.dirname(folder))
+        body = {"language": language}
+        for name, (field, limit) in LISTING_TEXT.items():
+            path = os.path.join(folder, name)
+            if not os.path.isfile(path):
+                raise PlayError(f"{language}: missing store/listing/{language}/{name}")
+            # strip() drops the trailing newline editors add; it is not part of the text.
+            with open(path, encoding="utf-8") as f:
+                text = f.read().strip()
+            if not text:
+                raise PlayError(f"{language} {field} is empty")
+            if len(text) > limit:
+                raise PlayError(f"{language} {field} is {len(text)} characters; Play takes {limit}")
+            body[field] = text
+        listings[language] = body
+    if not listings:
+        raise PlayError(f"no <language>/ folders in {root}")
+    return listings
+
+
+def publish_listing(play, edit, listings):
+    # PATCH changes only the fields sent: the listing's images and video stay as they are.
+    for language, body in listings.items():
+        play.call("PATCH", f"{API}/edits/{edit}/listings/{language}", json=body)
+        print("    " + ", ".join(f"{k} {len(v)}" for k, v in body.items() if k != "language"))
+
+
 def publish_bundle(play, edit, args):
     notes = release_notes(args.notes_dir)
     bundle = play.upload(f"{UPLOAD}/edits/{edit}/bundles", args.bundle, "application/octet-stream")
@@ -145,6 +190,7 @@ def main():
     p.add_argument("--release-name")
     p.add_argument("--notes-dir")
     p.add_argument("--screenshots", action="store_true")
+    p.add_argument("--listing", action="store_true")
     p.add_argument("--validate-only", action="store_true")
     p.add_argument("--changes-not-sent-for-review", action="store_true")
     p.add_argument("--dry-run", action="store_true")
@@ -153,8 +199,10 @@ def main():
     release = [args.bundle, args.mapping, args.track, args.release_name, args.notes_dir]
     if any(release) and not all(release):
         p.error("--bundle needs --mapping, --track, --release-name and --notes-dir")
-    if not args.bundle and not args.screenshots:
-        p.error("nothing to publish: pass --bundle, --screenshots, or both")
+    if not (args.bundle or args.screenshots or args.listing):
+        p.error("nothing to publish: pass --bundle, --screenshots and/or --listing")
+    # Check the listing text before signing in, so text over a limit fails before any call.
+    listings = listing_text(LISTING) if args.listing else None
 
     key = os.environ.get("PLAY_SERVICE_ACCOUNT", DEFAULT_KEY)
     play = Play("dry-run" if args.dry_run else access_token(key), args.dry_run)
@@ -163,6 +211,8 @@ def main():
     try:
         if args.bundle:
             publish_bundle(play, edit, args)
+        if args.listing:
+            publish_listing(play, edit, listings)
         if args.screenshots:
             publish_screenshots(play, edit)
         if args.validate_only:
