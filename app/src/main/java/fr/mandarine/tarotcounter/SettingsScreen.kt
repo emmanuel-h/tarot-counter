@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +59,15 @@ import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 //   │ ┌──────────────────────────────┐ │
 //   │ │ [palette] Theme (Light|Dark) │ │
 //   │ └──────────────────────────────┘ │
+//   │ SCORING (issue #236)             │
+//   │ ┌──────────────────────────────┐ │
+//   │ │ [star] Petit au bout         │ │
+//   │ │        (× contract | Flat 10)│ │
+//   │ │ [hand] Poignée               │ │
+//   │ │        (Flat | × contract)   │ │
+//   │ │ FFT rules by default. Applies│ │
+//   │ │ to new games.                │ │
+//   │ └──────────────────────────────┘ │
 //   │ LANGUAGE                         │
 //   │ ┌──────────────────────────────┐ │
 //   │ │ [globe] (English | Français) │ │
@@ -74,6 +85,7 @@ import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 //
 // onThemeChange:  persisted by the ViewModel when the user picks a theme.
 // onLocaleChange: persisted by the ViewModel when the user picks a language.
+// scoringRules / onScoringRulesChange: the house scoring rules (issue #236).
 // onBack:         back arrow → landing screen.
 // versionName:    shown in About; defaults to the app's BuildConfig.VERSION_NAME.
 @Composable
@@ -81,6 +93,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onThemeChange: (AppTheme) -> Unit = {},
     onLocaleChange: (AppLocale) -> Unit = {},
+    scoringRules: ScoringRules = ScoringRules.FFT,
+    onScoringRulesChange: (ScoringRules) -> Unit = {},
     onBack: () -> Unit = {},
     versionName: String = BuildConfig.VERSION_NAME
 ) {
@@ -121,6 +135,38 @@ fun SettingsScreen(
                         modifier = Modifier.width(184.dp)
                     )
                 }
+            }
+
+            // ── Scoring: house rules (issue #236) ─────────────────────────────
+            // Each option is a two-way toggle whose first segment is the FFT rule.
+            // `copy(...)` returns a new ScoringRules with one field changed.
+            SettingsGroup(strings.scoringLabel) {
+                HouseRuleRow(
+                    icon     = Icons.Default.Star,
+                    label    = strings.petitAuBoutRuleLabel,
+                    options  = listOf(true to strings.ruleTimesContract, false to strings.ruleFlatTen),
+                    selected = scoringRules.petitAuBoutMultiplied,
+                    onSelect = { onScoringRulesChange(scoringRules.copy(petitAuBoutMultiplied = it)) },
+                    tag      = "rule_petit"
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HouseRuleRow(
+                    icon     = Icons.Default.PanTool,
+                    label    = strings.poigneeRuleLabel,
+                    options  = listOf(false to strings.ruleFlat, true to strings.ruleTimesContract),
+                    selected = scoringRules.poigneeMultiplied,
+                    onSelect = { onScoringRulesChange(scoringRules.copy(poigneeMultiplied = it)) },
+                    tag      = "rule_poignee"
+                )
+                Text(
+                    text     = strings.houseRulesNote,
+                    style    = MaterialTheme.typography.bodySmall,
+                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(horizontal = Dimens.SpaceM)
+                        .padding(bottom = Dimens.SpaceM)
+                        .testTag("house_rules_note")
+                )
             }
 
             // ── Language ──────────────────────────────────────────────────────
@@ -217,6 +263,44 @@ private fun SettingsRow(
             // No label: the trailing control takes the rest of the row.
             Box(modifier = Modifier.weight(1f)) { trailing() }
         }
+    }
+}
+
+// A house-rule row: icon and label on the first line, the two-way toggle on its own
+// full-width line below, so long labels ("Petit au bout") and options both fit.
+@Composable
+private fun HouseRuleRow(
+    icon: ImageVector,
+    label: String,
+    options: List<Pair<Boolean, String>>,
+    selected: Boolean,
+    onSelect: (Boolean) -> Unit,
+    tag: String
+) {
+    Column(
+        modifier            = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)
+    ) {
+        Row(
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
+        ) {
+            Icon(
+                imageVector        = icon,
+                contentDescription = null, // the label names the row
+                tint               = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(text = label, style = MaterialTheme.typography.bodyLarge)
+        }
+        ChoiceToggle(
+            options  = options,
+            selected = selected,
+            onSelect = onSelect,
+            tag      = tag,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

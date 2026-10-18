@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -49,6 +50,9 @@ private val FINISHED_GAMES_KEY = intPreferencesKey("finished_game_count")
 // true once the Play Store review flow has been launched, so it is never shown again.
 private val REVIEW_REQUESTED_KEY = booleanPreferencesKey("review_requested")
 
+// The key under which the house scoring rules are stored, as a JSON object (issue #236).
+private val SCORING_RULES_KEY = stringPreferencesKey("scoring_rules")
+
 // How many past games to keep on the device.
 // Older games beyond this limit are dropped when a new game is saved.
 private const val MAX_SAVED_GAMES = 20
@@ -81,6 +85,13 @@ interface GameStorageInterface {
     fun loadReviewRequested(): Flow<Boolean>
     suspend fun incrementFinishedGameCount()
     suspend fun markReviewRequested()
+
+
+    // House scoring rules (issue #236). The bodies here are *default implementations*:
+    // a class implementing the interface may skip them, which keeps simple test fakes
+    // short — they then always report the FFT rules and ignore saves.
+    fun loadScoringRules(): Flow<ScoringRules> = flowOf(ScoringRules.FFT)
+    suspend fun saveScoringRules(rules: ScoringRules) {}
 }
 
 // GameStorage handles all DataStore read and write operations for saved games.
@@ -168,6 +179,24 @@ class GameStorage(private val context: Context) : GameStorageInterface {
     override suspend fun saveTheme(theme: AppTheme) {
         context.dataStore.edit { prefs ->
             prefs[THEME_KEY] = theme.name
+        }
+    }
+
+    // Returns a Flow of the house scoring rules. Nothing stored yet, or an unreadable
+    // value, means the FFT rules — so the feature is invisible until the user opts in.
+    override fun loadScoringRules(): Flow<ScoringRules> =
+        context.dataStore.data
+            .catch { emit(emptyPreferences()) }
+            .map { prefs ->
+                prefs[SCORING_RULES_KEY]
+                    ?.let { runCatching { json.decodeFromString<ScoringRules>(it) }.getOrNull() }
+                    ?: ScoringRules.FFT
+            }
+
+    // Persists the house scoring rules as a small JSON object.
+    override suspend fun saveScoringRules(rules: ScoringRules) {
+        context.dataStore.edit { prefs ->
+            prefs[SCORING_RULES_KEY] = json.encodeToString(rules)
         }
     }
 

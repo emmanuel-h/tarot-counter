@@ -98,6 +98,15 @@ class GameViewModel internal constructor(
         initialValue = false
     )
 
+    // The house scoring rules chosen in Settings (issue #236) — the rules a *new* game
+    // will use. FFT until the stored value is read (and when nothing was ever saved).
+    val scoringRules: StateFlow<ScoringRules> = storage.loadScoringRules()
+        .stateIn(
+            scope        = viewModelScope,
+            started      = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ScoringRules.FFT
+        )
+
     // ── Game session state ────────────────────────────────────────────────────
     //
     // These fields are set by initGame() and mutated by recordPlayed(), recordSkipped(),
@@ -126,6 +135,10 @@ class GameViewModel internal constructor(
     // again); this guard makes sure such a game is only counted once.
     private var _countedGameId: String? = null
 
+    // The house scoring rules of *this* game (issue #236), fixed when it starts so a
+    // later change in Settings never re-scores it.
+    private var _gameRules: ScoringRules = ScoringRules.FFT
+
     // Observable round counter. `mutableIntStateOf` is a Compose snapshot primitive:
     // any composable that reads `currentRound` automatically recomposes when it changes.
     // `private set` prevents callers from mutating it directly.
@@ -141,6 +154,7 @@ class GameViewModel internal constructor(
     val startingIndex: Int get() = _startingIndex
     val gameId: String get() = _gameId
     val dealerSitsOut: Boolean get() = _dealerSitsOut
+    val gameRules: ScoringRules get() = _gameRules
 
     // The display name of the player whose turn it is to *deal* the cards this round.
     // Deals rotate through players in setup order starting from a random first dealer.
@@ -174,12 +188,16 @@ class GameViewModel internal constructor(
     //                        Null means the first dealer is picked randomly (legacy behaviour).
     // dealerSitsOut        : the user's "dealer sits out" choice for a fresh start. It is
     //                        resolved against the table size (always on at 6, never at 3/5).
+    // scoringRules         : house rules for a fresh start (the Settings value). A resumed
+    //                        game keeps the rules stored with it instead.
     fun initGame(
         displayNames: List<String>,
         inProgressGame: InProgressGame?,
         startingIndexOverride: Int? = null,
-        dealerSitsOut: Boolean = false
+        dealerSitsOut: Boolean = false,
+        scoringRules: ScoringRules = ScoringRules.FFT
     ) {
+        _gameRules     = inProgressGame?.scoringRules ?: scoringRules
         _displayNames  = displayNames
         // A resumed game keeps its own setting; resolving again guarantees a table
         // of 6 always has a dead player, whatever was stored.
@@ -216,7 +234,7 @@ class GameViewModel internal constructor(
         // its live result, so what the user sees is exactly what gets recorded.
         // The dead player (if any) is left out of the scoring and recorded with 0.
         val dead    = deadPlayer
-        val preview = previewRound(_displayNames, takerName, contract, details, dead)
+        val preview = previewRound(_displayNames, takerName, contract, details, dead, _gameRules)
         val won     = preview.won
         val scores  = preview.playerScores
         roundHistory.add(RoundResult(currentRound, takerName, contract, details, won, scores, dead))
@@ -275,7 +293,8 @@ class GameViewModel internal constructor(
                     playerNames = _displayNames,
                     rounds      = roundHistory.toList(),
                     finalScores = computeFinalTotals(_displayNames, roundHistory),
-                    dealerSitsOut = _dealerSitsOut
+                    dealerSitsOut = _dealerSitsOut,
+                    scoringRules  = _gameRules
                 )
             )
             countFinishedGame()
@@ -311,7 +330,8 @@ class GameViewModel internal constructor(
         currentRound  = currentRound,
         startingIndex = _startingIndex,
         rounds        = roundHistory.toList(),
-        dealerSitsOut = _dealerSitsOut
+        dealerSitsOut = _dealerSitsOut,
+        scoringRules  = _gameRules
     )
 
     // Saves the completed game to the past-games list and clears the in-progress state.
@@ -352,6 +372,14 @@ class GameViewModel internal constructor(
     fun setLocale(locale: AppLocale) {
         viewModelScope.launch {
             storage.saveLocale(locale)
+        }
+    }
+
+    // Persists the house scoring rules chosen in Settings (issue #236). They apply to
+    // games started afterwards; the game in progress keeps its own rules.
+    fun setScoringRules(rules: ScoringRules) {
+        viewModelScope.launch {
+            storage.saveScoringRules(rules)
         }
     }
 

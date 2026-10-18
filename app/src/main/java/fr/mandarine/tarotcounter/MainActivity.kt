@@ -63,6 +63,8 @@ class MainActivity : ComponentActivity() {
             val inProgressGame by gameViewModel.inProgressGame.collectAsState()
             val savedLocale    by gameViewModel.locale.collectAsState()
             val savedTheme     by gameViewModel.theme.collectAsState()
+            // House scoring rules from Settings (issue #236); FFT until changed.
+            val scoringRules   by gameViewModel.scoringRules.collectAsState()
 
             // Determine the active locale:
             //   1. If the user has explicitly chosen a language, use it.
@@ -139,7 +141,9 @@ class MainActivity : ComponentActivity() {
                                         inProgressGame        = null,
                                         startingIndexOverride = dealerIndex,
                                         // Issue #231: dealer sits out at 6 (or 4 by choice).
-                                        dealerSitsOut         = dealerSitsOut
+                                        dealerSitsOut         = dealerSitsOut,
+                                        // Issue #236: the new game captures the current house rules.
+                                        scoringRules          = scoringRules
                                     )
                                     gameViewModel.clearInProgressGame()
                                     currentScreen = Screen.GAME
@@ -167,6 +171,9 @@ class MainActivity : ComponentActivity() {
                                 // Persist the user's language choice and trigger a recomposition
                                 // through the StateFlow → collectAsState → CompositionLocalProvider chain.
                                 onLocaleChange = { gameViewModel.setLocale(it) },
+                                // House scoring rules (issue #236), persisted for new games.
+                                scoringRules         = scoringRules,
+                                onScoringRulesChange = { gameViewModel.setScoringRules(it) },
                                 // Navigate back to the setup screen.
                                 onBack        = { currentScreen = Screen.SETUP }
                             )

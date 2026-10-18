@@ -247,6 +247,33 @@ fun poigneeThresholds(playerCount: Int): Triple<Int, Int, Int> = when (playerCou
     else -> throw IllegalArgumentException("playerCount must be 3–5, got $playerCount")
 }
 
+// ── House scoring rules (issue #236) ───────────────────────────────────────
+//
+// A small, well-defined set of common deviations from the FFT rules, chosen in
+// Settings › Scoring. The defaults ARE the FFT rules, so a game that never touched
+// the setting — or any game saved before this feature — scores exactly as before.
+//
+//   petitAuBoutMultiplied : true  (FFT) → petit au bout = 10 × contract multiplier
+//                           false       → a flat 10, whatever the contract
+//   poigneeMultiplied     : false (FFT) → poignée = flat 20 / 30 / 40
+//                           true        → 20 / 30 / 40 × contract multiplier
+//
+// The rules are captured when a game starts and stored with it (InProgressGame and
+// SavedGame), so changing the setting never re-scores a game already under way.
+@Serializable
+data class ScoringRules(
+    val petitAuBoutMultiplied: Boolean = true,
+    val poigneeMultiplied: Boolean = false
+) {
+    /** True when every option is at its FFT value. */
+    val isFft: Boolean get() = this == FFT
+
+    companion object {
+        /** The official FFT scoring — the default everywhere. */
+        val FFT = ScoringRules()
+    }
+}
+
 // Returns the petit-au-bout bonus amount per defender.
 //
 // The petit au bout is achieved when the Petit (1 of trumps) is captured on the
@@ -262,7 +289,16 @@ fun poigneeThresholds(playerCount: Int): Triple<Int, Int, Int> = when (playerCou
 //   taker delta    = sign × petitAuBoutBonus × numDefenders
 //   defender delta = −sign × petitAuBoutBonus   (per defender)
 //   partner delta  = 0   (partner is not involved in the petit-au-bout bonus)
-fun petitAuBoutBonus(contract: Contract): Int = 10 * contract.multiplier
+//
+// House rule (issue #236): with `rules.petitAuBoutMultiplied == false` the bonus is a
+// flat 10, whatever the contract.
+fun petitAuBoutBonus(contract: Contract, rules: ScoringRules = ScoringRules.FFT): Int =
+    if (rules.petitAuBoutMultiplied) 10 * contract.multiplier else 10
+
+// Scales the summed poignée bonus (from `totalPoigneeBonus`) by the house rules:
+// flat under the FFT rules, × the contract multiplier when `rules.poigneeMultiplied`.
+fun scaledPoigneeBonus(totalBonus: Int, contract: Contract, rules: ScoringRules = ScoringRules.FFT): Int =
+    if (rules.poigneeMultiplied) totalBonus * contract.multiplier else totalBonus
 
 // Returns the flat poignée (trump show) bonus per defender for a single declaration.
 //
@@ -375,6 +411,7 @@ fun chelemBonus(chelem: Chelem): Int = when (chelem) {
 //   takerName    : display name of the taker
 //   won          : true if the taker won (determines poignée direction)
 //   numDefenders : number of defending players (2 in 3-player, 3 in 4- or 5-player)
+//   rules        : house scoring rules (issue #236); FFT by default
 //
 // Returns a new map with all three bonuses applied; the result is still zero-sum.
 fun applyBonuses(
@@ -383,14 +420,15 @@ fun applyBonuses(
     details: RoundDetails,
     takerName: String,
     won: Boolean,
-    numDefenders: Int
+    numDefenders: Int,
+    rules: ScoringRules = ScoringRules.FFT
 ): Map<String, Int> {
 
     // ── Petit au bout ──────────────────────────────────────────────────────
     // The bonus goes to whichever camp captured the Petit on the last trick,
     // regardless of who won the round overall.
     // Taker's camp = taker + partner; defenders' camp = everyone else.
-    val pabAmount = if (details.petitAuBout != null) petitAuBoutBonus(contract) else 0
+    val pabAmount = if (details.petitAuBout != null) petitAuBoutBonus(contract, rules) else 0
     // +1 if the achiever is in the taker's camp, -1 if they are a defender, 0 if nobody.
     val pabSign = when (details.petitAuBout) {
         null                -> 0
@@ -417,10 +455,15 @@ fun applyBonuses(
     // `effectivePoignees` / `effectiveDoublePoignees` / `effectiveTriplePoignees`
     // transparently handle both old saved games (single player in legacy nullable
     // fields) and new games (multi-player lists from issue #149).
-    val pBonus = totalPoigneeBonus(
-        details.effectivePoignees,
-        details.effectiveDoublePoignees,
-        details.effectiveTriplePoignees
+    // House rule (issue #236): optionally multiplied by the contract.
+    val pBonus = scaledPoigneeBonus(
+        totalPoigneeBonus(
+            details.effectivePoignees,
+            details.effectiveDoublePoignees,
+            details.effectiveTriplePoignees
+        ),
+        contract,
+        rules
     )
     val pSign  = if (won) 1 else -1
     val scoresAfterPoignee = if (pBonus == 0) scoresAfterPab else {
@@ -550,7 +593,10 @@ data class SavedGame(
     val finalScores: Map<String, Int>,
     // True when the dealer sat out every round (6 players, or 4 with the option on).
     // Defaults to false so games saved before issue #231 still load.
-    val dealerSitsOut: Boolean = false
+    val dealerSitsOut: Boolean = false,
+    // House scoring rules the game was played with (issue #236). FFT by default, so
+    // games saved before this feature still load and keep their meaning.
+    val scoringRules: ScoringRules = ScoringRules.FFT
 )
 
 // InProgressGame captures the state of a game that has not been ended yet.
@@ -580,7 +626,10 @@ data class InProgressGame(
     val rounds: List<RoundResult>,
     // True when the dealer sits out each round (issue #231). The default keeps
     // in-progress games saved by older versions loadable.
-    val dealerSitsOut: Boolean = false
+    val dealerSitsOut: Boolean = false,
+    // House scoring rules captured when the game started (issue #236). FFT by default
+    // for in-progress games saved before this feature.
+    val scoringRules: ScoringRules = ScoringRules.FFT
 )
 
 // Returns the name(s) of the player(s) with the highest cumulative total.
@@ -657,12 +706,14 @@ data class RoundPreview(
 // deadPlayer  : the player sitting out this round (issue #231), or null. They are
 //               left out of the scoring and get an explicit 0 in the result, so the
 //               round stays zero-sum among the players who actually played.
+// rules       : the game's house scoring rules (issue #236); FFT by default.
 fun previewRound(
     playerNames: List<String>,
     takerName: String,
     contract: Contract,
     details: RoundDetails,
-    deadPlayer: String? = null
+    deadPlayer: String? = null,
+    rules: ScoringRules = ScoringRules.FFT
 ): RoundPreview {
     // Only the active players take part in the scoring.
     val active = playerNames.filter { it != deadPlayer }
@@ -677,7 +728,7 @@ fun previewRound(
     )
     // 3/4 active players: every non-taker is a defender; 5 with a partner: exactly 3.
     val numDefenders = if (details.partnerName != null) 3 else active.size - 1
-    val scores = applyBonuses(base, contract, details, takerName, won, numDefenders)
+    val scores = applyBonuses(base, contract, details, takerName, won, numDefenders, rules)
     return RoundPreview(
         won          = won,
         margin       = abs(details.points - requiredPoints(details.bouts)),
