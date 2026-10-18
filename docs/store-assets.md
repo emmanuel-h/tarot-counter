@@ -37,6 +37,44 @@ adb pull /sdcard/Android/data/fr.mandarine.tarotcounter/files/store store/screen
 
 `leaveApksInstalledAfterRun` matters: without it, Gradle uninstalls the app after the run, and the files go with it.
 
+### Captions (issue #225)
+
+People often see only the first two or three screenshots in search results, so the ones on Play carry a short caption saying what each screen does. `tools/store/caption_screenshots.py` (Pillow) reads the raw phone captures and writes framed versions to `store/captioned/{en,fr}/{light,dark}/`, with the same file names. The raw captures in `store/screenshots/` are not changed, so they can be regenerated and the captions redrawn at any time:
+
+```bash
+python3 tools/store/caption_screenshots.py
+```
+
+Each output is 1080 × 1920 (9:16), styled like the feature graphic:
+
+```
+┌──────────────────────────┐
+│        felt green        │
+│   Standings at a glance  │  Figtree Bold, ivory, wraps to 2 balanced lines
+│  ═════  ♠ ♥ ♦ ♣  ═════   │  brass double hairline with the suits
+│   ┌──────────────────┐   │
+│   │                  │   │  the app screen, scaled to 821 × 1450,
+│   │    app screen    │   │  rounded corners, brass frame, soft shadow
+│   │                  │   │
+│   └──────────────────┘   │
+└──────────────────────────┘
+```
+
+| Screen | EN | FR |
+|---|---|---|
+| `1_home` | All your Tarot games | Toutes vos parties de tarot |
+| `2_game` | Standings at a glance | Le classement en un coup d'œil |
+| `3_round_entry` | Scores calculated for you | Le score calculé pour vous |
+| `4_game_over` | Winner and score chart | Le vainqueur et l'évolution des scores |
+| `5_history` | The full score sheet | Toute la feuille de marque |
+
+The captions are set in `CAPTIONS` at the top of the script.
+
+Which shots get captions:
+
+- **Phone, light and dark**: captioned. The dark shots fill phone slots 6–8 on Play next to the light ones, so they get the same frame (on the same felt page) and the same caption as their light counterpart; leaving them bare would make the listing look unfinished.
+- **Tablets**: left raw. They exist in French only, are shown in their own Play slots, and their wide layout already reads at a glance; the raw files are uploaded as they are.
+
 ## Feature graphic
 
 `store/feature_graphic_{en,fr}.png` (1024 × 500) is drawn by `tools/store/feature_graphic.py` using Pillow, the app's own fonts from `res/font`, and the icon SVG. It shows:
@@ -74,9 +112,11 @@ python3 tools/store/publish-play.py --bundle … --mapping … --track productio
 
 | Play slot | en-US | fr-FR |
 |---|---|---|
-| Phone (max 8) | `en/light/1`–`5`, then `en/dark/2`–`4` | `fr/light/1`–`5`, then `fr/dark/2`–`4` |
-| 7-inch | left untouched | `tablet7/fr/light/*` |
-| 10-inch | left untouched | `tablet10/fr/light/*` |
+| Phone (max 8) | `captioned/en/light/1`–`5`, then `captioned/en/dark/2`–`4` | `captioned/fr/light/1`–`5`, then `captioned/fr/dark/2`–`4` |
+| 7-inch | left untouched | `screenshots/tablet7/fr/light/*` |
+| 10-inch | left untouched | `screenshots/tablet10/fr/light/*` |
+
+Paths are relative to `store/`. Phone slots take the captioned shots, so run `caption_screenshots.py` after regenerating the raw captures; the script stops before touching Play if a file is missing.
 
 It needs only `requests`, `PyJWT` and `cryptography`, which the system Python already has — no Google client library, no fastlane, no Ruby.
 
