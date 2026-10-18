@@ -255,6 +255,25 @@ data class AppStrings(
     val contractGarde: String,
     val contractGardeSans: String,
     val contractGardeContre: String,
+
+    // ── Statistics (issue #229) ───────────────────────────────────────────────
+    // Screen title, also the label of the top-bar icon on the home screen.
+    val statistics: String,
+    // Empty state shown before the first saved game.
+    val statsEmpty: String,
+    // "Based on 7 saved games" line under the title.
+    val statsBasedOn: (games: Int) -> String,
+    // Labels of the four key figures of a player card.
+    val statGames: String,
+    val statWins: String,
+    val statTakeRate: String,
+    val statAverage: String,
+    // Heading above the per-contract success rates.
+    val statSuccessByContract: String,
+    // "3/4 made" — contracts made out of contracts taken.
+    val statMadeOutOf: (won: Int, taken: Int) -> String,
+    // Shown instead of a number when there is nothing to compute (e.g. never taken).
+    val statNone: String,
 )
 
 // ── English strings ───────────────────────────────────────────────────────────
@@ -389,6 +408,16 @@ val EnStrings = AppStrings(
     contractGarde        = "Guard",
     contractGardeSans    = "Guard Without",
     contractGardeContre  = "Guard Against",
+    statistics            = "Statistics",
+    statsEmpty            = "No saved games yet. Statistics appear here after your first finished game.",
+    statsBasedOn          = { n -> if (n == 1) "Based on 1 saved game" else "Based on $n saved games" },
+    statGames             = "Games",
+    statWins              = "Wins",
+    statTakeRate          = "Takes",
+    statAverage           = "Avg score",
+    statSuccessByContract = "Success by contract",
+    statMadeOutOf         = { won, taken -> "$won/$taken made" },
+    statNone              = "–",
 
     settings                 = "Settings",
     settingsTitle            = "Settings",
@@ -546,6 +575,16 @@ val FrStrings = AppStrings(
     contractGarde        = "Garde",
     contractGardeSans    = "Garde Sans",
     contractGardeContre  = "Garde Contre",
+    statistics            = "Statistiques",
+    statsEmpty            = "Aucune partie enregistrée. Les statistiques apparaissent ici après votre première partie terminée.",
+    statsBasedOn          = { n -> if (n == 1) "Sur 1 partie enregistrée" else "Sur $n parties enregistrées" },
+    statGames             = "Parties",
+    statWins              = "Victoires",
+    statTakeRate          = "Prises",
+    statAverage           = "Moyenne",
+    statSuccessByContract = "Réussite par contrat",
+    statMadeOutOf         = { won, taken -> "$won/$taken réussies" },
+    statNone              = "–",
 
     settings                 = "Paramètres",
     settingsTitle            = "Paramètres",

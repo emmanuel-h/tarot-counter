@@ -243,6 +243,7 @@ afterEvaluate {
                 "fr.mandarine.tarotcounter.UiComponentsPreviewsKt*," +
                 "fr.mandarine.tarotcounter.ThemeModeProvider*," +
                 "fr.mandarine.tarotcounter.SettingsScreenKt*," +
+                "fr.mandarine.tarotcounter.StatisticsScreenKt*," +
                 "fr.mandarine.tarotcounter.RulesScreenKt*," +
                 // Bonus rows + bottom sheets (composables) and their private sheet enum
                 "fr.mandarine.tarotcounter.BonusSheetsKt*," +

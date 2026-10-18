@@ -25,7 +25,8 @@ import fr.mandarine.tarotcounter.ui.theme.TarotCounterTheme
 // SETUP    = the player name entry screen.
 // GAME     = the active game session.
 // SETTINGS = the settings page (theme, language, feedback).
-enum class Screen { SETUP, GAME, SETTINGS }
+// STATISTICS = per-player statistics across saved games (issue #229).
+enum class Screen { SETUP, GAME, SETTINGS, STATISTICS }
 
 // MainActivity is the entry point of every Android app.
 // It extends ComponentActivity, which is the base class for activities
@@ -144,7 +145,14 @@ class MainActivity : ComponentActivity() {
                                     currentScreen = Screen.GAME
                                 },
                                 // Navigate to the settings page when the gear icon is tapped.
-                                onNavigateToSettings = { currentScreen = Screen.SETTINGS }
+                                onNavigateToSettings = { currentScreen = Screen.SETTINGS },
+                                // Open the statistics page (leaderboard icon).
+                                onNavigateToStatistics = { currentScreen = Screen.STATISTICS }
+                            )
+                            Screen.STATISTICS -> StatisticsScreen(
+                                games    = pastGames,
+                                onBack   = { currentScreen = Screen.SETUP },
+                                modifier = screenModifier
                             )
                             Screen.SETTINGS -> SettingsScreen(
                                 modifier      = screenModifier,

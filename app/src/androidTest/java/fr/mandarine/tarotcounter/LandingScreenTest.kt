@@ -56,13 +56,15 @@ class LandingScreenTest {
      */
     private fun launch(
         onStartGame: (List<String>, Int?) -> Unit = { _, _ -> },
-        onNavigateToSettings: () -> Unit = {}
+        onNavigateToSettings: () -> Unit = {},
+        onNavigateToStatistics: () -> Unit = {}
     ) {
         composeTestRule.setContent {
             TarotCounterTheme {
                 LandingScreen(
                     onStartGame          = onStartGame,
-                    onNavigateToSettings = onNavigateToSettings
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToStatistics = onNavigateToStatistics
                 )
             }
         }
@@ -140,6 +142,18 @@ class LandingScreenTest {
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
 
         assert(called) { "Expected onNavigateToSettings to be called when gear icon is tapped" }
+    }
+
+    // ── Spec: statistics icon (issue #229) ───────────────────────────────────
+
+    @Test
+    fun tapping_statistics_icon_calls_onNavigateToStatistics() {
+        var called = false
+        launch(onNavigateToStatistics = { called = true })
+
+        composeTestRule.onNodeWithContentDescription("Statistics").performClick()
+
+        assert(called) { "Expected onNavigateToStatistics to be called when the statistics icon is tapped" }
     }
 
     // ── Spec: settings button is large/consistent with other action buttons ────

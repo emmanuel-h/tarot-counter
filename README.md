@@ -18,6 +18,7 @@ TarotCounter guides players through a game round by round:
 10. **Settings page**: reached from the ⚙ gear icon on the home screen. It has grouped cards with icons: **Appearance** (Light / Dark), **Language** (English / Français), **Help** (Rules ›, Send feedback ›) and **About** (version). The Rules open as a full-screen page with section headers and tables for the bouts thresholds and contract multipliers, built from the scoring code. Theme and language are persisted across restarts.
 11. **Motion, haptics and accessibility**: screens fade through into each other. After each round the standings count up to the new totals and the rows slide into their new ranks. Tapping a taker and confirming a round give light haptic feedback. Everything is instant when Android's **Remove animations** setting is on. All tap targets are at least 48 dp, every icon and avatar has a screen-reader label, and the layout was checked at 200 % font size and on a 10" tablet in landscape.
 12. **Salon look from the first frame**: a felt-green launcher icon with the three bouts in a brass ring, and a matching splash screen (ivory, or night felt in dark mode) that hands over to the app without a white flash.
+13. **Player statistics**: the leaderboard icon on the home screen opens one card per player, computed from the saved games: games played, wins (ties count for every co-winner), take rate, average final score and success rate per contract. See [`docs/statistics.md`](docs/statistics.md).
 
 The app rotates the **dealer** each round and lets the user explicitly select the **attacker** (the player who won the bidding), determines win/loss, and computes each player's score for the round.
 
@@ -76,7 +77,7 @@ Single-module Jetpack Compose app — all source lives in `:app` under `fr.manda
 
 ```
 app/src/main/java/fr/mandarine/tarotcounter/
-├── MainActivity.kt        # Entry point, Screen enum (SETUP / GAME), top-level navigation, ViewModel wiring
+├── MainActivity.kt        # Entry point, Screen enum (SETUP / GAME / SETTINGS / STATISTICS), top-level navigation, ViewModel wiring
 ├── AppLocale.kt           # Locale enum (EN / FR) + CompositionLocal provider
 ├── AppTheme.kt            # Theme enum (LIGHT / DARK) + CompositionLocal provider
 ├── AppStrings.kt          # All user-visible strings, parameterised by locale
@@ -93,6 +94,8 @@ app/src/main/java/fr/mandarine/tarotcounter/
 ├── MotionLogic.kt         # Pure motion/haptics helpers (reduced motion, durations, effects)
 ├── ScoreHistoryScreen.kt  # Score history: sticky-header table + round cards, with toggle
 ├── FinalScoreScreen.kt    # Game over: winner card, ranking, score-over-time chart
+├── StatisticsScreen.kt    # Per-player statistics across saved games
+├── PlayerStats.kt         # Pure statistics logic: games, wins, take rate, success per contract, average
 ├── UiComponents.kt        # Shared UI: App* buttons, AutoSizeText, Salon components (SalonCard, PlayerAvatar, SalonTopBar…)
 ├── UiComponentsPreviews.kt # Light + dark @Previews of every Salon component
 ├── SalonUi.kt             # Pure logic behind the Salon components (initials, sizes, suit glyphs)
@@ -226,9 +229,11 @@ manual retrace instructions, and where to view crash reports in Play Console.
 | `BonusesTest.kt` | Bonus sheet logic: one poignée level per player, declarants order, chelem candidates, announced chelems |
 | `RoundPreviewTest.kt` | Live round result: win/short margin, distribution (3 and 5 players), bonuses, zero-sum |
 | `StandingsTest.kt` | Game screen logic: ranked standings (ties, leaders, trend), taker grid columns, last rounds |
+| `PlayerStatsTest.kt` | Statistics: games/wins (ties), take rate, success per contract, average score, name matching, order, strings |
 | `HomeLogicTest.kt` | Home screen logic: current leader(s), past-game date formatting, app → Java locale |
 | `GameViewModelTest.kt` | ViewModel: locale + theme StateFlows, `setLocale`, `setTheme`, `saveGame`, `clearInProgressGame` |
 | `LandingScreenTest.kt` | Home screen: top bar, resume card, New Game card (player count, name fields with avatars, duplicate validation, dealer), past-game rows |
+| `StatisticsScreenTest.kt` | Statistics screen: empty state, one card per player, back arrow |
 | `SettingsScreenTest.kt` | Settings: groups, theme/language toggles, feedback row, version, rules page (tables, close, system back) |
 | `GameScreenTest.kt` | Full game flow: contract selection, details form, history, score history navigation, End Game button |
 | `ScoreHistoryScreenTest.kt` | Score history: table (header avatars, totals, sideways scroll), round cards, empty state, toggle, back navigation |
@@ -259,6 +264,7 @@ TarotCounter/
 │   ├── score-history.md      # Score history: sticky table, round cards
 │   ├── motion-accessibility.md # Transitions, animated standings, reduced motion, haptics, a11y
 │   ├── final-score.md        # Game over screen: winner card, ranking, score chart
+│   ├── statistics.md         # Player statistics across saved games
 │   ├── game-persistence.md   # How completed games are saved and displayed
 │   ├── score-color.md        # Score colour-coding convention and scoreColor() helper
 │   ├── theme.md              # "Salon" design tokens: colours, dark variant, fonts, shapes, spacing
@@ -287,6 +293,7 @@ More detailed documentation lives in [`docs/`](docs/):
 - [`docs/player-setup.md`](docs/player-setup.md) — setup screen behaviour and validation rules
 - [`docs/settings.md`](docs/settings.md) — settings page: theme toggle, language toggle, feedback button, navigation wiring
 - [`docs/score-history.md`](docs/score-history.md) — score history screen: table view, list view, toggle, navigation
+- [`docs/statistics.md`](docs/statistics.md) — player statistics: figures, rules, name matching, limitations
 - [`docs/final-score.md`](docs/final-score.md) — final score screen: winner card, table highlighting, New Game navigation
 - [`docs/game-persistence.md`](docs/game-persistence.md) — how completed games are saved to DataStore and displayed on the setup screen
 - [`docs/score-color.md`](docs/score-color.md) — score colour-coding convention: `scoreColor()` helper, where it is used, winner column
