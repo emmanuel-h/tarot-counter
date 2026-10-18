@@ -71,6 +71,16 @@ or removes the `Companion` object or the `serializer()` method, the call fails
 with a `NoSuchMethodException`.  These two rules keep both the companion object
 reference and any method whose signature returns a `KSerializer`.
 
+### Google Play In-App Review — missing annotation
+
+```proguard
+-dontwarn com.google.android.gms.common.annotation.NoNullnessRewrite
+```
+
+`review-ktx` (issue #223, see `review-prompt.md`) references this Play Services
+annotation, which only exists at compile time. Without the rule R8 stops with
+"Missing class". Ignoring it is safe: an annotation has no runtime behaviour.
+
 ## What is NOT in this file (and why)
 
 | Library | Where its rules live |

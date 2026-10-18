@@ -26,6 +26,9 @@ class FakeGameStorage : GameStorageInterface {
     private val _inProgress = MutableStateFlow<InProgressGame?>(null)
     private val _locale     = MutableStateFlow<AppLocale?>(null)
     private val _theme      = MutableStateFlow<AppTheme?>(null)
+    // Review prompt state (issue #223).
+    private val _finishedGames   = MutableStateFlow(0)
+    private val _reviewRequested = MutableStateFlow(false)
 
     // ── Call counters ─────────────────────────────────────────────────────────
 
@@ -34,6 +37,7 @@ class FakeGameStorage : GameStorageInterface {
     var clearInProgressCallCount = 0; private set
     var saveLocaleCallCount      = 0; private set
     var saveThemeCallCount       = 0; private set
+    var markReviewCallCount      = 0; private set
 
     // ── Last-written values ───────────────────────────────────────────────────
 
@@ -47,6 +51,18 @@ class FakeGameStorage : GameStorageInterface {
     fun seedGames(games: List<SavedGame>)        { _games.value = games }
     fun seedInProgressGame(game: InProgressGame) { _inProgress.value = game }
     fun seedLocale(locale: AppLocale)            { _locale.value = locale }
+    /** Pre-populate the finished-games counter and the "review already asked" flag. */
+    fun seedReviewState(finishedGames: Int, reviewRequested: Boolean = false) {
+        _finishedGames.value   = finishedGames
+        _reviewRequested.value = reviewRequested
+    }
+
+    /** Current finished-games counter, for assertions. */
+    val finishedGameCount: Int get() = _finishedGames.value
+
+    /** Current "review already asked" flag, for assertions. */
+    val reviewRequested: Boolean get() = _reviewRequested.value
+
     fun seedTheme(theme: AppTheme)               { _theme.value = theme }
 
     // ── GameStorageInterface ──────────────────────────────────────────────────
@@ -88,5 +104,17 @@ class FakeGameStorage : GameStorageInterface {
         saveThemeCallCount++
         lastSavedTheme = theme
         _theme.value = theme
+    }
+
+    override fun loadFinishedGameCount(): Flow<Int>   = _finishedGames.asStateFlow()
+    override fun loadReviewRequested():   Flow<Boolean> = _reviewRequested.asStateFlow()
+
+    override suspend fun incrementFinishedGameCount() {
+        _finishedGames.value = _finishedGames.value + 1
+    }
+
+    override suspend fun markReviewRequested() {
+        markReviewCallCount++
+        _reviewRequested.value = true
     }
 }

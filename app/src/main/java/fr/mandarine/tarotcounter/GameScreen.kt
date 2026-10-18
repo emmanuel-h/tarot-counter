@@ -60,6 +60,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.animation.AnimatedContent
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -74,6 +75,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
+// Pause between the Game Over screen appearing and the Play review sheet (issue #223).
+private const val REVIEW_PROMPT_DELAY_MS = 1_500L
+
 // GameScreen handles the full round-by-round flow of a Tarot game on a single scrollable page.
 //
 // All information is presented together: the compact scoreboard, the contract selection,
@@ -86,12 +90,16 @@ import androidx.compose.ui.unit.dp
 // viewModel : holds the mutable game session state and all game-logic helpers.
 // onEndGame : called when the user presses "New Game" on the Final Score screen.
 //             The caller (MainActivity) uses this to navigate back to the setup screen.
+// requestReview : launches the Play Store review flow (issue #223). Returns true when
+//             it ran. MainActivity passes the real Play launcher; tests pass a fake.
+//             The default does nothing, so previews and most tests are unaffected.
 // modifier  : passed in from the parent (e.g. Scaffold padding).
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(
     viewModel: GameViewModel,
     onEndGame: () -> Unit = {},
+    requestReview: suspend () -> Boolean = { false },
     modifier: Modifier = Modifier
 ) {
     // Read the active locale from the composition tree and resolve all strings once.
@@ -334,6 +342,24 @@ fun GameScreen(
     // and the form are kept). Declared after the handler above, so it wins.
     BackHandler(enabled = !showFinalScore && !showScoreHistory && roundEntryOpen) {
         roundEntryOpen = false
+    }
+
+    // ── Play Store review prompt (issue #223) ─────────────────────────────────
+    // Only while Game Over is shown, and only once the policy says so (3rd finished
+    // game, never asked before). `collectAsState` turns the ViewModel's StateFlow into
+    // Compose state, so this recomposes when the counter is updated by endGame().
+    val shouldRequestReview by viewModel.shouldRequestReview.collectAsState()
+    // LaunchedEffect runs its block in a coroutine when it enters the composition and
+    // restarts it whenever a key changes. If Game Over is left (showFinalScore turns
+    // false), the coroutine is cancelled, so the review is never shown mid-game.
+    LaunchedEffect(showFinalScore, shouldRequestReview) {
+        if (showFinalScore && shouldRequestReview) {
+            // Let the player see the final scores before Play's sheet slides up.
+            delay(REVIEW_PROMPT_DELAY_MS)
+            // The result (rated or not) is unknown by design; we only remember that
+            // the flow was launched so it is not shown again.
+            if (requestReview()) viewModel.markReviewRequested()
+        }
     }
 
     // ── Overlay screens ───────────────────────────────────────────────────────

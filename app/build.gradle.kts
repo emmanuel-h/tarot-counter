@@ -253,6 +253,10 @@ afterEvaluate {
                 // Android Activity and DataStore storage (can't run on JVM)
                 "fr.mandarine.tarotcounter.MainActivity*," +
                 "fr.mandarine.tarotcounter.GameStorage*," +
+                // Thin wrapper around the Play In-App Review API (needs an Activity and
+                // Play Services). The "should ask" decision lives in ReviewPromptPolicy,
+                // which IS mutated; PlayReviewLauncher is covered by an instrumented test.
+                "fr.mandarine.tarotcounter.PlayReviewLauncher*," +
                 // Kotlin serialization plugin-generated serializer classes
                 "fr.mandarine.tarotcounter.*\$\$serializer," +
                 "fr.mandarine.tarotcounter.*\$serializer," +
@@ -301,6 +305,9 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     // ViewModel for Compose — lets us call viewModel() inside a Composable function.
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    // Google Play In-App Review — asks for a rating after a few finished games (issue #223).
+    // It also ships FakeReviewManager (com.google.android.play.core.review.testing) for tests.
+    implementation(libs.play.review.ktx)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)

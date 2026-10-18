@@ -55,6 +55,7 @@ Only our own production code is mutated:
   - Compose screen composables (`GameScreenKt`, `LandingScreenKt`, etc.) — only exercised by instrumented tests
   - `MainActivity` — Android lifecycle, cannot run on JVM
   - `GameStorage` — DataStore I/O, cannot run on JVM
+  - `PlayReviewLauncher` — Play In-App Review wrapper, needs an Activity and Play Services (its decision logic, `ReviewPromptPolicy`, is mutated)
   - Kotlin serialization-generated classes (`*$$serializer`, `*$serializer`)
   - Compose compiler-generated singletons (`ComposableSingletons*`)
   - Material theme declarations (`ui.theme.*`) — pure style constants, no logic

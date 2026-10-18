@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import java.util.UUID
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -79,6 +80,24 @@ class GameViewModel internal constructor(
             initialValue = null
         )
 
+    // shouldRequestReview is true when the Play Store review flow should be launched
+    // the next time the Game Over screen is shown (issue #223).
+    //
+    // `combine` merges two Flows into one: whenever either the finished-games counter
+    // or the "already asked" flag changes, the lambda re-runs with the latest value of
+    // both, and the pure ReviewPromptPolicy decides. `initialValue = false` means we
+    // never ask before the stored values have actually been read.
+    val shouldRequestReview: StateFlow<Boolean> = combine(
+        storage.loadFinishedGameCount(),
+        storage.loadReviewRequested()
+    ) { finishedGames, alreadyAsked ->
+        ReviewPromptPolicy.shouldAsk(finishedGames, alreadyAsked)
+    }.stateIn(
+        scope        = viewModelScope,
+        started      = SharingStarted.WhileSubscribed(5_000),
+        initialValue = false
+    )
+
     // ── Game session state ────────────────────────────────────────────────────
     //
     // These fields are set by initGame() and mutated by recordPlayed(), recordSkipped(),
@@ -101,6 +120,11 @@ class GameViewModel internal constructor(
     // True when the dealer sits out each round (6 players, or 4 with the option on —
     // issue #231). Set once by initGame().
     private var _dealerSitsOut: Boolean = false
+
+    // Id of the last game already added to the finished-games counter (issue #223).
+    // endGame() can run several times for the same game (Game Over → back → End Game
+    // again); this guard makes sure such a game is only counted once.
+    private var _countedGameId: String? = null
 
     // Observable round counter. `mutableIntStateOf` is a Compose snapshot primitive:
     // any composable that reads `currentRound` automatically recomposes when it changes.
@@ -254,10 +278,28 @@ class GameViewModel internal constructor(
                     dealerSitsOut = _dealerSitsOut
                 )
             )
+            countFinishedGame()
         } else {
             // No rounds were played — discard the in-progress game so it does not
             // linger as a resumable entry on the landing screen (issue #90).
             clearInProgressGame()
+        }
+    }
+
+    // Adds the current game to the persisted finished-games counter, once per game.
+    private fun countFinishedGame() {
+        if (_gameId == _countedGameId) return
+        _countedGameId = _gameId
+        viewModelScope.launch {
+            storage.incrementFinishedGameCount()
+        }
+    }
+
+    // Remembers that the Play Store review flow has been launched, so
+    // shouldRequestReview becomes false for good (issue #223).
+    fun markReviewRequested() {
+        viewModelScope.launch {
+            storage.markReviewRequested()
         }
     }
 
