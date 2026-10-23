@@ -13,7 +13,7 @@ activityCompose = "1.13.0"
 kotlin = "2.4.21"
 composeBom = "2026.09.00"
 # Kotlinx Serialization: converts Kotlin objects to/from JSON strings.
-kotlinxSerializationJson = "1.11.0"
+kotlinxSerializationJson = "1.12.0"
 # DataStore: Android's modern key-value storage solution (replaces SharedPreferences).
 datastorePreferences = "1.2.1"
 # lifecycle-viewmodel-compose: lets us use ViewModel inside Composable functions.
