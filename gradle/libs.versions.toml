@@ -1,5 +1,5 @@
 [versions]
-agp = "9.4.1"
+agp = "9.5.0"
 coreKtx = "1.19.1"
 # core-splashscreen: backport of the Android 12 splash screen API to every supported version.
 coreSplashscreen = "1.2.0"
